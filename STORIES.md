@@ -25,17 +25,17 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 
 ### FOUND-001: Initialize Vue 3 Project
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** None
 
 **Story:** As a developer, I need a Vue 3 project scaffold so that I have a foundation to build upon.
 
 **Acceptance Criteria:**
-- [ ] Project created with `npm create vue@latest` (Vue 3, Vite, TypeScript, Pinia, Vue Router)
-- [ ] Tailwind CSS installed and configured
-- [ ] Project runs locally with `npm run dev`
-- [ ] Project builds without errors with `npm run build`
-- [ ] Default boilerplate removed, clean starting point
+- [x] Project created with `npm create vue@latest` (Vue 3, Vite, TypeScript, Pinia, Vue Router)
+- [x] Tailwind CSS installed and configured
+- [x] Project runs locally with `npm run dev`
+- [x] Project builds without errors with `npm run build`
+- [x] Default boilerplate removed, clean starting point
 
 **Size:** S
 
@@ -872,13 +872,13 @@ User experience improvements.
 
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
-| 0: Project Foundation | 9 | 0 | 9 |
+| 0: Project Foundation | 9 | 1 | 8 |
 | 1: Question Tracking | 10 | 0 | 10 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 7 | 0 | 7 |
 | 4: Game State | 4 | 0 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **0** | **38** |
+| **Total** | **38** | **1** | **37** |
 
 ---
 
@@ -903,9 +903,13 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-When starting fresh, only **FOUND-001** is ready.
-
-After each card completes, check which cards become unblocked.
+With FOUND-001 complete, the following cards are now ready:
+- **FOUND-002**: Configure Vitest for Unit Testing
+- **FOUND-004**: Configure Playwright for E2E Testing
+- **FOUND-007**: Configure PWA Support
+- **Q-001**: Define Question Data Model
+- **CARD-001**: Define Card Data Model
+- **UX-004**: Visual Design System
 
 ---
 
