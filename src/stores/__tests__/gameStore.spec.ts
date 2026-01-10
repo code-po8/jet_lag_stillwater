@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { nextTick } from 'vue'
-import { useGameStore, GamePhase, type Player } from '../gameStore'
+import { useGameStore, GamePhase } from '../gameStore'
 
 describe('gameStore core', () => {
   beforeEach(() => {
