@@ -43,18 +43,18 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 
 ### FOUND-002: Configure Vitest for Unit Testing
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-001
 
 **Story:** As a developer, I need Vitest configured so that I can write and run unit tests.
 
 **Acceptance Criteria:**
-- [ ] Vitest installed and configured
-- [ ] Vue Test Utils installed
-- [ ] `npm run test:unit` command runs tests
-- [ ] Test coverage reporting enabled (`npm run test:coverage`)
-- [ ] Sample unit test passes (e.g., test a simple utility function)
-- [ ] Tests run in watch mode during development (`npm run test:unit -- --watch`)
+- [x] Vitest installed and configured
+- [x] Vue Test Utils installed
+- [x] `npm run test:unit` command runs tests
+- [x] Test coverage reporting enabled (`npm run test:coverage`)
+- [x] Sample unit test passes (e.g., test a simple utility function)
+- [x] Tests run in watch mode during development (`npm run test:unit -- --watch`)
 
 **Size:** S
 
@@ -872,13 +872,13 @@ User experience improvements.
 
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
-| 0: Project Foundation | 9 | 1 | 8 |
+| 0: Project Foundation | 9 | 2 | 7 |
 | 1: Question Tracking | 10 | 0 | 10 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 7 | 0 | 7 |
 | 4: Game State | 4 | 0 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **1** | **37** |
+| **Total** | **38** | **2** | **36** |
 
 ---
 
@@ -903,10 +903,13 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001 complete, the following cards are now ready:
-- **FOUND-002**: Configure Vitest for Unit Testing
+With FOUND-001 and FOUND-002 complete, the following cards are now ready:
+- **FOUND-003**: Configure Testing Library for Integration Tests
 - **FOUND-004**: Configure Playwright for E2E Testing
+- **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
+- **FOUND-008**: Create Persistence Service Abstraction
+- **T-001**: Create Timer Composable
 - **Q-001**: Define Question Data Model
 - **CARD-001**: Define Card Data Model
 - **UX-004**: Visual Design System
