@@ -381,26 +381,41 @@ describe('questionStore persistence', () => {
 
 ### Q-003a: Question List Display
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-002a, FOUND-003
 
 **Story:** As a player, I need to see all questions grouped by category so that I can browse what's available.
 
 **Acceptance Criteria:**
-- [ ] Component displays questions grouped by category
-- [ ] Each category shows: name, draw/keep values
-- [ ] Questions show: text
-- [ ] Component is mobile-friendly (touch targets, scrollable)
-- [ ] Accessible from both hider and seeker views
+- [x] Component displays questions grouped by category
+- [x] Each category shows: name, draw/keep values
+- [x] Questions show: text
+- [x] Component is mobile-friendly (touch targets, scrollable)
+- [x] Accessible from both hider and seeker views
 
 **Size:** S
 
-**Tests to Write:**
+**Tests Written (8 tests):**
 ```typescript
-describe('QuestionList display', () => {
-  it('should display all categories')
-  it('should show questions within each category')
-  it('should display draw/keep values for each category')
+describe('QuestionList', () => {
+  describe('category display', () => {
+    it('should display all categories')
+    it('should display draw/keep values for each category')
+  })
+  describe('question display', () => {
+    it('should show questions within each category')
+    it('should display question text')
+  })
+  describe('category collapsing', () => {
+    it('should show category headers that can be expanded/collapsed')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly category headers')
+    it('should have a scrollable container')
+  })
+  describe('category stats', () => {
+    it('should show question count for each category')
+  })
 })
 ```
 
@@ -906,12 +921,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 10 | 5 | 5 |
+| 1: Question Tracking | 10 | 6 | 4 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 7 | 0 | 7 |
 | 4: Game State | 4 | 0 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **9** | **29** |
+| **Total** | **38** | **10** | **28** |
 
 ---
 
@@ -936,18 +951,18 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, and Q-002c complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, and Q-003a complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-001**: Create Timer Composable
-- **Q-003a**: Question List Display
-- **Q-005**: Question History View (newly unblocked by Q-002c)
+- **Q-003b**: Question Status Indicators (newly unblocked by Q-003a)
+- **Q-005**: Question History View
 - **CARD-001**: Define Card Data Model
 - **UX-004**: Visual Design System
 - **GS-001**: Create Game Store
 
-**Note:** Q-002c completion unblocks Q-005 (Question History View). Q-003b (Question Status Indicators) requires Q-003a, so working on Q-003a first is recommended for the Question UI path.
+**Note:** Q-003a completion unblocks Q-003b (Question Status Indicators), which continues the Question UI path toward Q-004a (Ask Question Modal).
 
 ---
 
