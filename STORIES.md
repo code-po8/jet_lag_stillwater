@@ -551,30 +551,76 @@ Game timing functionality.
 
 ### T-001: Create Timer Composable
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-002
 
 **Story:** As a developer, I need a reusable timer composable so that timing logic is consistent across the app.
 
 **Acceptance Criteria:**
-- [ ] `useTimer` composable created
-- [ ] Supports: start, stop, pause, resume, reset
-- [ ] Tracks elapsed time in milliseconds
-- [ ] Emits events at configurable intervals
-- [ ] Handles app backgrounding (calculates drift on resume)
-- [ ] Unit tests cover all timer states
+- [x] `useTimer` composable created
+- [x] Supports: start, stop, pause, resume, reset
+- [x] Tracks elapsed time in milliseconds
+- [x] Emits events at configurable intervals
+- [x] Handles app backgrounding (calculates drift on resume)
+- [x] Unit tests cover all timer states
 
 **Size:** M
 
-**Tests to Write:**
+**Tests Written (34 tests):**
 ```typescript
 describe('useTimer', () => {
-  it('should start from zero')
-  it('should track elapsed time')
-  it('should pause and resume')
-  it('should reset to zero')
-  it('should handle time drift when app backgrounds')
-  it('should emit tick events at intervals')
+  describe('initialization', () => {
+    it('should start from zero')
+    it('should initialize in stopped state')
+    it('should initialize as not paused')
+  })
+  describe('start', () => {
+    it('should set isRunning to true')
+    it('should track elapsed time')
+    it('should continue tracking time over multiple seconds')
+    it('should not restart if already running')
+  })
+  describe('stop', () => {
+    it('should set isRunning to false')
+    it('should reset elapsed time to zero')
+  })
+  describe('pause and resume', () => {
+    it('should set isPaused to true when paused')
+    it('should keep isRunning true when paused')
+    it('should stop tracking time when paused')
+    it('should resume tracking time')
+    it('should set isPaused to false when resumed')
+    it('should do nothing if paused when not running')
+    it('should do nothing if resumed when not paused')
+  })
+  describe('reset', () => {
+    it('should reset elapsed to zero')
+    it('should stop the timer')
+    it('should clear paused state')
+    it('should allow starting fresh after reset')
+  })
+  describe('tick events', () => {
+    it('should emit tick events at default 100ms interval')
+    it('should emit tick events at custom interval')
+    it('should pass elapsed time to tick callback')
+    it('should not emit tick events when paused')
+    it('should resume tick events after unpause')
+  })
+  describe('app backgrounding', () => {
+    it('should handle time drift when app resumes')
+    it('should not adjust time if not running')
+    it('should not adjust time if paused')
+  })
+  describe('countdown mode', () => {
+    it('should count down from initial value')
+    it('should not go below zero')
+    it('should emit onComplete when countdown reaches zero')
+    it('should auto-stop when countdown completes')
+    it('should reset countdown to initial value on reset')
+  })
+  describe('cleanup', () => {
+    it('should clear interval on stop')
+  })
 })
 ```
 
@@ -1294,11 +1340,11 @@ User experience improvements.
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 7 | 4 |
-| 2: Timers | 4 | 0 | 4 |
+| 2: Timers | 4 | 1 | 3 |
 | 3: Card Management | 12 | 0 | 12 |
 | 4: Game State | 7 | 1 | 6 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **12** | **35** |
+| **Total** | **47** | **13** | **34** |
 
 ---
 
@@ -1332,20 +1378,22 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, and GS-001 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, GS-001, and T-001 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
-- **T-001**: Create Timer Composable
+- **T-002**: Hiding Period Timer (newly unblocked by T-001)
+- **T-003**: Hiding Duration Timer (newly unblocked by T-001)
+- **T-004**: Question Response Timer (depends on T-001 + Q-004, Q-004 not complete)
 - **Q-004a**: Ask Question Modal
 - **Q-005**: Question History View
 - **CARD-001**: Define Card Data Model
+- **CARD-006b**: Curse Clearing (newly unblocked by T-001, still needs CARD-006a)
 - **UX-004**: Visual Design System
-- **GS-002**: Game Setup Flow (newly unblocked by GS-001)
-- **GS-005**: End Game Flow (depends on GS-001 + T-003, partially unblocked)
-- **GS-007**: Unified Game Pause/Resume (depends on GS-001 + T-001, partially unblocked)
+- **GS-002**: Game Setup Flow
+- **GS-007**: Unified Game Pause/Resume (newly fully unblocked by T-001 + GS-001)
 
-**Note:** GS-001 completion unblocks GS-002 (Game Setup Flow), GS-005 (End Game Flow - still needs T-003), GS-007 (Game Pause - still needs T-001), and others that now have GS-001 as a satisfied dependency.
+**Note:** T-001 completion unblocks T-002, T-003, T-004 (partially), CARD-006b (partially), and GS-007 (now fully unblocked).
 
 ---
 
