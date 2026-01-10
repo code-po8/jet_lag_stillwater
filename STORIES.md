@@ -423,30 +423,33 @@ describe('QuestionList', () => {
 
 ### Q-003b: Question Status Indicators
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-003a, Q-002b
 
 **Story:** As a player, I need to see question status (asked/available/pending) so that I know what can still be asked.
 
 **Acceptance Criteria:**
-- [ ] Questions show: asked/available/pending status
-- [ ] Asked questions are visually distinct (grayed out, strikethrough, or hidden)
-- [ ] Pending question (awaiting answer) highlighted
-- [ ] Disable asking new questions while one is pending
-- [ ] Emit event when question selected
+- [x] Questions show: asked/available/pending status
+- [x] Asked questions are visually distinct (grayed out, strikethrough, or hidden)
+- [x] Pending question (awaiting answer) highlighted
+- [x] Disable asking new questions while one is pending
+- [x] Emit event when question selected
 
 **Size:** S
 
 **Design Reference:**
 - See RESEARCH_NOTES.md "Question Icon Reference" - in the show, used/unavailable questions appear faded/grayed out
 
-**Tests to Write:**
+**Tests Written (7 tests):**
 ```typescript
-describe('QuestionList status', () => {
+describe('QuestionList status indicators', () => {
   it('should gray out asked questions')
   it('should highlight pending question')
   it('should disable selection while question is pending')
   it('should emit event when question selected')
+  it('should show asked status indicator text')
+  it('should show pending status indicator text')
+  it('should not emit event when clicking asked question')
 })
 ```
 
@@ -925,12 +928,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 10 | 6 | 4 |
+| 1: Question Tracking | 10 | 7 | 3 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 7 | 0 | 7 |
 | 4: Game State | 4 | 0 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **10** | **28** |
+| **Total** | **38** | **11** | **27** |
 
 ---
 
@@ -955,18 +958,18 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, and Q-003a complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, and Q-003b complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-001**: Create Timer Composable
-- **Q-003b**: Question Status Indicators (newly unblocked by Q-003a)
+- **Q-004a**: Ask Question Modal (newly unblocked by Q-003b)
 - **Q-005**: Question History View
 - **CARD-001**: Define Card Data Model
 - **UX-004**: Visual Design System
 - **GS-001**: Create Game Store
 
-**Note:** Q-003a completion unblocks Q-003b (Question Status Indicators), which continues the Question UI path toward Q-004a (Ask Question Modal).
+**Note:** Q-003b completion unblocks Q-004a (Ask Question Modal), which continues the Question UI flow toward the full ask/answer workflow.
 
 ---
 

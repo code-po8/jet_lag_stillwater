@@ -2,22 +2,38 @@
 import { ref, computed } from 'vue'
 import { useQuestionStore } from '@/stores/questionStore'
 import { QUESTION_CATEGORIES, type Question } from '@/types/question'
+import { ALL_QUESTIONS } from '@/data/questions'
+
+// Emit event when question is selected
+const emit = defineEmits<{
+  questionSelect: [question: Question]
+}>()
 
 const questionStore = useQuestionStore()
 
 // Track which categories are expanded
 const expandedCategories = ref<Set<string>>(new Set(QUESTION_CATEGORIES.map((c) => c.id)))
 
-// Get questions grouped by category
+// Get all questions grouped by category (including asked and pending)
 const questionsByCategory = computed(() => {
   const grouped = new Map<string, Question[]>()
 
   QUESTION_CATEGORIES.forEach((category) => {
-    const questions = questionStore.getAvailableQuestions(category.id)
+    const questions = ALL_QUESTIONS.filter((q) => q.categoryId === category.id)
     grouped.set(category.id, questions)
   })
 
   return grouped
+})
+
+// Get set of asked question IDs
+const askedQuestionIds = computed(() => {
+  return new Set(questionStore.askedQuestions.map((aq) => aq.questionId))
+})
+
+// Get pending question ID
+const pendingQuestionId = computed(() => {
+  return questionStore.pendingQuestion?.questionId ?? null
 })
 
 // Get stats for each category
@@ -37,6 +53,62 @@ function toggleCategory(categoryId: string) {
 
 function isCategoryExpanded(categoryId: string): boolean {
   return expandedCategories.value.has(categoryId)
+}
+
+/**
+ * Get the status of a question
+ */
+function getQuestionStatus(questionId: string): 'available' | 'asked' | 'pending' {
+  if (pendingQuestionId.value === questionId) {
+    return 'pending'
+  }
+  if (askedQuestionIds.value.has(questionId)) {
+    return 'asked'
+  }
+  return 'available'
+}
+
+/**
+ * Check if a question can be selected
+ * Questions cannot be selected if:
+ * - Another question is pending
+ * - The question has already been asked
+ */
+function isQuestionSelectable(questionId: string): boolean {
+  const status = getQuestionStatus(questionId)
+  // Can't select asked questions
+  if (status === 'asked') return false
+  // Can't select any question while another is pending
+  if (pendingQuestionId.value !== null) return false
+  return true
+}
+
+/**
+ * Handle question click
+ */
+function handleQuestionClick(question: Question) {
+  if (isQuestionSelectable(question.id)) {
+    emit('questionSelect', question)
+  }
+}
+
+/**
+ * Get CSS classes for question based on status
+ */
+function getQuestionClasses(questionId: string): string {
+  const status = getQuestionStatus(questionId)
+  const baseClasses = 'py-3 text-sm'
+
+  switch (status) {
+    case 'asked':
+      return `${baseClasses} opacity-50 line-through cursor-not-allowed`
+    case 'pending':
+      return `${baseClasses} bg-yellow-100 font-medium`
+    case 'available':
+      return pendingQuestionId.value
+        ? `${baseClasses} cursor-not-allowed`
+        : `${baseClasses} cursor-pointer hover:bg-gray-50`
+  }
 }
 </script>
 
@@ -81,9 +153,29 @@ function isCategoryExpanded(categoryId: string): boolean {
             v-for="question in questionsByCategory.get(category.id)"
             :key="question.id"
             :data-testid="`question-${question.id}`"
-            class="py-3 text-sm"
+            :class="getQuestionClasses(question.id)"
+            :aria-disabled="!isQuestionSelectable(question.id)"
+            role="button"
+            tabindex="0"
+            @click="handleQuestionClick(question)"
+            @keydown.enter="handleQuestionClick(question)"
+            @keydown.space.prevent="handleQuestionClick(question)"
           >
-            {{ question.text }}
+            <div class="flex items-center justify-between gap-2">
+              <span>{{ question.text }}</span>
+              <span
+                v-if="getQuestionStatus(question.id) === 'asked'"
+                class="shrink-0 rounded bg-gray-200 px-2 py-0.5 text-xs text-gray-600"
+              >
+                Asked
+              </span>
+              <span
+                v-else-if="getQuestionStatus(question.id) === 'pending'"
+                class="shrink-0 rounded bg-yellow-500 px-2 py-0.5 text-xs text-white"
+              >
+                Pending
+              </span>
+            </div>
           </li>
           <li
             v-if="!questionsByCategory.get(category.id)?.length"

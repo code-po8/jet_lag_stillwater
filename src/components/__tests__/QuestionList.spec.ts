@@ -1,8 +1,11 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest'
-import { render, screen, cleanup, within } from '@testing-library/vue'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+import { render, screen, cleanup, within, fireEvent } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import QuestionList from '../QuestionList.vue'
 import { QUESTION_CATEGORIES } from '@/types/question'
+import { useQuestionStore } from '@/stores/questionStore'
+import { ALL_QUESTIONS } from '@/data/questions'
 
 describe('QuestionList', () => {
   beforeEach(() => {
@@ -106,6 +109,138 @@ describe('QuestionList', () => {
       const matchingSection = screen.getByTestId('category-matching')
       // Should show something like "22 questions" or "22 available"
       expect(within(matchingSection).getByText(/\d+\s*(questions|available)/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('question status indicators', () => {
+    it('should gray out asked questions', async () => {
+      render(QuestionList)
+      const store = useQuestionStore()
+
+      // Get a matching question and ask/answer it
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+      store.askQuestion(matchingQuestion.id)
+      store.answerQuestion(matchingQuestion.id, 'Yes')
+
+      // Wait for Vue to update the DOM
+      await nextTick()
+
+      // The asked question should have a visual indicator (grayed out styling)
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      expect(questionElement).toHaveClass('opacity-50')
+    })
+
+    it('should highlight pending question', async () => {
+      render(QuestionList)
+      const store = useQuestionStore()
+
+      // Get a matching question and mark it as pending
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+      store.askQuestion(matchingQuestion.id)
+
+      // Wait for Vue to update the DOM
+      await nextTick()
+
+      // The pending question should be highlighted
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      expect(questionElement).toHaveClass('bg-yellow-100')
+    })
+
+    it('should disable selection while question is pending', async () => {
+      render(QuestionList)
+      const store = useQuestionStore()
+
+      // Get two matching questions
+      const matchingQuestions = ALL_QUESTIONS.filter((q) => q.categoryId === 'matching')
+      const firstQuestion = matchingQuestions[0]
+      const secondQuestion = matchingQuestions[1]
+
+      // Mark first question as pending
+      store.askQuestion(firstQuestion.id)
+
+      // Wait for Vue to update the DOM
+      await nextTick()
+
+      // Try to click the second question - it should be disabled
+      const secondQuestionElement = screen.getByTestId(`question-${secondQuestion.id}`)
+      expect(secondQuestionElement).toHaveAttribute('aria-disabled', 'true')
+    })
+
+    it('should emit event when question selected', async () => {
+      const onQuestionSelect = vi.fn()
+      render(QuestionList, {
+        props: {
+          onQuestionSelect,
+        },
+      })
+
+      // Get a matching question
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+
+      // Click the question
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      await fireEvent.click(questionElement)
+
+      // Should emit the event with the question
+      expect(onQuestionSelect).toHaveBeenCalledWith(matchingQuestion)
+    })
+
+    it('should show asked status indicator text', async () => {
+      render(QuestionList)
+      const store = useQuestionStore()
+
+      // Ask and answer a question
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+      store.askQuestion(matchingQuestion.id)
+      store.answerQuestion(matchingQuestion.id, 'Yes')
+
+      // Wait for Vue to update the DOM
+      await nextTick()
+
+      // Should show "Asked" status indicator
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      expect(within(questionElement).getByText(/asked/i)).toBeInTheDocument()
+    })
+
+    it('should show pending status indicator text', async () => {
+      render(QuestionList)
+      const store = useQuestionStore()
+
+      // Mark a question as pending
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+      store.askQuestion(matchingQuestion.id)
+
+      // Wait for Vue to update the DOM
+      await nextTick()
+
+      // Should show "Pending" status indicator
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      expect(within(questionElement).getByText(/pending/i)).toBeInTheDocument()
+    })
+
+    it('should not emit event when clicking asked question', async () => {
+      const onQuestionSelect = vi.fn()
+      render(QuestionList, {
+        props: {
+          onQuestionSelect,
+        },
+      })
+      const store = useQuestionStore()
+
+      // Ask and answer a question
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+      store.askQuestion(matchingQuestion.id)
+      store.answerQuestion(matchingQuestion.id, 'Yes')
+
+      // Wait for Vue to update the DOM
+      await nextTick()
+
+      // Click the asked question
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      await fireEvent.click(questionElement)
+
+      // Should NOT emit the event
+      expect(onQuestionSelect).not.toHaveBeenCalled()
     })
   })
 })
