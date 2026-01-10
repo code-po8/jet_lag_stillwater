@@ -511,6 +511,38 @@ describe('QuestionList status indicators', () => {
 
 ---
 
+### Q-006: Re-ask Question with Double Cost
+
+**Status:** `pending`
+**Depends On:** Q-004b
+
+**Story:** As a seeker, I need the option to re-ask a previously asked question at double the card cost so that I can get updated information.
+
+**Acceptance Criteria:**
+- [ ] Previously asked questions show "Re-ask (2x cost)" option
+- [ ] Re-asking shows confirmation with doubled draw/keep values
+- [ ] Hider draws double the normal cards when re-asked question is answered
+- [ ] Re-asked questions tracked separately in history (marked as re-ask)
+- [ ] Vetoed questions can be re-asked at normal cost (not doubled)
+
+**Size:** S
+
+**Rules Reference:**
+- See GAME_RULES.md "Re-asking" rule: "Questions cannot be re-asked unless seekers pay double cost (or hider used Veto)"
+
+**Tests to Write:**
+```typescript
+describe('Re-ask Question', () => {
+  it('should show re-ask option for previously asked questions')
+  it('should display doubled card cost for re-asking')
+  it('should grant double cards to hider when re-asked')
+  it('should mark re-asked questions in history')
+  it('should allow normal cost re-ask for vetoed questions')
+})
+```
+
+---
+
 ## Epic 2: Timers
 
 Game timing functionality.
@@ -761,6 +793,173 @@ describe('CurseClearing', () => {
 
 ---
 
+### CARD-007a: Discard/Draw Powerup Effect
+
+**Status:** `pending`
+**Depends On:** CARD-002
+
+**Story:** As a hider, I need to play the Discard/Draw powerup so that I can exchange unwanted cards for new ones.
+
+**Acceptance Criteria:**
+- [ ] Discard/Draw card can be played from hand
+- [ ] UI allows selecting which cards to discard (multi-select)
+- [ ] After discarding, draw equal number of new cards
+- [ ] Confirmation before finalizing the play
+- [ ] Card removed from hand after playing
+- [ ] Visual feedback showing cards discarded and drawn
+
+**Size:** S
+
+**Rules Reference:**
+- See GAME_RULES.md "Powerup Cards" section
+
+**Tests to Write:**
+```typescript
+describe('Discard/Draw Powerup', () => {
+  it('should allow selecting multiple cards to discard')
+  it('should draw equal number of new cards')
+  it('should remove powerup card after playing')
+  it('should require confirmation before playing')
+})
+```
+
+---
+
+### CARD-007b: Draw 1, Expand Powerup Effect
+
+**Status:** `pending`
+**Depends On:** CARD-002
+
+**Story:** As a hider, I need to play the Draw 1, Expand powerup so that I can draw a card and permanently increase my hand size.
+
+**Acceptance Criteria:**
+- [ ] Draw 1, Expand card can be played from hand
+- [ ] Playing draws one card immediately
+- [ ] Hand limit permanently increased by 1 (persists for rest of game)
+- [ ] Hand limit indicator updates to show new limit
+- [ ] Confirmation before playing
+- [ ] Card removed from hand after playing
+
+**Size:** S
+
+**Rules Reference:**
+- See GAME_RULES.md "Powerup Cards" section
+
+**Tests to Write:**
+```typescript
+describe('Draw 1, Expand Powerup', () => {
+  it('should draw one card when played')
+  it('should increase hand limit by 1')
+  it('should persist increased hand limit')
+  it('should remove powerup card after playing')
+})
+```
+
+---
+
+### CARD-007c: Duplicate Powerup Effect
+
+**Status:** `pending`
+**Depends On:** CARD-002
+
+**Story:** As a hider, I need to play the Duplicate powerup so that I can copy another card in my hand.
+
+**Acceptance Criteria:**
+- [ ] Duplicate card can be played from hand
+- [ ] UI allows selecting which card in hand to copy
+- [ ] Creates a copy of the selected card in hand
+- [ ] If duplicating a time bonus, the copy has doubled value
+- [ ] Confirmation before playing
+- [ ] Original Duplicate card removed after playing
+
+**Size:** S
+
+**Rules Reference:**
+- See GAME_RULES.md "Powerup Cards" section
+- Duplicate can copy any time bonus, doubling its value
+
+**Tests to Write:**
+```typescript
+describe('Duplicate Powerup', () => {
+  it('should allow selecting a card to copy')
+  it('should create copy of selected card')
+  it('should double time bonus value when duplicating time bonus')
+  it('should remove powerup card after playing')
+})
+```
+
+---
+
+### CARD-007d: Move Powerup Effect
+
+**Status:** `pending`
+**Depends On:** CARD-002, GS-001, T-003
+
+**Story:** As a hider, I need to play the Move powerup so that I can establish a new hiding zone while seekers wait.
+
+**Acceptance Criteria:**
+- [ ] Move card can be played from hand
+- [ ] Playing pauses the hiding duration timer
+- [ ] Seekers view shows notification: "Hider is moving - stay put"
+- [ ] Hider can travel to new location and establish new hiding zone
+- [ ] "Confirm New Zone" action resumes hiding timer
+- [ ] Move state persists if app is closed mid-move
+- [ ] Card removed from hand after playing
+
+**Size:** M
+
+**Rules Reference:**
+- See GAME_RULES.md "Powerup Cards" section
+- Move allows establishing new hiding zone; hiding timer pauses, seekers must stay put
+
+**Tests to Write:**
+```typescript
+describe('Move Powerup', () => {
+  it('should pause hiding timer when played')
+  it('should notify seekers to stay put')
+  it('should allow establishing new hiding zone')
+  it('should resume timer when new zone confirmed')
+  it('should persist move state across app restart')
+})
+```
+
+---
+
+### CARD-008: Time Trap Card Implementation
+
+**Status:** `pending`
+**Depends On:** CARD-002, GS-001
+
+**Story:** As a hider, I need to play Time Trap cards to designate stations as traps so that I gain bonus time if seekers visit them.
+
+**Acceptance Criteria:**
+- [ ] Time Trap card can be played from hand
+- [ ] Playing prompts hider to select/enter a transit station name
+- [ ] Trapped station is publicly announced (seekers see it)
+- [ ] If seekers visit trapped station, hider gains bonus time (amount TBD from rulebook)
+- [ ] "Triggered" traps show as triggered with time bonus applied
+- [ ] Multiple traps can be active simultaneously
+- [ ] Traps persist across app restarts
+
+**Size:** M
+
+**Rules Reference:**
+- See GAME_RULES.md "Time Trap Cards (Expansion Pack)" section
+- Can be used as misdirection (trap a station far from hiding spot)
+
+**Tests to Write:**
+```typescript
+describe('Time Trap Cards', () => {
+  it('should allow setting a station as trapped')
+  it('should publicly display trapped stations')
+  it('should grant bonus time when seekers visit trap')
+  it('should mark trap as triggered after visit')
+  it('should allow multiple active traps')
+})
+```
+
+---
+
 ## Epic 5: Game State
 
 Overall game flow management.
@@ -835,6 +1034,105 @@ Overall game flow management.
 - [ ] Option to start next round or end game
 
 **Size:** M
+
+---
+
+### GS-005: End Game Flow
+
+**Status:** `pending`
+**Depends On:** GS-001, T-003
+
+**Story:** As a player, I need the app to handle the end game sequence so that rounds conclude properly when the hider is found.
+
+**Acceptance Criteria:**
+- [ ] "Enter Hiding Zone" action triggers end game phase
+- [ ] End game phase shows: seekers are in zone, searching for hider
+- [ ] "Hider Found" action stops the hiding duration timer
+- [ ] Records final hiding time for scoring
+- [ ] Transitions to round-complete phase (triggers GS-004 Round Summary)
+- [ ] Enforces rule: Photo/Tentacles questions disabled during end game phase
+
+**Size:** M
+
+**Rules Reference:**
+- See GAME_RULES.md "End Game" section
+- Triggered when seekers enter hiding zone and leave transit
+- Seekers must spot hider AND be within 5 feet to win
+
+**Tests to Write:**
+```typescript
+describe('End Game Flow', () => {
+  it('should transition to end-game phase when zone entered')
+  it('should stop hiding timer when hider found')
+  it('should record final hiding time')
+  it('should disable Photo questions in end-game phase')
+  it('should transition to round-complete after hider found')
+})
+```
+
+---
+
+### GS-006: Multi-Round Scoring & Winner Declaration
+
+**Status:** `pending`
+**Depends On:** GS-004
+
+**Story:** As a player, I need the app to track scores across all rounds and declare a winner so that we know who won the game.
+
+**Acceptance Criteria:**
+- [ ] Track total hiding time per player across all rounds
+- [ ] Track which players have been hider (rotation tracking)
+- [ ] "End Game" option available after all players have been hider
+- [ ] Final results screen shows all players ranked by total time
+- [ ] Winner clearly announced (longest total hiding time)
+- [ ] Option to start new game or return to setup
+
+**Size:** S
+
+**Tests to Write:**
+```typescript
+describe('Multi-Round Scoring', () => {
+  it('should track cumulative hiding time per player')
+  it('should track which players have been hider')
+  it('should allow ending game after all players rotated')
+  it('should rank players by total hiding time')
+  it('should declare winner with longest time')
+})
+```
+
+---
+
+### GS-007: Unified Game Pause/Resume
+
+**Status:** `pending`
+**Depends On:** GS-001, T-001
+
+**Story:** As a player, I need to pause the entire game so that all timers stop for safety or comfort breaks.
+
+**Acceptance Criteria:**
+- [ ] "Pause Game" action available during active gameplay
+- [ ] Pausing stops ALL timers (hiding period, hiding duration, response timer)
+- [ ] Visual indicator shows game is paused
+- [ ] "Resume Game" action restarts all timers from where they stopped
+- [ ] Pause state persists if app is closed
+- [ ] Both hider and seeker views show pause status
+
+**Size:** S
+
+**Rules Reference:**
+- See RESEARCH_NOTES.md "Pausing" section
+- Game can be paused if needed for safety/comfort
+- When paused, ALL timers stop
+
+**Tests to Write:**
+```typescript
+describe('Game Pause/Resume', () => {
+  it('should pause all active timers')
+  it('should show pause indicator')
+  it('should resume all timers from paused state')
+  it('should persist pause state across app restart')
+})
+```
 
 ---
 
@@ -928,12 +1226,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 10 | 7 | 3 |
+| 1: Question Tracking | 11 | 7 | 4 |
 | 2: Timers | 4 | 0 | 4 |
-| 3: Card Management | 7 | 0 | 7 |
-| 4: Game State | 4 | 0 | 4 |
+| 3: Card Management | 12 | 0 | 12 |
+| 4: Game State | 7 | 0 | 7 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **11** | **27** |
+| **Total** | **47** | **11** | **36** |
 
 ---
 
@@ -944,15 +1242,24 @@ Cards with no pending dependencies are **ready** to work on.
 ```
 FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
                      │              ├─→ FOUND-005
-                     │              ├─→ FOUND-008 ─→ Q-002c, GS-001
-                     │              └─→ T-001 ─→ T-002, T-003, CARD-006b
+                     │              ├─→ FOUND-008 ─→ Q-002c, GS-001 ─┬─→ GS-002, GS-003
+                     │              │                                ├─→ GS-005 ─→ GS-004 ─→ GS-006
+                     │              │                                ├─→ GS-007
+                     │              │                                ├─→ CARD-007d
+                     │              │                                └─→ CARD-008
+                     │              └─→ T-001 ─┬─→ T-002, T-003 ─┬─→ GS-005
+                     │                         │                 └─→ CARD-007d
+                     │                         ├─→ CARD-006b
+                     │                         └─→ GS-007
                      ├─→ FOUND-004 ─┬─→ FOUND-006
                      │              └─→ UX-001
                      ├─→ FOUND-007
                      ├─→ UX-004
                      ├─→ Q-001 ─→ Q-001a ─→ Q-002a ─→ Q-002b ─→ Q-002c ─→ Q-005
-                     │                              └─→ Q-003a ─→ Q-003b ─→ Q-004a ─→ Q-004b
-                     └─→ CARD-001 ─┬─→ CARD-002 ─→ CARD-003, CARD-004, CARD-005
+                     │                              └─→ Q-003a ─→ Q-003b ─→ Q-004a ─→ Q-004b ─→ Q-006
+                     └─→ CARD-001 ─┬─→ CARD-002 ─┬─→ CARD-003, CARD-004, CARD-005
+                                   │             ├─→ CARD-007a, CARD-007b, CARD-007c, CARD-007d
+                                   │             └─→ CARD-008
                                    └─→ CARD-006a ─→ CARD-006b
 ```
 
