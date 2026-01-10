@@ -3,10 +3,11 @@
  *
  * Pinia store for tracking question state in the game.
  * Tracks all available questions, asked questions, and pending questions.
+ * Persists state to localStorage via the persistence service.
  */
 
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ALL_QUESTIONS, getQuestionById as getQuestionByIdFromData } from '@/data/questions'
 import {
   QUESTION_CATEGORIES,
@@ -15,6 +16,9 @@ import {
   getCategoryById,
 } from '@/types/question'
 import { GameSize, QuestionCategoryId } from '@/types/question'
+import { createPersistenceService } from '@/services/persistence'
+
+const STORAGE_KEY = 'questions'
 
 /**
  * Result type for question actions
@@ -39,13 +43,76 @@ export interface CategoryStats {
   cardsKeep: number
 }
 
+/**
+ * Persisted state shape for localStorage
+ */
+interface PersistedQuestionState {
+  askedQuestions: AskedQuestion[]
+  pendingQuestion: AskedQuestion | null
+}
+
+/**
+ * Convert date strings back to Date objects when rehydrating from localStorage.
+ * JSON.stringify converts Dates to ISO strings, so we need to convert them back.
+ */
+function parseDates(question: AskedQuestion): AskedQuestion {
+  return {
+    ...question,
+    askedAt: new Date(question.askedAt),
+    answeredAt: question.answeredAt ? new Date(question.answeredAt) : undefined,
+  }
+}
+
 export const useQuestionStore = defineStore('questions', () => {
+  // Persistence service
+  const persistenceService = createPersistenceService()
+
   // State
   const askedQuestions = ref<AskedQuestion[]>([])
   const pendingQuestion = ref<AskedQuestion | null>(null)
 
   // Getters
   const hasPendingQuestion = computed(() => pendingQuestion.value !== null)
+
+  /**
+   * Persist current state to localStorage
+   */
+  function persist(): void {
+    const state: PersistedQuestionState = {
+      askedQuestions: askedQuestions.value,
+      pendingQuestion: pendingQuestion.value,
+    }
+    persistenceService.save(STORAGE_KEY, state)
+  }
+
+  /**
+   * Rehydrate state from localStorage.
+   * Call this when the app loads to restore previous state.
+   */
+  function rehydrate(): void {
+    try {
+      const persisted = persistenceService.load<PersistedQuestionState>(STORAGE_KEY)
+      if (persisted) {
+        // Convert date strings back to Date objects
+        askedQuestions.value = persisted.askedQuestions.map(parseDates)
+        pendingQuestion.value = persisted.pendingQuestion
+          ? parseDates(persisted.pendingQuestion)
+          : null
+      }
+    } catch {
+      // If rehydration fails (e.g., corrupted data), keep default state
+      // No action needed - defaults are already set
+    }
+  }
+
+  // Watch for state changes and persist automatically
+  watch(
+    [askedQuestions, pendingQuestion],
+    () => {
+      persist()
+    },
+    { deep: true },
+  )
 
   /**
    * Get all available questions, optionally filtered by category.
@@ -228,5 +295,7 @@ export const useQuestionStore = defineStore('questions', () => {
     askQuestion,
     answerQuestion,
     vetoQuestion,
+    // Persistence
+    rehydrate,
   }
 })

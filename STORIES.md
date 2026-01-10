@@ -353,24 +353,27 @@ describe('questionStore actions', () => {
 
 ### Q-002c: Question Store Persistence
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-002b, FOUND-008
 
 **Story:** As a player, I need question state to persist so that I don't lose progress if the app closes.
 
 **Acceptance Criteria:**
-- [ ] Store persists to localStorage via persistence service
-- [ ] Store rehydrates on app load
-- [ ] Pending question state preserved across restarts
+- [x] Store persists to localStorage via persistence service
+- [x] Store rehydrates on app load
+- [x] Pending question state preserved across restarts
 
 **Size:** S
 
-**Tests to Write:**
+**Tests Written (6 tests):**
 ```typescript
 describe('questionStore persistence', () => {
   it('should persist state to localStorage')
   it('should rehydrate state on load')
   it('should preserve pending question across restart')
+  it('should convert date strings back to Date objects on rehydrate')
+  it('should handle empty localStorage gracefully')
+  it('should handle corrupted localStorage data gracefully')
 })
 ```
 
@@ -903,12 +906,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 10 | 4 | 6 |
+| 1: Question Tracking | 10 | 5 | 5 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 7 | 0 | 7 |
 | 4: Game State | 4 | 0 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **8** | **30** |
+| **Total** | **38** | **9** | **29** |
 
 ---
 
@@ -933,19 +936,18 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, and Q-002b complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, and Q-002c complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-001**: Create Timer Composable
-- **Q-002c**: Question Store Persistence (newly unblocked by Q-002b)
 - **Q-003a**: Question List Display
-- **Q-003b**: Question Status Indicators (newly unblocked by Q-002b, also needs Q-003a)
+- **Q-005**: Question History View (newly unblocked by Q-002c)
 - **CARD-001**: Define Card Data Model
 - **UX-004**: Visual Design System
 - **GS-001**: Create Game Store
 
-**Note:** Q-002b completion unblocks Q-002c (Question Store Persistence) and Q-003b (Question Status Indicators). Q-003b also requires Q-003a, so working on Q-003a first is recommended for the Question UI path.
+**Note:** Q-002c completion unblocks Q-005 (Question History View). Q-003b (Question Status Indicators) requires Q-003a, so working on Q-003a first is recommended for the Question UI path.
 
 ---
 

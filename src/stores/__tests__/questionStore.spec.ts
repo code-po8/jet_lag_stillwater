@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { nextTick } from 'vue'
 import { useQuestionStore } from '../questionStore'
 import { ALL_QUESTIONS } from '@/data/questions'
 import { QuestionCategoryId, GameSize, QUESTION_CATEGORIES } from '@/types/question'
@@ -402,5 +403,155 @@ describe('questionStore actions', () => {
       expect(result.success).toBe(false)
       expect(result.error).toBe('No question is pending')
     })
+  })
+})
+
+describe('questionStore persistence', () => {
+  let mockStorage: Record<string, string>
+
+  beforeEach(() => {
+    mockStorage = {}
+
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((key: string) => mockStorage[key] ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        mockStorage[key] = value
+      }),
+      removeItem: vi.fn((key: string) => {
+        delete mockStorage[key]
+      }),
+      clear: vi.fn(() => {
+        mockStorage = {}
+      }),
+    })
+
+    setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('should persist state to localStorage', async () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS[0]!
+
+    // Ask and answer a question to create state
+    store.askQuestion(question.id)
+    store.answerQuestion(question.id, 'Yes')
+
+    // Wait for Vue's watcher to trigger (watchers are async)
+    await nextTick()
+
+    // State should be persisted to localStorage
+    expect(localStorage.setItem).toHaveBeenCalled()
+
+    // Verify persisted data contains the asked question
+    const persistedKey = Object.keys(mockStorage).find((key) =>
+      key.includes('questions'),
+    )
+    expect(persistedKey).toBeDefined()
+
+    const persistedData = JSON.parse(mockStorage[persistedKey!]!)
+    expect(persistedData.askedQuestions).toBeDefined()
+    expect(persistedData.askedQuestions.length).toBe(1)
+    expect(persistedData.askedQuestions[0].questionId).toBe(question.id)
+  })
+
+  it('should rehydrate state on load', () => {
+    const question = ALL_QUESTIONS[0]!
+    const askedQuestion = {
+      questionId: question.id,
+      categoryId: question.categoryId,
+      answer: 'Yes',
+      askedAt: new Date().toISOString(),
+      answeredAt: new Date().toISOString(),
+      vetoed: false,
+    }
+
+    // Pre-populate localStorage with persisted state
+    mockStorage['jet-lag-stillwater:questions'] = JSON.stringify({
+      askedQuestions: [askedQuestion],
+      pendingQuestion: null,
+    })
+
+    // Create a new store - it should rehydrate from localStorage
+    const store = useQuestionStore()
+    store.rehydrate()
+
+    expect(store.askedQuestions.length).toBe(1)
+    expect(store.askedQuestions[0]!.questionId).toBe(question.id)
+    expect(store.askedQuestions[0]!.answer).toBe('Yes')
+  })
+
+  it('should preserve pending question across restart', () => {
+    const question = ALL_QUESTIONS[0]!
+    const pendingQuestion = {
+      questionId: question.id,
+      categoryId: question.categoryId,
+      answer: '',
+      askedAt: new Date().toISOString(),
+      vetoed: false,
+    }
+
+    // Pre-populate localStorage with a pending question
+    mockStorage['jet-lag-stillwater:questions'] = JSON.stringify({
+      askedQuestions: [],
+      pendingQuestion: pendingQuestion,
+    })
+
+    // Create a new store - it should rehydrate with the pending question
+    const store = useQuestionStore()
+    store.rehydrate()
+
+    expect(store.hasPendingQuestion).toBe(true)
+    expect(store.pendingQuestion?.questionId).toBe(question.id)
+  })
+
+  it('should convert date strings back to Date objects on rehydrate', () => {
+    const question = ALL_QUESTIONS[0]!
+    const now = new Date()
+    const askedQuestion = {
+      questionId: question.id,
+      categoryId: question.categoryId,
+      answer: 'Yes',
+      askedAt: now.toISOString(),
+      answeredAt: now.toISOString(),
+      vetoed: false,
+    }
+
+    mockStorage['jet-lag-stillwater:questions'] = JSON.stringify({
+      askedQuestions: [askedQuestion],
+      pendingQuestion: null,
+    })
+
+    const store = useQuestionStore()
+    store.rehydrate()
+
+    // askedAt should be a Date object, not a string
+    expect(store.askedQuestions[0]!.askedAt).toBeInstanceOf(Date)
+    expect(store.askedQuestions[0]!.answeredAt).toBeInstanceOf(Date)
+  })
+
+  it('should handle empty localStorage gracefully', () => {
+    // localStorage is empty
+    const store = useQuestionStore()
+    store.rehydrate()
+
+    // Store should have default state
+    expect(store.askedQuestions).toEqual([])
+    expect(store.pendingQuestion).toBeNull()
+  })
+
+  it('should handle corrupted localStorage data gracefully', () => {
+    // Corrupted data in localStorage
+    mockStorage['jet-lag-stillwater:questions'] = 'not valid json {'
+
+    const store = useQuestionStore()
+
+    // Should not throw and should have default state
+    expect(() => store.rehydrate()).not.toThrow()
+    expect(store.askedQuestions).toEqual([])
+    expect(store.pendingQuestion).toBeNull()
   })
 })
