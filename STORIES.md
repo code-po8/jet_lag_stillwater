@@ -274,27 +274,36 @@ Core functionality for tracking questions during gameplay.
 
 ### Q-002a: Question Store Core
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-001a, FOUND-002
 
 **Story:** As a developer, I need a Pinia store to track question state so that both roles can see what's available and asked.
 
 **Acceptance Criteria:**
-- [ ] Pinia store created: `questionStore`
-- [ ] Store tracks: all available questions, asked questions, pending question
-- [ ] `getAvailableQuestions(category?)` getter filters out asked questions
-- [ ] `hasPendingQuestion()` getter returns true if waiting for answer
+- [x] Pinia store created: `questionStore`
+- [x] Store tracks: all available questions, asked questions, pending question
+- [x] `getAvailableQuestions(category?)` getter filters out asked questions
+- [x] `hasPendingQuestion()` getter returns true if waiting for answer
 
 **Size:** S
 
-**Tests to Write:**
-```typescript
-describe('questionStore core', () => {
-  it('should initialize with all questions available')
-  it('should filter out asked questions from available')
-  it('should return pending state correctly')
-})
-```
+**Tests Written (16 tests):**
+- `should initialize with all questions available`
+- `should initialize with no asked questions`
+- `should initialize with no pending question`
+- `should return all questions when none asked`
+- `should filter out asked questions from available`
+- `should filter by category when specified`
+- `should filter by both category and exclude asked`
+- `should filter questions by game size`
+- `should exclude large-only questions from small game size`
+- `should include tentacle questions for medium game size`
+- `should return false when no pending question`
+- `should return true when there is a pending question`
+- `should return question by id`
+- `should return undefined for non-existent id`
+- `should return stats for all categories`
+- `should update stats when questions are asked`
 
 ---
 
@@ -878,12 +887,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 10 | 2 | 8 |
+| 1: Question Tracking | 10 | 3 | 7 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 7 | 0 | 7 |
 | 4: Game State | 4 | 0 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **6** | **32** |
+| **Total** | **38** | **7** | **31** |
 
 ---
 
@@ -908,17 +917,18 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, and Q-001a complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, and Q-002a complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-001**: Create Timer Composable
-- **Q-002a**: Question Store Core (newly unblocked by Q-001a)
+- **Q-002b**: Question Store Actions (newly unblocked by Q-002a)
+- **Q-003a**: Question List Display (newly unblocked by Q-002a)
 - **CARD-001**: Define Card Data Model
 - **UX-004**: Visual Design System
 - **GS-001**: Create Game Store
 
-**Note:** Q-001a completion unblocks Q-002a (Question Store Core), which then unblocks Q-002b, Q-003a, and the rest of the Question epic chain.
+**Note:** Q-002a completion unblocks Q-002b (Question Store Actions) and Q-003a (Question List Display), allowing parallel work on store logic and UI components.
 
 ---
 
