@@ -330,7 +330,6 @@ describe('TIME_BONUS_CARDS', () => {
 
 describe('TOTAL_DECK_SIZE', () => {
   it('should equal 100 cards', () => {
-    // Note: GAME_RULES.md summary says 99 (23 curses), but detailed list has 24 curses
     expect(TOTAL_DECK_SIZE).toBe(100)
   })
 

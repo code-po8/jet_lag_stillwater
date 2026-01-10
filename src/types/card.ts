@@ -539,7 +539,6 @@ export const TIME_BONUS_CARDS: TimeBonusCard[] = TIME_BONUS_TIERS.map(tier => ({
 
 /**
  * Get total number of cards in deck (excluding expansion)
- * Note: GAME_RULES.md summary says 99, but detailed list has 24 curses (not 23)
  * 55 time bonus + 21 powerup + 24 curse = 100 cards
  */
 export const TOTAL_DECK_SIZE = 100

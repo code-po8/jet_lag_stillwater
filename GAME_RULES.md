@@ -290,7 +290,7 @@ Format: **"Of all the [location type] within [distance] of me (the seeker), whic
 
 ## Card Types
 
-The hider's deck contains 3 types of cards (99 cards total).
+The hider's deck contains 3 types of cards (100 cards total).
 
 ### 1. Time Bonus Cards (55 cards)
 
@@ -319,7 +319,7 @@ The hider's deck contains 3 types of cards (99 cards total).
 | 2x | Duplicate Another Card | Play this card as a copy of any other card in your hand. This may be used to duplicate a time bonus at the end of your round. |
 | 1x | Move | Discard your hand and send the seekers the location of your transit station. Grants a new hiding period (S:10min, M:20min, L:60min) to establish a new hiding zone. Seekers are frozen and hiding timer is paused until the new hiding period concludes. Cannot be played during endgame. |
 
-### 3. Curse Cards (23 cards)
+### 3. Curse Cards (24 cards)
 
 - Played by hider against seekers
 - Impose conditions, challenges, or restrictions on seekers
@@ -366,8 +366,8 @@ The hider's deck contains 3 types of cards (99 cards total).
 |-----------|-------|
 | Time Bonus | 55 |
 | Powerup | 21 |
-| Curse | 23 |
-| **Total** | **99** |
+| Curse | 24 |
+| **Total** | **100** |
 
 ---
 
