@@ -784,20 +784,92 @@ describe('getCurseCards', () => {
 
 ### CARD-002: Create Card Store
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-001, FOUND-008
 
 **Story:** As a hider, I need to track my hand of cards so that I know what I can play.
 
 **Acceptance Criteria:**
-- [ ] Pinia store created: `cardStore`
-- [ ] Hand limit enforced (default 6, expandable)
-- [ ] `drawCards(count)` action adds random cards
-- [ ] `playCard(cardId)` action removes card from hand
-- [ ] `discardCard(cardId)` action removes without playing
-- [ ] Store persists to localStorage
+- [x] Pinia store created: `cardStore`
+- [x] Hand limit enforced (default 6, expandable)
+- [x] `drawCards(count)` action adds random cards
+- [x] `playCard(cardId)` action removes card from hand
+- [x] `discardCard(cardId)` action removes without playing
+- [x] Store persists to localStorage
 
 **Size:** M
+
+**Tests Written (42 tests):**
+```typescript
+describe('cardStore core', () => {
+  describe('initialization', () => {
+    it('should initialize with empty hand')
+    it('should initialize with default hand limit of 6')
+    it('should initialize with full deck')
+    it('should initialize with no discarded cards')
+  })
+  describe('hand management getters', () => {
+    it('should return current hand count')
+    it('should return true when hand is full')
+    it('should return false when hand is not full')
+    it('should return available hand slots')
+  })
+  describe('card filtering getters', () => {
+    it('should return time bonus cards in hand')
+    it('should return powerup cards in hand')
+    it('should return curse cards in hand')
+    it('should calculate total time bonus value')
+  })
+})
+describe('cardStore actions', () => {
+  describe('drawCards', () => {
+    it('should add cards to hand')
+    it('should return drawn cards')
+    it('should reduce deck size')
+    it('should respect hand limit')
+    it('should return error when deck is empty')
+    it('should draw weighted by card quantities in deck')
+    it('should assign unique instance IDs to each drawn card')
+  })
+  describe('playCard', () => {
+    it('should remove card from hand')
+    it('should return the played card')
+    it('should add card to discard pile')
+    it('should return error if card not in hand')
+  })
+  describe('discardCard', () => {
+    it('should remove card from hand')
+    it('should add card to discard pile')
+    it('should return error if card not in hand')
+  })
+  describe('expandHandLimit', () => {
+    it('should increase hand limit by specified amount')
+    it('should default to increasing by 1')
+  })
+  describe('clearHand', () => {
+    it('should remove all cards from hand')
+    it('should add cleared cards to discard pile')
+  })
+  describe('reset', () => {
+    it('should reset hand to empty')
+    it('should reset hand limit to default')
+    it('should reset deck to full size')
+    it('should clear discard pile')
+  })
+})
+describe('cardStore time bonus calculations', () => {
+  it('should calculate total time bonus for small game')
+  it('should calculate total time bonus for medium game')
+  it('should calculate total time bonus for large game')
+})
+describe('cardStore persistence', () => {
+  it('should persist state to localStorage')
+  it('should rehydrate state on load')
+  it('should preserve expanded hand limit across restart')
+  it('should handle empty localStorage gracefully')
+  it('should handle corrupted localStorage data gracefully')
+})
+```
 
 ---
 
@@ -1408,10 +1480,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 7 | 4 |
 | 2: Timers | 4 | 1 | 3 |
-| 3: Card Management | 12 | 1 | 11 |
+| 3: Card Management | 12 | 2 | 10 |
 | 4: Game State | 7 | 1 | 6 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **14** | **33** |
+| **Total** | **47** | **15** | **32** |
 
 ---
 
@@ -1445,7 +1517,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, GS-001, T-001, and CARD-001 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, GS-001, T-001, CARD-001, and CARD-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
@@ -1454,13 +1526,19 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **T-004**: Question Response Timer (depends on T-001 + Q-004, Q-004 not complete)
 - **Q-004a**: Ask Question Modal
 - **Q-005**: Question History View
-- **CARD-002**: Create Card Store (newly unblocked by CARD-001)
-- **CARD-006a**: Curse Display (newly unblocked by CARD-001)
+- **CARD-003**: Card Hand Display (newly unblocked by CARD-002)
+- **CARD-004**: Card Draw Simulation (newly unblocked by CARD-002)
+- **CARD-005**: Time Bonus Calculator (newly unblocked by CARD-002)
+- **CARD-006a**: Curse Display
+- **CARD-007a**: Discard/Draw Powerup Effect (newly unblocked by CARD-002)
+- **CARD-007b**: Draw 1, Expand Powerup Effect (newly unblocked by CARD-002)
+- **CARD-007c**: Duplicate Powerup Effect (newly unblocked by CARD-002)
+- **CARD-008**: Time Trap Card Implementation (depends on CARD-002 + GS-001, both complete)
 - **UX-004**: Visual Design System
 - **GS-002**: Game Setup Flow
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** CARD-001 completion unblocks CARD-002, CARD-006a, and all downstream Card Management cards.
+**Note:** CARD-002 completion unblocks CARD-003, CARD-004, CARD-005, CARD-007a-c, and CARD-008.
 
 ---
 
