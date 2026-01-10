@@ -155,17 +155,17 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 
 ### FOUND-008: Create Persistence Service Abstraction
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-002
 
 **Story:** As a developer, I need a persistence service abstraction so that storage can be swapped from localStorage to Supabase later.
 
 **Acceptance Criteria:**
-- [ ] `src/services/persistence.ts` created with interface
-- [ ] Interface includes: `save(key, data)`, `load(key)`, `remove(key)`, `clear()`
-- [ ] localStorage implementation created
-- [ ] Unit tests verify save/load/remove/clear operations
-- [ ] Service is injectable into Pinia stores
+- [x] `src/services/persistence.ts` created with interface
+- [x] Interface includes: `save(key, data)`, `load(key)`, `remove(key)`, `clear()`
+- [x] localStorage implementation created
+- [x] Unit tests verify save/load/remove/clear operations
+- [x] Service is injectable into Pinia stores
 
 **Size:** S
 
@@ -872,13 +872,13 @@ User experience improvements.
 
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
-| 0: Project Foundation | 9 | 3 | 6 |
+| 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 10 | 0 | 10 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 7 | 0 | 7 |
 | 4: Game State | 4 | 0 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **3** | **35** |
+| **Total** | **38** | **4** | **34** |
 
 ---
 
@@ -903,17 +903,17 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, and FOUND-003 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, and FOUND-008 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
-- **FOUND-008**: Create Persistence Service Abstraction
 - **T-001**: Create Timer Composable
 - **Q-001**: Define Question Data Model
 - **CARD-001**: Define Card Data Model
 - **UX-004**: Visual Design System
+- **GS-001**: Create Game Store (newly unblocked by FOUND-008)
 
-**Note:** FOUND-003 completion now unblocks several UI component cards once their other dependencies (Q-002a, CARD-002, GS-001, T-001) are also complete.
+**Note:** FOUND-008 completion unblocks Q-002c (Question Store Persistence), CARD-002 (Card Store), and GS-001 (Game Store).
 
 ---
 
