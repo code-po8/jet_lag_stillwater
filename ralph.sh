@@ -21,4 +21,14 @@ claude \
   --allowedTools "Bash(git diff*)" \
   --allowedTools "Bash(git log*)" \
   --allowedTools "Bash(mkdir*)" \
-  -- "Start a Ralph Wiggum iteration. Read CLAUDE.md for workflow instructions, then read STORIES.md to analyze the backlog. IMPORTANT: The order of stories in the markdown file is arbitrary - do NOT simply pick the first pending card. Instead, analyze ALL pending cards, identify which ones have all dependencies satisfied, then select the optimal card based on: which unblocks the most other cards, logical grouping with recent work, and foundation-before-features. Explain your selection reasoning, then implement the card following TDD. After completing the card, update STORIES.md: mark the card complete, adjust dependencies on other cards if you discovered any were missing or unnecessary, add new cards if needed, and update the backlog summary counts. Stop and wait for my approval after completing the card."
+  -- "Start a Ralph Wiggum iteration.
+
+CRITICAL RULE: When committing, NEVER add Co-Authored-By lines. No AI attribution in commits.
+
+Read CLAUDE.md for workflow instructions, then read STORIES.md to analyze the backlog.
+
+Card selection: The order in STORIES.md is arbitrary - do NOT simply pick the first pending card. Analyze ALL pending cards, identify which have all dependencies satisfied, then select the optimal card based on: which unblocks the most other cards, logical grouping with recent work, and foundation-before-features. Explain your selection reasoning.
+
+Implementation: Follow TDD as described in CLAUDE.md.
+
+After completing the card: Update STORIES.md (mark card complete, adjust dependencies, add new cards if needed, update backlog summary counts). Commit changes. Then STOP and wait for human approval."

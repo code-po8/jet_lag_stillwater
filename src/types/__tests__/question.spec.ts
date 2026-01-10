@@ -55,7 +55,7 @@ describe('QuestionCategory', () => {
     const tentacle = QUESTION_CATEGORIES.find(c => c.id === QuestionCategoryId.Tentacle)
     expect(tentacle).toBeDefined()
     expect(tentacle?.name).toBe('Tentacle')
-    expect(tentacle?.format).toBe('Within _ of me, which _ are you nearest to? (You must also be within _)')
+    expect(tentacle?.format).toBe('Of all the [location type] within [distance] of me, which are you closest to?')
   })
 
   it('should have correct draw and keep values for each category', () => {

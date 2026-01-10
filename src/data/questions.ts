@@ -625,75 +625,76 @@ export const PHOTO_QUESTIONS: Question[] = [
 
 /**
  * Tentacle Questions
- * Format: "Within _ of me, which _ are you nearest to? (You must also be within _)"
+ * Format: "Of all the [location type] within [distance] of me, which are you closest to?"
+ * Note: If the hider is NOT within [distance] of the seekers, they do not have to answer.
  */
 export const TENTACLE_QUESTIONS: Question[] = [
   // Medium and Large (1 mile distance)
   {
     id: 'tentacle-1mi-museums',
-    text: 'Within 1 mile of me, which museum are you nearest to? (You must also be within 1 mile)',
+    text: 'Of all the museums within 1 mile of me, which are you closest to?',
     categoryId: QuestionCategoryId.Tentacle,
     subcategory: 'places-of-interest',
     availableIn: MEDIUM_AND_LARGE,
-    instructions: 'If hider is not within 1 mile of any museum, they answer that they are not within the distance',
+    instructions: 'If the hider is NOT within 1 mile of the seekers, they do not have to answer',
   },
   {
     id: 'tentacle-1mi-libraries',
-    text: 'Within 1 mile of me, which library are you nearest to? (You must also be within 1 mile)',
+    text: 'Of all the libraries within 1 mile of me, which are you closest to?',
     categoryId: QuestionCategoryId.Tentacle,
     subcategory: 'public-utilities',
     availableIn: MEDIUM_AND_LARGE,
-    instructions: 'If hider is not within 1 mile of any library, they answer that they are not within the distance',
+    instructions: 'If the hider is NOT within 1 mile of the seekers, they do not have to answer',
   },
   {
     id: 'tentacle-1mi-movie-theaters',
-    text: 'Within 1 mile of me, which movie theater are you nearest to? (You must also be within 1 mile)',
+    text: 'Of all the movie theaters within 1 mile of me, which are you closest to?',
     categoryId: QuestionCategoryId.Tentacle,
     subcategory: 'places-of-interest',
     availableIn: MEDIUM_AND_LARGE,
-    instructions: 'If hider is not within 1 mile of any movie theater, they answer that they are not within the distance',
+    instructions: 'If the hider is NOT within 1 mile of the seekers, they do not have to answer',
   },
   {
     id: 'tentacle-1mi-hospitals',
-    text: 'Within 1 mile of me, which hospital are you nearest to? (You must also be within 1 mile)',
+    text: 'Of all the hospitals within 1 mile of me, which are you closest to?',
     categoryId: QuestionCategoryId.Tentacle,
     subcategory: 'public-utilities',
     availableIn: MEDIUM_AND_LARGE,
-    instructions: 'If hider is not within 1 mile of any hospital, they answer that they are not within the distance',
+    instructions: 'If the hider is NOT within 1 mile of the seekers, they do not have to answer',
   },
 
   // Large only (15 miles distance)
   {
     id: 'tentacle-15mi-metro-lines',
-    text: 'Within 15 miles of me, which metro line are you nearest to? (You must also be within 15 miles)',
+    text: 'Of all the metro lines within 15 miles of me, which are you closest to?',
     categoryId: QuestionCategoryId.Tentacle,
     subcategory: 'transit',
     availableIn: LARGE_ONLY,
-    instructions: 'If hider is not within 15 miles of any metro line, they answer that they are not within the distance',
+    instructions: 'If the hider is NOT within 15 miles of the seekers, they do not have to answer',
   },
   {
     id: 'tentacle-15mi-zoos',
-    text: 'Within 15 miles of me, which zoo are you nearest to? (You must also be within 15 miles)',
+    text: 'Of all the zoos within 15 miles of me, which are you closest to?',
     categoryId: QuestionCategoryId.Tentacle,
     subcategory: 'places-of-interest',
     availableIn: LARGE_ONLY,
-    instructions: 'If hider is not within 15 miles of any zoo, they answer that they are not within the distance',
+    instructions: 'If the hider is NOT within 15 miles of the seekers, they do not have to answer',
   },
   {
     id: 'tentacle-15mi-aquariums',
-    text: 'Within 15 miles of me, which aquarium are you nearest to? (You must also be within 15 miles)',
+    text: 'Of all the aquariums within 15 miles of me, which are you closest to?',
     categoryId: QuestionCategoryId.Tentacle,
     subcategory: 'places-of-interest',
     availableIn: LARGE_ONLY,
-    instructions: 'If hider is not within 15 miles of any aquarium, they answer that they are not within the distance',
+    instructions: 'If the hider is NOT within 15 miles of the seekers, they do not have to answer',
   },
   {
     id: 'tentacle-15mi-amusement-parks',
-    text: 'Within 15 miles of me, which amusement park are you nearest to? (You must also be within 15 miles)',
+    text: 'Of all the amusement parks within 15 miles of me, which are you closest to?',
     categoryId: QuestionCategoryId.Tentacle,
     subcategory: 'places-of-interest',
     availableIn: LARGE_ONLY,
-    instructions: 'If hider is not within 15 miles of any amusement park, they answer that they are not within the distance',
+    instructions: 'If the hider is NOT within 15 miles of the seekers, they do not have to answer',
   },
 ]
 

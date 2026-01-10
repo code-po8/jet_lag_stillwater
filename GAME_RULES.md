@@ -260,9 +260,9 @@ Response time: 10 minutes (Small/Medium), 20 minutes (Large)
 
 ### Tentacle Questions (8 total)
 
-Format: **"Within _ of me, which _ are you nearest to? (You must also be within _)"**
+Format: **"Of all the [location type] within [distance] of me (the seeker), which are you (the hider) closest to?"**
 
-If the hider is not within the specified distance of any location of that type, they answer that they are not within the distance.
+**Important rule:** If the hider is NOT within [distance] of the seekers, they do not have to answer the question. This means Tentacle questions only work when the hider is relatively close to the seekers.
 
 **Note: Tentacle questions are NOT available for Small game size.**
 

@@ -63,13 +63,14 @@
 
 The "cost" of asking a question is the cards the hider gets to draw and keep. More valuable information for seekers = more cards for hider.
 
-| Category | Description | Draw | Keep |
-|----------|-------------|------|------|
-| Relative | Compares some element of the seekers to the hider | TBD | TBD |
-| Radar | Checks if the hider is within a radius of the seekers | TBD | TBD |
-| Photos | Requires the hider to send a photo of their choosing | TBD | TBD |
-| Oddball | Requires hider to do something that may reveal incidental info | TBD | TBD |
-| Precision | Lets seekers narrow down exactly where the hider is | TBD | TBD |
+| Category | Format | Draw | Pick |
+|----------|--------|------|------|
+| Matching | "Is your nearest _ the same as my nearest _?" | 3 | 1 |
+| Measuring | "Compared to me, are you closer to or further from _?" | 3 | 1 |
+| Radar | "Are you within _ of me?" | 2 | 1 |
+| Thermometer | "After traveling _, am I hotter or colder?" | 2 | 1 |
+| Tentacles | "Of all the [location type] within [distance] of me, which are you closest to?" | 4 | 2 |
+| Photo | "Send us a photo of _" | 1 | 1 |
 
 **Hand Limit:** Hider can hold up to 6 cards by default. Some powerup cards increase this limit.
 
@@ -85,7 +86,7 @@ The "cost" of asking a question is the cards the hider gets to draw and keep. Mo
 - Seekers can ask at any time, as long as previous question has been answered
 - Hider must answer each question truthfully
 - Hider may use the internet to answer EXCEPT Google Street View and similar services
-- Once seekers enter hiding zone, hider cannot fulfill Photo or Oddball requests
+- Once seekers enter hiding zone, hider cannot fulfill Photo or Tentacles requests
 
 ---
 
@@ -422,30 +423,111 @@ Row-level security in Supabase will enforce these permissions at the database le
 
 **Typography:** "JET LAG" in bold caps, "THE GAME" in smaller text below. Font appears to be a bold sans-serif (Poppins or similar).
 
-### Question Category Colors (Not Official)
+### Question Category Colors (From Nebula Show)
 
-The official game does not publish color codes for question categories. Community tools create their own palettes. Recommended approach: Design our own distinctive colors for each category that are:
-- Accessible (good contrast)
-- Distinguishable from each other
-- Mobile-friendly (visible in bright outdoor light)
+Colors are taken directly from the Jet Lag: Hide and Seek Nebula series Question Menu UI.
 
-**Suggested Category Palette (to be finalized):**
+| Category | Color | Hex (approx) |
+|----------|-------|--------------|
+| Matching | Dark Navy Blue | #1e3a5f |
+| Measuring | Green | #2d8a4e |
+| Radar | Orange | #e07830 |
+| Thermometer | Yellow/Gold | #d4a012 |
+| Tentacles | Purple | #7b4d9e |
+| Photo | Light Blue/Cyan | #5ba4c9 |
 
-Using the official branding palette as inspiration, here's a proposed scheme:
+**UI Design Elements (from show):**
+- Red banner header with "QUESTION MENU" title
+- Categories arranged in columns
+- Each category has colored header tile with icon, name, and "DRAW X, PICK Y" values
+- Grid of question tiles below each category header
+- Rounded rectangle tiles with white icons on colored backgrounds
+- Used/unavailable questions appear faded/grayed out
+- Gray gradient background
 
-| Category | Hex | Rationale |
-|----------|-----|-----------|
-| Relative | #f5b830 (Gold) | Comparison/balance feels "golden" |
-| Radar | #00aaff (Cyan) | Tech/scanning vibe, matches glow |
-| Photos | #f07d2e (Orange) | Warm, creative, visible |
-| Oddball | #9b59b6 (Purple) | Unusual/quirky stands out |
-| Precision | #c73e3e (Red) | Precise/urgent, high-stakes feel |
+### Question Icon Reference (From Nebula Show)
 
-These colors:
-- Derive from the official Jet Lag palette (plus purple for contrast)
-- Are distinct from each other at a glance
-- Work on dark backgrounds
-- Should be tested for WCAG AA compliance
+Detailed icon descriptions for each question category. Icons are white on colored tile backgrounds.
+
+#### MATCHING (Navy Blue) - Draw 3, Pick 1
+
+| Row | Col 1 | Col 2 | Col 3 | Col 4 | Col 5 |
+|-----|-------|-------|-------|-------|-------|
+| 1 | Plane + control tower (commercial airport) | Region borders + "1" (1st admin division) | Mountains (mountain) | Paw print (zoo) | Film reel (movie theater) |
+| 2 | Commuter train front (transit line) | Region borders + "2" (2nd admin division) | Palm tree + island + sun (landmass) | Fish bowl (aquarium) | Hospital building (hospital) |
+| 3 | Street + dashed line (street/path) | Region borders + "3" (3rd admin division) | Tree + park elements (park) | Tee flag + golf ball (golf course) | Open book (library) |
+| 4 | Train + letter "A" (station name length) | Region borders + "4" (4th admin division) | Ferris wheel (amusement park) | Museum building (museum) | Speech bubbles (foreign consulate) |
+
+#### MEASURING (Green) - Draw 3, Pick 1
+
+All icons include a map marker in bottom-right corner.
+
+| Row | Col 1 | Col 2 | Col 3 | Col 4 | Col 5 |
+|-----|-------|-------|-------|-------|-------|
+| 1 | Plane + tower (commercial airport) | Region + "1" (1st admin division) | Palm tree + island (coastline) | Paw print (zoo) | Film reel (movie theater) |
+| 2 | Bullet train side profile (high-speed train) | Region + "2" (2nd admin division) | Mountains (mountain) | Fish bowl (aquarium) | Hospital (hospital) |
+| 3 | Train front (rail station) | Waves + shoreline (sea level) | Tree + park (park) | Golf tee (golf course) | Book (library) |
+| 4 | Region borders (international border) | Waves (body of water) | Ferris wheel (amusement park) | Museum (museum) | Speech bubbles (foreign consulate) |
+
+#### RADAR (Orange) - Draw 2, Pick 1
+
+Distance radius options:
+
+| Row | Col 1 | Col 2 | Col 3 |
+|-----|-------|-------|-------|
+| 1 | 1/4 mi | 5 mi | 100 mi |
+| 2 | 1/2 mi | 10 mi | ???? |
+| 3 | 1 mi | 25 mi | |
+| 4 | 3 mi | 50 mi | |
+
+#### THERMOMETER (Yellow) - Draw 2, Pick 1
+
+Closer/farther comparisons at specific distances:
+
+| Row | Options |
+|-----|---------|
+| 1 | 1/2 mi | 3 mi | 10 mi | 50 mi |
+
+#### TENTACLES (Purple) - Draw 4, Pick 2
+
+Multi-location questions: "Of all the [location type] within X miles of me, which are you closest to?" Each question has a distance range shown below the icon.
+
+**Special rule:** If the hider is NOT within [distance] of the seekers, they do not have to answer the question. This makes Tentacles a late-game question type that only works when seekers are getting close.
+
+**Stillwater note:** Tentacle questions are NOT available for Small game size, so they won't be used in the Stillwater adaptation.
+
+| Row | Col 1 | Col 2 | Col 3 | Col 4 |
+|-----|-------|-------|-------|-------|
+| 1 | Train (metro lines) 15 mi | Paw print (zoos) 15 mi | Fish bowl (aquariums) 15 mi | Ferris wheel (amusement parks) 15 mi |
+| 2 | Museum (museums) 1 mi | Book (libraries) 1 mi | Film reel (movie theaters) 1 mi | Hospital (hospitals) 1 mi |
+
+#### PHOTO (Cyan) - Draw 1
+
+All icons have rectangle border to indicate photo. Some include action elements.
+
+| Row | Col 1 | Col 2 | Col 3 | Col 4 | Col 5 |
+|-----|-------|-------|-------|-------|-------|
+| 1 | Train + 2 buildings, one taller (tallest building from station) | Waves (biggest body of water in zone) | Person (you/selfie) | Fork + knife (restaurant interior) | Person running + "1/2" (trace 1/2 mi of streets) |
+| 2 | Train + building (any building from station) | Street + dashed line (widest street) | Tree + airplane in sky (the sky) | Shopping cart (grocery store aisle) | Person running + dashed line + tree (trace nearest street/path) |
+| 3 | Building platform (train platform) | Tree (a tree) | 2 buildings, one taller (tallest structure in sightline) | Church (place of worship) | |
+| 4 | Mountains (tallest mountain from station) | Tree + park (park) | 5 buildings varying height (five buildings) | Train + platform (train platform) | |
+
+#### Stillwater Applicability
+
+Some questions won't apply to Stillwater/OSU bus system. Consider flagging or hiding:
+
+**Not Applicable:**
+- High-speed train (no high-speed rail)
+- Coastline, sea level, body of water (landlocked)
+- Mountains (flat terrain)
+- International border (single city)
+- Large distance radars (100 mi, 50 mi possibly too large)
+- Admin divisions 1-4 (may need Stillwater-specific alternatives)
+
+**Applicable with Modification:**
+- Transit line → OSU bus route
+- Rail station → Bus stop
+- Metro lines → Bus routes
 
 ### Community Inspiration
 

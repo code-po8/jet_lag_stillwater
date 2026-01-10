@@ -159,8 +159,8 @@ export const QUESTION_CATEGORIES: QuestionCategory[] = [
   {
     id: QuestionCategoryId.Tentacle,
     name: 'Tentacle',
-    format: 'Within _ of me, which _ are you nearest to? (You must also be within _)',
-    description: 'Identifies which specific location of a type the hider is nearest to within a radius',
+    format: 'Of all the [location type] within [distance] of me, which are you closest to?',
+    description: 'Identifies which specific location the hider is nearest to. Hider must be within [distance] of seekers to answer.',
     cardsDraw: 4,
     cardsKeep: 2,
     responseTimeMinutes: 5,
