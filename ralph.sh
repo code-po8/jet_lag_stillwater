@@ -27,7 +27,12 @@ CRITICAL RULE: When committing, NEVER add Co-Authored-By lines. No AI attributio
 
 Read CLAUDE.md for workflow instructions, then read STORIES.md to analyze the backlog.
 
-Card selection: The order in STORIES.md is arbitrary - do NOT simply pick the first pending card. Analyze ALL pending cards, identify which have all dependencies satisfied, then select the optimal card based on: which unblocks the most other cards, logical grouping with recent work, and foundation-before-features. Explain your selection reasoning.
+Card selection: The order in STORIES.md is arbitrary - do NOT simply pick the first pending card. Analyze ALL pending cards, identify which have all dependencies satisfied, then select the optimal card based on:
+1. UI visibility preference: Prioritize cards that make the app viewable/usable in a browser so progress can be seen and direction validated early
+2. Which unblocks the most other cards
+3. Logical grouping with recent work
+4. Foundation-before-features (but don't let infrastructure block UI progress indefinitely)
+Explain your selection reasoning.
 
 Implementation: Follow TDD as described in CLAUDE.md.
 
