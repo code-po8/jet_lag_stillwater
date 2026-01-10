@@ -102,7 +102,8 @@ chore(deps): configure vitest and vue test utils
 
 | File | Purpose |
 |------|---------|
-| `RESEARCH_NOTES.md` | Game rules, tech decisions, architecture |
+| `RESEARCH_NOTES.md` | Game rules, tech decisions, UI design specs, icon reference |
+| `GAME_RULES.md` | Official question formats, card costs, Stillwater adaptations |
 | `STORIES.md` | Backlog of cards with acceptance criteria |
 | `DEVELOPMENT.md` | Setup, scripts, deployment guide |
 | `CLAUDE.md` | This file - workflow instructions |

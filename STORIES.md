@@ -437,6 +437,9 @@ describe('QuestionList', () => {
 
 **Size:** S
 
+**Design Reference:**
+- See RESEARCH_NOTES.md "Question Icon Reference" - in the show, used/unavailable questions appear faded/grayed out
+
 **Tests to Write:**
 ```typescript
 describe('QuestionList status', () => {
@@ -910,8 +913,9 @@ User experience improvements.
 
 **Design Notes:**
 - See RESEARCH_NOTES.md "Visual Design Research" section
+- See RESEARCH_NOTES.md "Question Category Colors (From Nebula Show)" for exact hex values
+- See RESEARCH_NOTES.md "Question Icon Reference" for icon descriptions per category
 - Official Jet Lag logo palette: #1a1a2e (navy), #c73e3e (red), #f07d2e (orange), #f5b830 (gold), #00aaff (cyan)
-- Proposed category colors in RESEARCH_NOTES.md (to be finalized)
 - Prioritize accessibility and outdoor visibility
 
 ---
