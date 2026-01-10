@@ -968,20 +968,87 @@ Overall game flow management.
 
 ### GS-001: Create Game Store
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-008
 
 **Story:** As a player, I need game state tracked so that the app knows the current phase and active players.
 
 **Acceptance Criteria:**
-- [ ] Pinia store created: `gameStore`
-- [ ] Tracks: current phase, current hider, round number, player list
-- [ ] Phases: setup, hiding-period, seeking, end-game, round-complete
-- [ ] `startRound(hiderId)` action initiates hiding period
-- [ ] `endRound()` action records hider time and rotates
-- [ ] Store persists to localStorage
+- [x] Pinia store created: `gameStore`
+- [x] Tracks: current phase, current hider, round number, player list
+- [x] Phases: setup, hiding-period, seeking, end-game, round-complete
+- [x] `startRound(hiderId)` action initiates hiding period
+- [x] `endRound()` action records hider time and rotates
+- [x] Store persists to localStorage
 
 **Size:** M
+
+**Tests Written (37 tests):**
+```typescript
+describe('gameStore core', () => {
+  describe('initialization', () => {
+    it('should initialize with setup phase')
+    it('should initialize with no current hider')
+    it('should initialize at round 0')
+    it('should initialize with empty player list')
+  })
+  describe('player management', () => {
+    it('should add players')
+    it('should assign unique IDs to players')
+    it('should remove players by ID')
+    it('should get player by ID')
+    it('should return undefined for non-existent player ID')
+  })
+  describe('currentHider getter', () => {
+    it('should return null when no hider is set')
+    it('should return the current hider player object')
+  })
+  describe('seekers getter', () => {
+    it('should return empty array when no players')
+    it('should return all players except current hider')
+  })
+})
+describe('gameStore phase transitions', () => {
+  describe('startRound', () => {
+    it('should transition from setup to hiding-period')
+    it('should set the current hider')
+    it('should increment round number')
+    it('should require at least 2 players')
+    it('should reject invalid player ID as hider')
+    it('should mark player as having been hider')
+  })
+  describe('startSeeking', () => {
+    it('should transition from hiding-period to seeking')
+    it('should fail if not in hiding-period phase')
+  })
+  describe('enterHidingZone', () => {
+    it('should transition from seeking to end-game')
+    it('should fail if not in seeking phase')
+  })
+  describe('hiderFound', () => {
+    it('should transition from end-game to round-complete')
+    it('should fail if not in end-game phase')
+  })
+  describe('endRound', () => {
+    it('should record hider time')
+    it('should transition back to setup for next round')
+    it('should fail if not in round-complete phase')
+    it('should accumulate hiding time across multiple rounds')
+  })
+})
+describe('gameStore getters', () => {
+  it('should return false when not all players have been hider')
+  it('should return true when all players have been hider')
+  it('should rank players by total hiding time descending')
+  it('should return players who havent been hider yet')
+})
+describe('gameStore persistence', () => {
+  it('should persist state to localStorage')
+  it('should rehydrate state on load')
+  it('should handle empty localStorage gracefully')
+  it('should handle corrupted localStorage data gracefully')
+})
+```
 
 ---
 
@@ -1229,9 +1296,9 @@ User experience improvements.
 | 1: Question Tracking | 11 | 7 | 4 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 12 | 0 | 12 |
-| 4: Game State | 7 | 0 | 7 |
+| 4: Game State | 7 | 1 | 6 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **11** | **36** |
+| **Total** | **47** | **12** | **35** |
 
 ---
 
@@ -1265,18 +1332,20 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, and Q-003b complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, and GS-001 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-001**: Create Timer Composable
-- **Q-004a**: Ask Question Modal (newly unblocked by Q-003b)
+- **Q-004a**: Ask Question Modal
 - **Q-005**: Question History View
 - **CARD-001**: Define Card Data Model
 - **UX-004**: Visual Design System
-- **GS-001**: Create Game Store
+- **GS-002**: Game Setup Flow (newly unblocked by GS-001)
+- **GS-005**: End Game Flow (depends on GS-001 + T-003, partially unblocked)
+- **GS-007**: Unified Game Pause/Resume (depends on GS-001 + T-001, partially unblocked)
 
-**Note:** Q-003b completion unblocks Q-004a (Ask Question Modal), which continues the Question UI flow toward the full ask/answer workflow.
+**Note:** GS-001 completion unblocks GS-002 (Game Setup Flow), GS-005 (End Game Flow - still needs T-003), GS-007 (Game Pause - still needs T-001), and others that now have GS-001 as a satisfied dependency.
 
 ---
 
