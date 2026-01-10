@@ -290,55 +290,84 @@ Format: **"Of all the [location type] within [distance] of me (the seeker), whic
 
 ## Card Types
 
-The hider's deck contains 4 types of cards:
+The hider's deck contains 3 types of cards (99 cards total).
 
-### 1. Time Bonus Cards
+### 1. Time Bonus Cards (55 cards)
 
 - Add minutes to hiding duration when hider is found
 - Only count if they are in hand at the end of the round
 - Cannot be played, only discarded
-- Values vary (specific values TBD from rulebook)
+- Values scale by game size
 
-### 2. Powerup Cards
+| Quantity | Small | Medium | Large |
+|----------|-------|--------|-------|
+| 25x | 2 min | 3 min | 5 min |
+| 15x | 4 min | 6 min | 10 min |
+| 10x | 6 min | 9 min | 15 min |
+| 3x | 8 min | 12 min | 20 min |
+| 2x | 12 min | 18 min | 30 min |
 
-Special abilities for the hider:
+### 2. Powerup Cards (21 cards)
 
-| Powerup | Effect |
-|---------|--------|
-| Veto | Decline a question; hider still receives cards; seekers can re-ask |
-| Randomize | Replace question with random unasked question from same category |
-| Discard/Draw | Discard cards from hand and draw new ones |
-| Draw 1, Expand | Draw a card + increase hand size by 1 |
-| Duplicate | Copy another card; if kept, can copy any time bonus |
-| Move | Establish new hiding zone; hiding timer pauses, seekers must stay put |
+| Qty | Powerup | Effect |
+|-----|---------|--------|
+| 4x | Veto Question | Play instead of answering a question. No answer is given, and no reward is earned. |
+| 4x | Randomize Question | Play instead of answering a question. A new unasked question from the same category is chosen at random, which you answer instead. |
+| 4x | Discard 1, Draw 2 | Discard one other card from your hand. Then, draw and keep two cards from the hider deck. |
+| 4x | Discard 2, Draw 3 | Discard two other cards from your hand. Then, draw and keep three cards from the hider deck. |
+| 2x | Draw 1, Expand 1 | Draw one card from the hider deck. For the rest of the round, you can hold one additional card in your hand. |
+| 2x | Duplicate Another Card | Play this card as a copy of any other card in your hand. This may be used to duplicate a time bonus at the end of your round. |
+| 1x | Move | Discard your hand and send the seekers the location of your transit station. Grants a new hiding period (S:10min, M:20min, L:60min) to establish a new hiding zone. Seekers are frozen and hiding timer is paused until the new hiding period concludes. Cannot be played during endgame. |
 
-### 3. Curse Cards
+### 3. Curse Cards (23 cards)
 
 - Played by hider against seekers
 - Impose conditions, challenges, or restrictions on seekers
 - Many curses block question-asking until cleared
+- **Rule:** Never more than one curse blocking questions or transit at a time
 
-**Curse Types:**
+#### Curse Card Details
 
-| Type | Description |
-|------|-------------|
-| Action-to-clear | Seekers must perform a task to lift the curse |
-| Duration-based | Active for a set time period |
-| Until-found | Active until hider is caught |
-| Dice-based | Restrict movement using dice rolls |
-
-**Rule:** Never more than one curse blocking questions or transit at a time.
-
-### 4. Time Trap Cards (Expansion Pack)
-
-- Hider publicly designates a transit station as a trap
-- If seekers visit the trapped station, hider gains bonus time
-- Can be used as misdirection
+| Curse | Effect | Casting Cost |
+|-------|--------|--------------|
+| Lemon Phylactery | Seekers must each find a lemon and affix it to their clothes/skin before asking another question. If a lemon stops touching a seeker, hider gets bonus (S:30min, M:45min, L:60min). Cannot be played during endgame. | Discard a powerup |
+| Luxury Car | Take a photo of a car. Seekers must take a photo of a more expensive car before asking another question. | Photo of a car |
+| Water Weight | Seekers must carry 2L of liquid per seeker for rest of run. Cannot ask questions until acquired. If lost/abandoned, hider gets bonus (S:30min, M:30min, L:60min). | Seekers within 1000ft of body of water |
+| Spotty Memory | For rest of run, one random category disabled at all times. After each question, roll die to choose new disabled category. | Discard a time bonus |
+| Zoologist | Take photo of wild animal. Seekers must photo a wild animal in same category (fish/bird/mammal/reptile/amphibian/bug) before asking another question. | Photo of an animal |
+| Mediocre Travel Agent | Choose a place within (S:0.25mi, M:0.25mi, L:0.5mi) of seekers. They must go there, spend (S:5min, M:5min, L:10min), send 3 photos, and bring a souvenir. If souvenir lost, hider gets bonus (S:30min, M:45min, L:60min). | Destination must be further from hider than seekers' current location |
+| Gambler's Feet | For next (S:20min, M:40min, L:60min), seekers must roll die before taking steps. They may take that many steps before rolling again. | Roll die; if even, curse has no effect |
+| Egg Partner | Seekers must acquire an egg before asking another question. Egg is an official team member. If egg is cracked/abandoned before end of run, hider gets bonus (S:30min, M:45min, L:60min). Cannot be played during endgame. | Discard two cards |
+| Drained Brain | Choose three questions in different categories. Seekers cannot ask those questions for rest of run. | Discard your hand |
+| Cairn | Build a rock tower. Seekers must build one of same height before asking another question. Rocks must be found in nature and dispersed after. | Build a rock tower |
+| Endless Tumble | Seekers must roll a die at least 100ft and land on 5 or 6 before asking another question. If they hit someone with the die, hider gets bonus (S:10min, M:20min, L:30min). | Roll die; if 5 or 6, curse has no effect |
+| Hidden Hangman | Seekers must beat hider in hangman (5-letter word, 7 wrong guesses allowed). After (S:1, M:2, L:3) losses, wait 10min and curse clears. | Discard 2 cards |
+| Unguided Tourist | Send seekers a Google Street View image from within 500ft. Without using internet, they must find it in real life before using transit or asking questions. | Seekers must be outside |
+| Right Turn | For next (S:20min, M:40min, L:60min), seekers can only turn right at intersections. 180° allowed only at dead ends. | Discard a card |
+| Bird Guide | Film a bird for up to (S:5min, M:10min, L:15min). Seekers must film a bird for same time or longer before asking another question. | Film a bird |
+| U-Turn | Seekers must disembark at next station (if serviced by other transit within S:0.5hr, M:0.5hr, L:1hr). | Seekers must be heading wrong way (next station further from hider) |
+| Jammed Door | For next (S:0.5hr, M:1hr, L:3hr), seekers must roll 2 dice (7+ to enter) before passing through any doorway. Failed doorways can be re-attempted after (S:5min, M:10min, L:15min). | Discard two cards |
+| Overflowing Chalice | For next three questions, hider may draw (not keep) an additional card. | Discard a card |
+| Ransom Note | Next question must be composed of cut-out words/letters from printed material, at least 5 words. | Spell out "ransom note" as a ransom note |
+| Impressionable Consumer | Seekers must enter a location or buy a product they saw advertised (ad must be 100ft+ from product/location, not on device). | Seekers' next question is free |
+| Labyrinth | Draw a solvable maze (up to S:10min, M:20min, L:30min). Seekers must solve it before asking another question. | Draw a maze |
+| Urban Explorer | For rest of run, seekers cannot ask questions when on transit or in transit stations. | Discard 2 cards |
+| Distant Cuisine | Find restaurant in your zone serving food from specific foreign country. Seekers must visit restaurant serving food from equal/greater distance country before asking another question. | You must be at the restaurant |
+| Bridge Troll | Seekers must ask their next question from under a bridge. | Seekers must be at least (S:1mi, M:5mi, L:30mi) from you |
 
 ### Hand Limit
 
 - Default hand limit: 6 cards
 - Some powerup cards increase hand limit
+
+### Deck Summary
+
+| Card Type | Count |
+|-----------|-------|
+| Time Bonus | 55 |
+| Powerup | 21 |
+| Curse | 23 |
+| **Total** | **99** |
 
 ---
 

@@ -693,25 +693,92 @@ Card tracking for the hider role.
 
 ### CARD-001: Define Card Data Model
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-001
 
 **Story:** As a developer, I need card type definitions so that cards can be managed consistently.
 
 **Acceptance Criteria:**
-- [ ] TypeScript interfaces for: `Card`, `TimeBonusCard`, `PowerupCard`, `CurseCard`, `TimeTrapCard`
-- [ ] All cards from rulebook catalogued
-- [ ] Card effects documented in data
-- [ ] **Time Bonus Cards:** Add minutes to hiding duration (values TBD from rulebook)
-- [ ] **Powerup Cards:** Special abilities for hider (specific powerups TBD from rulebook)
-- [ ] **Curse Cards:** Impose restrictions on seekers (specific curses TBD from rulebook)
-- [ ] **Time Trap Cards (Expansion):** Designate station as trap, bonus if seekers visit
+- [x] TypeScript interfaces for: `Card`, `TimeBonusCard`, `PowerupCard`, `CurseCard`, `TimeTrapCard`
+- [x] All cards from rulebook catalogued
+- [x] Card effects documented in data
+- [x] **Time Bonus Cards:** Add minutes to hiding duration (5, 10, or 15 minutes)
+- [x] **Powerup Cards:** Special abilities for hider (6 types: Veto, Randomize, Discard/Draw, Draw 1 Expand, Duplicate, Move)
+- [x] **Curse Cards:** Impose restrictions on seekers (4 types: Action-to-Clear, Duration-Based, Until-Found, Dice-Based)
+- [x] **Time Trap Cards (Expansion):** Designate station as trap, bonus if seekers visit
 
 **Size:** M
 
 **Notes:**
 - Base game has 3 card types: Time Bonus, Powerup, Curse
 - Time Trap is from expansion pack
+
+**Tests Written (36 tests):**
+```typescript
+describe('CardType enum', () => {
+  it('should define all four card types')
+})
+describe('PowerupType enum', () => {
+  it('should define all six powerup types')
+})
+describe('CurseType enum', () => {
+  it('should define all four curse types')
+})
+describe('TIME_BONUS_VALUES', () => {
+  it('should contain 5, 10, and 15 minute values')
+})
+describe('TimeBonusCard interface', () => {
+  it('should allow creating a valid time bonus card')
+})
+describe('PowerupCard interface', () => {
+  it('should allow creating a valid powerup card')
+})
+describe('CurseCard interface', () => {
+  it('should allow creating a duration-based curse card')
+  it('should allow creating an action-to-clear curse card')
+  it('should allow creating an until-found curse card')
+})
+describe('TimeTrapCard interface', () => {
+  it('should allow creating a time trap card')
+})
+describe('POWERUP_CARDS', () => {
+  it('should define all six powerup cards')
+  it('should include Veto, Randomize, Discard/Draw, Draw 1 Expand, Duplicate, Move')
+  it('should have all powerup cards with correct type')
+})
+describe('CURSE_CARDS', () => {
+  it('should define curse cards')
+  it('should have all curse cards with correct type')
+  it('should have duration-based curses with durationMinutes')
+  it('should have action-to-clear curses with clearCondition')
+})
+describe('TIME_TRAP_CARD', () => {
+  it('should be a valid time trap card')
+})
+describe('getAllCards', () => {
+  it('should return all cards from all types')
+  it('should include cards of all types')
+})
+describe('getCardById', () => {
+  it('should return the correct card')
+  it('should return undefined for invalid ID')
+})
+describe('getCardsByType', () => {
+  it('should return only time bonus cards')
+  it('should return only powerup cards')
+  it('should return only curse cards')
+  it('should return only time trap cards')
+})
+describe('getTimeBonusCards', () => {
+  it('should return all time bonus cards')
+})
+describe('getPowerupCards', () => {
+  it('should return all powerup cards')
+})
+describe('getCurseCards', () => {
+  it('should return all curse cards')
+})
+```
 
 ---
 
@@ -1341,10 +1408,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 7 | 4 |
 | 2: Timers | 4 | 1 | 3 |
-| 3: Card Management | 12 | 0 | 12 |
+| 3: Card Management | 12 | 1 | 11 |
 | 4: Game State | 7 | 1 | 6 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **13** | **34** |
+| **Total** | **47** | **14** | **33** |
 
 ---
 
@@ -1378,22 +1445,22 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, GS-001, and T-001 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, GS-001, T-001, and CARD-001 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
-- **T-002**: Hiding Period Timer (newly unblocked by T-001)
-- **T-003**: Hiding Duration Timer (newly unblocked by T-001)
+- **T-002**: Hiding Period Timer
+- **T-003**: Hiding Duration Timer
 - **T-004**: Question Response Timer (depends on T-001 + Q-004, Q-004 not complete)
 - **Q-004a**: Ask Question Modal
 - **Q-005**: Question History View
-- **CARD-001**: Define Card Data Model
-- **CARD-006b**: Curse Clearing (newly unblocked by T-001, still needs CARD-006a)
+- **CARD-002**: Create Card Store (newly unblocked by CARD-001)
+- **CARD-006a**: Curse Display (newly unblocked by CARD-001)
 - **UX-004**: Visual Design System
 - **GS-002**: Game Setup Flow
-- **GS-007**: Unified Game Pause/Resume (newly fully unblocked by T-001 + GS-001)
+- **GS-007**: Unified Game Pause/Resume
 
-**Note:** T-001 completion unblocks T-002, T-003, T-004 (partially), CARD-006b (partially), and GS-007 (now fully unblocked).
+**Note:** CARD-001 completion unblocks CARD-002, CARD-006a, and all downstream Card Management cards.
 
 ---
 
