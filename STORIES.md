@@ -309,27 +309,43 @@ Core functionality for tracking questions during gameplay.
 
 ### Q-002b: Question Store Actions
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-002a
 
 **Story:** As a player, I need actions to ask, answer, and veto questions so that the game flow is tracked.
 
 **Acceptance Criteria:**
-- [ ] `askQuestion(questionId)` marks question as pending, returns draw/keep values
-- [ ] `answerQuestion(questionId, answer)` records answer, moves to asked
-- [ ] `vetoQuestion(questionId)` returns question to available (hider still gets cards)
-- [ ] Prevent new questions while one is pending
+- [x] `askQuestion(questionId)` marks question as pending, returns draw/keep values
+- [x] `answerQuestion(questionId, answer)` records answer, moves to asked
+- [x] `vetoQuestion(questionId)` returns question to available (hider still gets cards)
+- [x] Prevent new questions while one is pending
 
 **Size:** S
 
-**Tests to Write:**
+**Tests Written (15 tests):**
 ```typescript
 describe('questionStore actions', () => {
-  it('should mark a question as pending when asked')
-  it('should return draw/keep values when question asked')
-  it('should prevent new questions while one is pending')
-  it('should record answer and move question to asked')
-  it('should return vetoed question to available')
+  describe('askQuestion', () => {
+    it('should mark a question as pending when asked')
+    it('should return draw/keep values when question asked')
+    it('should prevent new questions while one is pending')
+    it('should prevent asking a question that was already asked')
+    it('should return error for non-existent question')
+    it('should set askedAt timestamp when question asked')
+  })
+  describe('answerQuestion', () => {
+    it('should record answer and move question to asked')
+    it('should set answeredAt timestamp when answered')
+    it('should return error if question id does not match pending')
+    it('should return error if no question is pending')
+    it('should mark question as not vetoed when answered')
+  })
+  describe('vetoQuestion', () => {
+    it('should return vetoed question to available')
+    it('should return draw/keep values when vetoed (hider still gets cards)')
+    it('should return error if question id does not match pending')
+    it('should return error if no question is pending')
+  })
 })
 ```
 
@@ -887,12 +903,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 10 | 3 | 7 |
+| 1: Question Tracking | 10 | 4 | 6 |
 | 2: Timers | 4 | 0 | 4 |
 | 3: Card Management | 7 | 0 | 7 |
 | 4: Game State | 4 | 0 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **38** | **7** | **31** |
+| **Total** | **38** | **8** | **30** |
 
 ---
 
@@ -917,18 +933,19 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, and Q-002a complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, and Q-002b complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-001**: Create Timer Composable
-- **Q-002b**: Question Store Actions (newly unblocked by Q-002a)
-- **Q-003a**: Question List Display (newly unblocked by Q-002a)
+- **Q-002c**: Question Store Persistence (newly unblocked by Q-002b)
+- **Q-003a**: Question List Display
+- **Q-003b**: Question Status Indicators (newly unblocked by Q-002b, also needs Q-003a)
 - **CARD-001**: Define Card Data Model
 - **UX-004**: Visual Design System
 - **GS-001**: Create Game Store
 
-**Note:** Q-002a completion unblocks Q-002b (Question Store Actions) and Q-003a (Question List Display), allowing parallel work on store logic and UI components.
+**Note:** Q-002b completion unblocks Q-002c (Question Store Persistence) and Q-003b (Question Status Indicators). Q-003b also requires Q-003a, so working on Q-003a first is recommended for the Question UI path.
 
 ---
 

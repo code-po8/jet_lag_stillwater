@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useQuestionStore } from '../questionStore'
 import { ALL_QUESTIONS } from '@/data/questions'
-import { QuestionCategoryId, GameSize } from '@/types/question'
+import { QuestionCategoryId, GameSize, QUESTION_CATEGORIES } from '@/types/question'
 
 describe('questionStore core', () => {
   beforeEach(() => {
@@ -203,6 +203,204 @@ describe('questionStore core', () => {
 
       expect(matchingStats.asked).toBe(1)
       expect(matchingStats.available).toBe(matchingStats.total - 1)
+    })
+  })
+})
+
+describe('questionStore actions', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  describe('askQuestion', () => {
+    it('should mark a question as pending when asked', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      store.askQuestion(question.id)
+
+      expect(store.pendingQuestion).not.toBeNull()
+      expect(store.pendingQuestion?.questionId).toBe(question.id)
+      expect(store.hasPendingQuestion).toBe(true)
+    })
+
+    it('should return draw/keep values when question asked', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
+      const category = QUESTION_CATEGORIES.find((c) => c.id === QuestionCategoryId.Matching)!
+
+      const result = store.askQuestion(question.id)
+
+      expect(result).toEqual({
+        success: true,
+        cardsDraw: category.cardsDraw,
+        cardsKeep: category.cardsKeep,
+      })
+    })
+
+    it('should prevent new questions while one is pending', () => {
+      const store = useQuestionStore()
+      const firstQuestion = ALL_QUESTIONS[0]!
+      const secondQuestion = ALL_QUESTIONS[1]!
+
+      store.askQuestion(firstQuestion.id)
+      const result = store.askQuestion(secondQuestion.id)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('A question is already pending')
+      expect(store.pendingQuestion?.questionId).toBe(firstQuestion.id)
+    })
+
+    it('should prevent asking a question that was already asked', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      // Ask the question and answer it
+      store.askQuestion(question.id)
+      store.answerQuestion(question.id, 'Yes')
+
+      // Try to ask it again
+      const result = store.askQuestion(question.id)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Question has already been asked')
+    })
+
+    it('should return error for non-existent question', () => {
+      const store = useQuestionStore()
+
+      const result = store.askQuestion('non-existent-id')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Question not found')
+    })
+
+    it('should set askedAt timestamp when question asked', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+      const before = new Date()
+
+      store.askQuestion(question.id)
+
+      const after = new Date()
+      expect(store.pendingQuestion?.askedAt.getTime()).toBeGreaterThanOrEqual(before.getTime())
+      expect(store.pendingQuestion?.askedAt.getTime()).toBeLessThanOrEqual(after.getTime())
+    })
+  })
+
+  describe('answerQuestion', () => {
+    it('should record answer and move question to asked', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      store.askQuestion(question.id)
+      const result = store.answerQuestion(question.id, 'Yes')
+
+      expect(result.success).toBe(true)
+      expect(store.pendingQuestion).toBeNull()
+      expect(store.askedQuestions.length).toBe(1)
+      expect(store.askedQuestions[0]?.answer).toBe('Yes')
+    })
+
+    it('should set answeredAt timestamp when answered', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      store.askQuestion(question.id)
+      const before = new Date()
+      store.answerQuestion(question.id, 'No')
+      const after = new Date()
+
+      const askedQuestion = store.askedQuestions[0]!
+      expect(askedQuestion.answeredAt).toBeDefined()
+      expect(askedQuestion.answeredAt!.getTime()).toBeGreaterThanOrEqual(before.getTime())
+      expect(askedQuestion.answeredAt!.getTime()).toBeLessThanOrEqual(after.getTime())
+    })
+
+    it('should return error if question id does not match pending', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+      const otherQuestion = ALL_QUESTIONS[1]!
+
+      store.askQuestion(question.id)
+      const result = store.answerQuestion(otherQuestion.id, 'Yes')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Question ID does not match pending question')
+      expect(store.pendingQuestion).not.toBeNull()
+    })
+
+    it('should return error if no question is pending', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      const result = store.answerQuestion(question.id, 'Yes')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No question is pending')
+    })
+
+    it('should mark question as not vetoed when answered', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      store.askQuestion(question.id)
+      store.answerQuestion(question.id, 'Yes')
+
+      expect(store.askedQuestions[0]?.vetoed).toBe(false)
+    })
+  })
+
+  describe('vetoQuestion', () => {
+    it('should return vetoed question to available', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      store.askQuestion(question.id)
+      const result = store.vetoQuestion(question.id)
+
+      expect(result.success).toBe(true)
+      expect(store.pendingQuestion).toBeNull()
+      // Question should NOT be in asked questions (it's available again)
+      expect(store.askedQuestions.find((q) => q.questionId === question.id)).toBeUndefined()
+      // Question should be available
+      const available = store.getAvailableQuestions()
+      expect(available.find((q) => q.id === question.id)).toBeDefined()
+    })
+
+    it('should return draw/keep values when vetoed (hider still gets cards)', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Radar)!
+      const category = QUESTION_CATEGORIES.find((c) => c.id === QuestionCategoryId.Radar)!
+
+      store.askQuestion(question.id)
+      const result = store.vetoQuestion(question.id)
+
+      expect(result.success).toBe(true)
+      expect(result.cardsDraw).toBe(category.cardsDraw)
+      expect(result.cardsKeep).toBe(category.cardsKeep)
+    })
+
+    it('should return error if question id does not match pending', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+      const otherQuestion = ALL_QUESTIONS[1]!
+
+      store.askQuestion(question.id)
+      const result = store.vetoQuestion(otherQuestion.id)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Question ID does not match pending question')
+    })
+
+    it('should return error if no question is pending', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      const result = store.vetoQuestion(question.id)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No question is pending')
     })
   })
 })

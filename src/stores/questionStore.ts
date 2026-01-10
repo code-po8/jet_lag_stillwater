@@ -8,8 +8,23 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ALL_QUESTIONS, getQuestionById as getQuestionByIdFromData } from '@/data/questions'
-import { QUESTION_CATEGORIES, type AskedQuestion, type Question } from '@/types/question'
+import {
+  QUESTION_CATEGORIES,
+  type AskedQuestion,
+  type Question,
+  getCategoryById,
+} from '@/types/question'
 import { GameSize, QuestionCategoryId } from '@/types/question'
+
+/**
+ * Result type for question actions
+ */
+export interface ActionResult {
+  success: boolean
+  error?: string
+  cardsDraw?: number
+  cardsKeep?: number
+}
 
 /**
  * Stats for a question category
@@ -98,6 +113,107 @@ export const useQuestionStore = defineStore('questions', () => {
     })
   }
 
+  /**
+   * Ask a question - marks it as pending and returns draw/keep values.
+   * Prevents asking if another question is already pending or if question was already asked.
+   */
+  function askQuestion(questionId: string): ActionResult {
+    // Check if a question is already pending
+    if (pendingQuestion.value !== null) {
+      return { success: false, error: 'A question is already pending' }
+    }
+
+    // Check if the question exists
+    const question = getQuestionByIdFromData(questionId)
+    if (!question) {
+      return { success: false, error: 'Question not found' }
+    }
+
+    // Check if the question was already asked
+    const alreadyAsked = askedQuestions.value.some((aq) => aq.questionId === questionId)
+    if (alreadyAsked) {
+      return { success: false, error: 'Question has already been asked' }
+    }
+
+    // Get the category for draw/keep values
+    const category = getCategoryById(question.categoryId)
+    if (!category) {
+      return { success: false, error: 'Question category not found' }
+    }
+
+    // Mark the question as pending
+    pendingQuestion.value = {
+      questionId,
+      categoryId: question.categoryId,
+      answer: '',
+      askedAt: new Date(),
+      vetoed: false,
+    }
+
+    return {
+      success: true,
+      cardsDraw: category.cardsDraw,
+      cardsKeep: category.cardsKeep,
+    }
+  }
+
+  /**
+   * Answer a pending question - records the answer and moves it to asked questions.
+   */
+  function answerQuestion(questionId: string, answer: string): ActionResult {
+    // Check if a question is pending
+    if (pendingQuestion.value === null) {
+      return { success: false, error: 'No question is pending' }
+    }
+
+    // Check if the question ID matches
+    if (pendingQuestion.value.questionId !== questionId) {
+      return { success: false, error: 'Question ID does not match pending question' }
+    }
+
+    // Record the answer and move to asked questions
+    const answeredQuestion: AskedQuestion = {
+      ...pendingQuestion.value,
+      answer,
+      answeredAt: new Date(),
+      vetoed: false,
+    }
+
+    askedQuestions.value.push(answeredQuestion)
+    pendingQuestion.value = null
+
+    return { success: true }
+  }
+
+  /**
+   * Veto a pending question - returns it to available (but hider still gets cards).
+   * The question is NOT added to asked questions, so it can be asked again.
+   */
+  function vetoQuestion(questionId: string): ActionResult {
+    // Check if a question is pending
+    if (pendingQuestion.value === null) {
+      return { success: false, error: 'No question is pending' }
+    }
+
+    // Check if the question ID matches
+    if (pendingQuestion.value.questionId !== questionId) {
+      return { success: false, error: 'Question ID does not match pending question' }
+    }
+
+    // Get the category for draw/keep values (hider still gets cards on veto)
+    const question = getQuestionByIdFromData(questionId)
+    const category = question ? getCategoryById(question.categoryId) : undefined
+
+    // Clear the pending question (returns it to available)
+    pendingQuestion.value = null
+
+    return {
+      success: true,
+      cardsDraw: category?.cardsDraw,
+      cardsKeep: category?.cardsKeep,
+    }
+  }
+
   return {
     // State
     askedQuestions,
@@ -109,5 +225,8 @@ export const useQuestionStore = defineStore('questions', () => {
     getAvailableQuestionsForGameSize,
     getQuestionById,
     getCategoryStats,
+    askQuestion,
+    answerQuestion,
+    vetoQuestion,
   }
 })
