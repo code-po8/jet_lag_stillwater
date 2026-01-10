@@ -2,19 +2,28 @@ import { describe, it, expect } from 'vitest'
 import {
   CardType,
   PowerupType,
-  CurseType,
-  TIME_BONUS_VALUES,
+  TIME_BONUS_TIERS,
   POWERUP_CARDS,
   CURSE_CARDS,
   TIME_TRAP_CARD,
+  TIME_BONUS_CARDS,
+  TOTAL_DECK_SIZE,
   getAllCards,
+  getAllCardsWithExpansion,
   getCardById,
   getCardsByType,
   getTimeBonusCards,
   getPowerupCards,
   getCurseCards,
+  getTimeBonusValue,
+  getTimeBonusTierQuantity,
+  getPowerupQuantity,
+  getTotalTimeBonusCount,
+  getTotalPowerupCount,
+  getTotalCurseCount,
 } from '../card'
-import type { Card, TimeBonusCard, PowerupCard, CurseCard, TimeTrapCard } from '../card'
+import type { TimeBonusCard, PowerupCard, CurseCard, TimeTrapCard } from '../card'
+import { GameSize } from '../question'
 
 describe('CardType enum', () => {
   it('should define all four card types', () => {
@@ -26,47 +35,72 @@ describe('CardType enum', () => {
 })
 
 describe('PowerupType enum', () => {
-  it('should define all six powerup types', () => {
+  it('should define all seven powerup types', () => {
     expect(PowerupType.Veto).toBe('veto')
     expect(PowerupType.Randomize).toBe('randomize')
-    expect(PowerupType.DiscardDraw).toBe('discard-draw')
+    expect(PowerupType.Discard1Draw2).toBe('discard-1-draw-2')
+    expect(PowerupType.Discard2Draw3).toBe('discard-2-draw-3')
     expect(PowerupType.DrawExpand).toBe('draw-expand')
     expect(PowerupType.Duplicate).toBe('duplicate')
     expect(PowerupType.Move).toBe('move')
   })
 })
 
-describe('CurseType enum', () => {
-  it('should define all four curse types', () => {
-    expect(CurseType.ActionToClear).toBe('action-to-clear')
-    expect(CurseType.DurationBased).toBe('duration-based')
-    expect(CurseType.UntilFound).toBe('until-found')
-    expect(CurseType.DiceBased).toBe('dice-based')
+describe('TIME_BONUS_TIERS', () => {
+  it('should have 5 tiers', () => {
+    expect(TIME_BONUS_TIERS).toHaveLength(5)
   })
-})
 
-describe('TIME_BONUS_VALUES', () => {
-  it('should contain 5, 10, and 15 minute values', () => {
-    expect(TIME_BONUS_VALUES).toContain(5)
-    expect(TIME_BONUS_VALUES).toContain(10)
-    expect(TIME_BONUS_VALUES).toContain(15)
-    expect(TIME_BONUS_VALUES).toHaveLength(3)
+  it('should have tiers numbered 1 through 5', () => {
+    const tiers = TIME_BONUS_TIERS.map(t => t.tier)
+    expect(tiers).toEqual([1, 2, 3, 4, 5])
+  })
+
+  it('should have correct quantities totaling 55 cards', () => {
+    const total = TIME_BONUS_TIERS.reduce((sum, t) => sum + t.quantity, 0)
+    expect(total).toBe(55)
+  })
+
+  it('should have correct quantities per tier', () => {
+    expect(TIME_BONUS_TIERS[0].quantity).toBe(25) // Tier 1
+    expect(TIME_BONUS_TIERS[1].quantity).toBe(15) // Tier 2
+    expect(TIME_BONUS_TIERS[2].quantity).toBe(10) // Tier 3
+    expect(TIME_BONUS_TIERS[3].quantity).toBe(3)  // Tier 4
+    expect(TIME_BONUS_TIERS[4].quantity).toBe(2)  // Tier 5
+  })
+
+  it('should have game-size-specific minutes for each tier', () => {
+    // Tier 1: S:2, M:3, L:5
+    expect(TIME_BONUS_TIERS[0].minutes[GameSize.Small]).toBe(2)
+    expect(TIME_BONUS_TIERS[0].minutes[GameSize.Medium]).toBe(3)
+    expect(TIME_BONUS_TIERS[0].minutes[GameSize.Large]).toBe(5)
+
+    // Tier 5: S:12, M:18, L:30
+    expect(TIME_BONUS_TIERS[4].minutes[GameSize.Small]).toBe(12)
+    expect(TIME_BONUS_TIERS[4].minutes[GameSize.Medium]).toBe(18)
+    expect(TIME_BONUS_TIERS[4].minutes[GameSize.Large]).toBe(30)
   })
 })
 
 describe('TimeBonusCard interface', () => {
   it('should allow creating a valid time bonus card', () => {
     const card: TimeBonusCard = {
-      id: 'time-bonus-5',
+      id: 'time-bonus-tier-1',
       type: CardType.TimeBonus,
-      name: '+5 Minutes',
-      description: 'Adds 5 minutes to hiding duration',
-      bonusMinutes: 5,
+      name: 'Time Bonus (Tier 1)',
+      description: 'Adds 2/3/5 minutes (S/M/L) to hiding duration',
+      tier: 1,
+      bonusMinutes: {
+        [GameSize.Small]: 2,
+        [GameSize.Medium]: 3,
+        [GameSize.Large]: 5,
+      },
     }
 
-    expect(card.id).toBe('time-bonus-5')
+    expect(card.id).toBe('time-bonus-tier-1')
     expect(card.type).toBe(CardType.TimeBonus)
-    expect(card.bonusMinutes).toBe(5)
+    expect(card.tier).toBe(1)
+    expect(card.bonusMinutes[GameSize.Small]).toBe(2)
   })
 })
 
@@ -75,68 +109,67 @@ describe('PowerupCard interface', () => {
     const card: PowerupCard = {
       id: 'powerup-veto',
       type: CardType.Powerup,
-      name: 'Veto',
-      description: 'Decline a question; still receive cards; seekers can re-ask',
+      name: 'Veto Question',
+      description: 'Decline to answer a question',
       powerupType: PowerupType.Veto,
-      effect: 'Decline to answer the current question',
+      effect: 'Play instead of answering a question. No answer is given.',
+      quantity: 4,
+      canPlayDuringEndgame: true,
     }
 
     expect(card.id).toBe('powerup-veto')
     expect(card.type).toBe(CardType.Powerup)
     expect(card.powerupType).toBe(PowerupType.Veto)
-    expect(card.effect).toBeTruthy()
+    expect(card.quantity).toBe(4)
+    expect(card.canPlayDuringEndgame).toBe(true)
   })
 })
 
 describe('CurseCard interface', () => {
-  it('should allow creating a duration-based curse card', () => {
+  it('should allow creating a curse card with penalty minutes', () => {
     const card: CurseCard = {
-      id: 'curse-duration-1',
+      id: 'curse-lemon-phylactery',
       type: CardType.Curse,
-      name: 'Slow Zone',
-      description: 'Seekers must walk for 10 minutes',
-      curseType: CurseType.DurationBased,
-      durationMinutes: 10,
-      blocksQuestions: false,
-      blocksTransit: false,
-    }
-
-    expect(card.id).toBe('curse-duration-1')
-    expect(card.type).toBe(CardType.Curse)
-    expect(card.curseType).toBe(CurseType.DurationBased)
-    expect(card.durationMinutes).toBe(10)
-  })
-
-  it('should allow creating an action-to-clear curse card', () => {
-    const card: CurseCard = {
-      id: 'curse-action-1',
-      type: CardType.Curse,
-      name: 'Photo Challenge',
-      description: 'Take a photo of a park',
-      curseType: CurseType.ActionToClear,
-      clearCondition: 'Take and submit a photo of a park',
+      name: 'Lemon Phylactery',
+      description: 'Seekers must find and wear lemons',
+      effect: 'Seekers must each find a lemon...',
+      castingCost: 'Discard a powerup',
       blocksQuestions: true,
       blocksTransit: false,
+      canPlayDuringEndgame: false,
+      penaltyMinutes: {
+        [GameSize.Small]: 30,
+        [GameSize.Medium]: 45,
+        [GameSize.Large]: 60,
+      },
     }
 
-    expect(card.curseType).toBe(CurseType.ActionToClear)
-    expect(card.clearCondition).toBeTruthy()
+    expect(card.id).toBe('curse-lemon-phylactery')
+    expect(card.type).toBe(CardType.Curse)
     expect(card.blocksQuestions).toBe(true)
+    expect(card.canPlayDuringEndgame).toBe(false)
+    expect(card.penaltyMinutes?.[GameSize.Large]).toBe(60)
   })
 
-  it('should allow creating an until-found curse card', () => {
+  it('should allow creating a curse card with duration minutes', () => {
     const card: CurseCard = {
-      id: 'curse-until-found-1',
+      id: 'curse-right-turn',
       type: CardType.Curse,
-      name: 'Silent Treatment',
-      description: 'No verbal communication until found',
-      curseType: CurseType.UntilFound,
+      name: 'Right Turn',
+      description: 'Can only turn right',
+      effect: 'For next (S:20min, M:40min, L:60min)...',
+      castingCost: 'Discard a card',
       blocksQuestions: false,
       blocksTransit: false,
+      canPlayDuringEndgame: true,
+      durationMinutes: {
+        [GameSize.Small]: 20,
+        [GameSize.Medium]: 40,
+        [GameSize.Large]: 60,
+      },
     }
 
-    expect(card.curseType).toBe(CurseType.UntilFound)
-    expect(card.durationMinutes).toBeUndefined()
+    expect(card.durationMinutes?.[GameSize.Medium]).toBe(40)
   })
 })
 
@@ -157,49 +190,59 @@ describe('TimeTrapCard interface', () => {
 })
 
 describe('POWERUP_CARDS', () => {
-  it('should define all six powerup cards', () => {
-    expect(POWERUP_CARDS).toHaveLength(6)
+  it('should define all seven powerup card types', () => {
+    expect(POWERUP_CARDS).toHaveLength(7)
   })
 
-  it('should include Veto powerup', () => {
+  it('should have total quantity of 21 cards', () => {
+    const total = POWERUP_CARDS.reduce((sum, card) => sum + card.quantity, 0)
+    expect(total).toBe(21)
+  })
+
+  it('should include Veto powerup with quantity 4', () => {
     const veto = POWERUP_CARDS.find(c => c.powerupType === PowerupType.Veto)
     expect(veto).toBeDefined()
-    expect(veto?.name).toBe('Veto')
-    expect(veto?.effect).toContain('Decline')
+    expect(veto?.name).toBe('Veto Question')
+    expect(veto?.quantity).toBe(4)
   })
 
-  it('should include Randomize powerup', () => {
+  it('should include Randomize powerup with quantity 4', () => {
     const randomize = POWERUP_CARDS.find(c => c.powerupType === PowerupType.Randomize)
     expect(randomize).toBeDefined()
-    expect(randomize?.name).toBe('Randomize')
-    expect(randomize?.effect).toContain('random')
+    expect(randomize?.quantity).toBe(4)
   })
 
-  it('should include Discard/Draw powerup', () => {
-    const discardDraw = POWERUP_CARDS.find(c => c.powerupType === PowerupType.DiscardDraw)
-    expect(discardDraw).toBeDefined()
-    expect(discardDraw?.name).toBe('Discard/Draw')
+  it('should include Discard 1, Draw 2 powerup with quantity 4', () => {
+    const discard1 = POWERUP_CARDS.find(c => c.powerupType === PowerupType.Discard1Draw2)
+    expect(discard1).toBeDefined()
+    expect(discard1?.name).toBe('Discard 1, Draw 2')
+    expect(discard1?.quantity).toBe(4)
   })
 
-  it('should include Draw 1, Expand powerup', () => {
+  it('should include Discard 2, Draw 3 powerup with quantity 4', () => {
+    const discard2 = POWERUP_CARDS.find(c => c.powerupType === PowerupType.Discard2Draw3)
+    expect(discard2).toBeDefined()
+    expect(discard2?.name).toBe('Discard 2, Draw 3')
+    expect(discard2?.quantity).toBe(4)
+  })
+
+  it('should include Draw 1, Expand 1 powerup with quantity 2', () => {
     const drawExpand = POWERUP_CARDS.find(c => c.powerupType === PowerupType.DrawExpand)
     expect(drawExpand).toBeDefined()
-    expect(drawExpand?.name).toBe('Draw 1, Expand')
-    expect(drawExpand?.effect).toContain('hand size')
+    expect(drawExpand?.quantity).toBe(2)
   })
 
-  it('should include Duplicate powerup', () => {
+  it('should include Duplicate powerup with quantity 2', () => {
     const duplicate = POWERUP_CARDS.find(c => c.powerupType === PowerupType.Duplicate)
     expect(duplicate).toBeDefined()
-    expect(duplicate?.name).toBe('Duplicate')
-    expect(duplicate?.effect).toContain('copy')
+    expect(duplicate?.quantity).toBe(2)
   })
 
-  it('should include Move powerup', () => {
+  it('should include Move powerup with quantity 1', () => {
     const move = POWERUP_CARDS.find(c => c.powerupType === PowerupType.Move)
     expect(move).toBeDefined()
-    expect(move?.name).toBe('Move')
-    expect(move?.effect).toContain('hiding zone')
+    expect(move?.quantity).toBe(1)
+    expect(move?.canPlayDuringEndgame).toBe(false)
   })
 
   it('should have all powerup cards with correct type', () => {
@@ -210,8 +253,8 @@ describe('POWERUP_CARDS', () => {
 })
 
 describe('CURSE_CARDS', () => {
-  it('should define curse cards', () => {
-    expect(CURSE_CARDS.length).toBeGreaterThan(0)
+  it('should define 24 unique curse cards', () => {
+    expect(CURSE_CARDS).toHaveLength(24)
   })
 
   it('should have all curse cards with correct type', () => {
@@ -232,20 +275,37 @@ describe('CURSE_CARDS', () => {
     })
   })
 
-  it('should have duration-based curses with durationMinutes', () => {
-    const durationBased = CURSE_CARDS.filter(c => c.curseType === CurseType.DurationBased)
-    durationBased.forEach(card => {
-      expect(card.durationMinutes).toBeDefined()
-      expect(card.durationMinutes).toBeGreaterThan(0)
+  it('should have each curse card define castingCost', () => {
+    CURSE_CARDS.forEach(card => {
+      expect(card.castingCost).toBeTruthy()
     })
   })
 
-  it('should have action-to-clear curses with clearCondition', () => {
-    const actionToClear = CURSE_CARDS.filter(c => c.curseType === CurseType.ActionToClear)
-    actionToClear.forEach(card => {
-      expect(card.clearCondition).toBeDefined()
-      expect(card.clearCondition).toBeTruthy()
+  it('should have each curse card define canPlayDuringEndgame', () => {
+    CURSE_CARDS.forEach(card => {
+      expect(typeof card.canPlayDuringEndgame).toBe('boolean')
     })
+  })
+
+  it('should include Lemon Phylactery curse', () => {
+    const lemon = CURSE_CARDS.find(c => c.id === 'curse-lemon-phylactery')
+    expect(lemon).toBeDefined()
+    expect(lemon?.blocksQuestions).toBe(true)
+    expect(lemon?.canPlayDuringEndgame).toBe(false)
+    expect(lemon?.penaltyMinutes?.[GameSize.Small]).toBe(30)
+  })
+
+  it('should include Unguided Tourist curse that blocks both questions and transit', () => {
+    const tourist = CURSE_CARDS.find(c => c.id === 'curse-unguided-tourist')
+    expect(tourist).toBeDefined()
+    expect(tourist?.blocksQuestions).toBe(true)
+    expect(tourist?.blocksTransit).toBe(true)
+  })
+
+  it('should have curses with duration minutes', () => {
+    const rightTurn = CURSE_CARDS.find(c => c.id === 'curse-right-turn')
+    expect(rightTurn?.durationMinutes).toBeDefined()
+    expect(rightTurn?.durationMinutes?.[GameSize.Small]).toBe(20)
   })
 })
 
@@ -257,41 +317,80 @@ describe('TIME_TRAP_CARD', () => {
   })
 })
 
-describe('getAllCards', () => {
-  it('should return all cards from all types', () => {
-    const allCards = getAllCards()
-
-    // Should include time bonus cards (3), powerup cards (6), curse cards, and time trap (1)
-    expect(allCards.length).toBeGreaterThanOrEqual(10)
+describe('TIME_BONUS_CARDS', () => {
+  it('should have 5 time bonus card definitions (one per tier)', () => {
+    expect(TIME_BONUS_CARDS).toHaveLength(5)
   })
 
-  it('should include cards of all types', () => {
-    const allCards = getAllCards()
-    const types = new Set(allCards.map(c => c.type))
+  it('should have correct tier assignments', () => {
+    const tiers = TIME_BONUS_CARDS.map(c => c.tier)
+    expect(tiers).toEqual([1, 2, 3, 4, 5])
+  })
+})
 
-    expect(types.has(CardType.TimeBonus)).toBe(true)
-    expect(types.has(CardType.Powerup)).toBe(true)
-    expect(types.has(CardType.Curse)).toBe(true)
-    expect(types.has(CardType.TimeTrap)).toBe(true)
+describe('TOTAL_DECK_SIZE', () => {
+  it('should equal 100 cards', () => {
+    // Note: GAME_RULES.md summary says 99 (23 curses), but detailed list has 24 curses
+    expect(TOTAL_DECK_SIZE).toBe(100)
+  })
+
+  it('should match sum of all card quantities', () => {
+    const timeBonusTotal = getTotalTimeBonusCount()
+    const powerupTotal = getTotalPowerupCount()
+    const curseTotal = getTotalCurseCount()
+    expect(timeBonusTotal + powerupTotal + curseTotal).toBe(TOTAL_DECK_SIZE)
+  })
+})
+
+describe('getAllCards', () => {
+  it('should return all base cards (excluding expansion)', () => {
+    const allCards = getAllCards()
+    // 5 time bonus + 7 powerup + 24 curse = 36 unique card definitions
+    expect(allCards.length).toBe(36)
+  })
+
+  it('should not include time trap card', () => {
+    const allCards = getAllCards()
+    const timeTrap = allCards.find(c => c.type === CardType.TimeTrap)
+    expect(timeTrap).toBeUndefined()
+  })
+})
+
+describe('getAllCardsWithExpansion', () => {
+  it('should return all cards including expansion', () => {
+    const allCards = getAllCardsWithExpansion()
+    expect(allCards.length).toBe(37) // 36 base + 1 time trap
+  })
+
+  it('should include time trap card', () => {
+    const allCards = getAllCardsWithExpansion()
+    const timeTrap = allCards.find(c => c.type === CardType.TimeTrap)
+    expect(timeTrap).toBeDefined()
   })
 })
 
 describe('getCardById', () => {
   it('should return the correct card', () => {
     const veto = getCardById('powerup-veto')
-    expect(veto?.name).toBe('Veto')
+    expect(veto?.name).toBe('Veto Question')
   })
 
   it('should return undefined for invalid ID', () => {
     const invalid = getCardById('invalid-card-id')
     expect(invalid).toBeUndefined()
   })
+
+  it('should find time trap card', () => {
+    const trap = getCardById('time-trap')
+    expect(trap).toBeDefined()
+    expect(trap?.type).toBe(CardType.TimeTrap)
+  })
 })
 
 describe('getCardsByType', () => {
   it('should return only time bonus cards', () => {
     const timeBonusCards = getCardsByType(CardType.TimeBonus)
-    expect(timeBonusCards.length).toBe(3) // 5, 10, 15 minute cards
+    expect(timeBonusCards.length).toBe(5) // 5 tiers
     timeBonusCards.forEach(card => {
       expect(card.type).toBe(CardType.TimeBonus)
     })
@@ -299,7 +398,7 @@ describe('getCardsByType', () => {
 
   it('should return only powerup cards', () => {
     const powerupCards = getCardsByType(CardType.Powerup)
-    expect(powerupCards.length).toBe(6)
+    expect(powerupCards.length).toBe(7)
     powerupCards.forEach(card => {
       expect(card.type).toBe(CardType.Powerup)
     })
@@ -307,7 +406,7 @@ describe('getCardsByType', () => {
 
   it('should return only curse cards', () => {
     const curseCards = getCardsByType(CardType.Curse)
-    expect(curseCards.length).toBeGreaterThan(0)
+    expect(curseCards.length).toBe(24)
     curseCards.forEach(card => {
       expect(card.type).toBe(CardType.Curse)
     })
@@ -325,15 +424,14 @@ describe('getCardsByType', () => {
 describe('getTimeBonusCards', () => {
   it('should return all time bonus cards', () => {
     const cards = getTimeBonusCards()
-    expect(cards).toHaveLength(3)
-    expect(cards.map(c => c.bonusMinutes).sort((a, b) => a - b)).toEqual([5, 10, 15])
+    expect(cards).toHaveLength(5)
   })
 })
 
 describe('getPowerupCards', () => {
   it('should return all powerup cards', () => {
     const cards = getPowerupCards()
-    expect(cards).toHaveLength(6)
+    expect(cards).toHaveLength(7)
     cards.forEach(card => {
       expect(card.powerupType).toBeDefined()
     })
@@ -343,9 +441,65 @@ describe('getPowerupCards', () => {
 describe('getCurseCards', () => {
   it('should return all curse cards', () => {
     const cards = getCurseCards()
-    expect(cards.length).toBeGreaterThan(0)
+    expect(cards).toHaveLength(24)
     cards.forEach(card => {
-      expect(card.curseType).toBeDefined()
+      expect(card.castingCost).toBeDefined()
     })
+  })
+})
+
+describe('getTimeBonusValue', () => {
+  it('should return correct value for tier 1 small game', () => {
+    expect(getTimeBonusValue(1, GameSize.Small)).toBe(2)
+  })
+
+  it('should return correct value for tier 5 large game', () => {
+    expect(getTimeBonusValue(5, GameSize.Large)).toBe(30)
+  })
+
+  it('should return 0 for invalid tier', () => {
+    expect(getTimeBonusValue(99, GameSize.Small)).toBe(0)
+  })
+})
+
+describe('getTimeBonusTierQuantity', () => {
+  it('should return 25 for tier 1', () => {
+    expect(getTimeBonusTierQuantity(1)).toBe(25)
+  })
+
+  it('should return 2 for tier 5', () => {
+    expect(getTimeBonusTierQuantity(5)).toBe(2)
+  })
+
+  it('should return 0 for invalid tier', () => {
+    expect(getTimeBonusTierQuantity(99)).toBe(0)
+  })
+})
+
+describe('getPowerupQuantity', () => {
+  it('should return 4 for Veto', () => {
+    expect(getPowerupQuantity(PowerupType.Veto)).toBe(4)
+  })
+
+  it('should return 1 for Move', () => {
+    expect(getPowerupQuantity(PowerupType.Move)).toBe(1)
+  })
+})
+
+describe('getTotalTimeBonusCount', () => {
+  it('should return 55', () => {
+    expect(getTotalTimeBonusCount()).toBe(55)
+  })
+})
+
+describe('getTotalPowerupCount', () => {
+  it('should return 21', () => {
+    expect(getTotalPowerupCount()).toBe(21)
+  })
+})
+
+describe('getTotalCurseCount', () => {
+  it('should return 24', () => {
+    expect(getTotalCurseCount()).toBe(24)
   })
 })
