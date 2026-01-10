@@ -242,4 +242,236 @@ describe('AskQuestionModal', () => {
       expect(screen.queryByRole('button', { name: /^ask$/i })).not.toBeInTheDocument()
     })
   })
+
+  describe('answer submission and card draw', () => {
+    it('should emit cardDraw event when answer is submitted', async () => {
+      const onCardDraw = vi.fn()
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          onCardDraw,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Enter and submit answer
+      const answerInput = screen.getByPlaceholderText(/enter the hider's answer/i)
+      await fireEvent.update(answerInput, 'Yes')
+      await fireEvent.click(screen.getByRole('button', { name: /submit answer/i }))
+
+      expect(onCardDraw).toHaveBeenCalledWith({
+        cardsDraw: 3,
+        cardsKeep: 1,
+      })
+    })
+
+    it('should show confirmation toast when answer is recorded', async () => {
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Enter and submit answer
+      const answerInput = screen.getByPlaceholderText(/enter the hider's answer/i)
+      await fireEvent.update(answerInput, 'Yes')
+      await fireEvent.click(screen.getByRole('button', { name: /submit answer/i }))
+
+      // Should show answer recorded confirmation
+      expect(screen.getByText(/answer recorded/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('veto handling', () => {
+    it('should show Veto button when question is pending', async () => {
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Should show Veto button
+      expect(screen.getByRole('button', { name: /veto/i })).toBeInTheDocument()
+    })
+
+    it('should return question to available when Veto is clicked', async () => {
+      const store = useQuestionStore()
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+      expect(store.hasPendingQuestion).toBe(true)
+
+      // Click Veto
+      await fireEvent.click(screen.getByRole('button', { name: /veto/i }))
+
+      // Question should no longer be pending
+      expect(store.hasPendingQuestion).toBe(false)
+      // Question should NOT be in asked questions (returned to available)
+      expect(store.askedQuestions).toHaveLength(0)
+    })
+
+    it('should emit cardDraw event when Veto is clicked (hider still gets cards)', async () => {
+      const onCardDraw = vi.fn()
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          onCardDraw,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Click Veto
+      await fireEvent.click(screen.getByRole('button', { name: /veto/i }))
+
+      expect(onCardDraw).toHaveBeenCalledWith({
+        cardsDraw: 3,
+        cardsKeep: 1,
+      })
+    })
+
+    it('should emit vetoed event when Veto is clicked', async () => {
+      const onVetoed = vi.fn()
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          onVetoed,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Click Veto
+      await fireEvent.click(screen.getByRole('button', { name: /veto/i }))
+
+      expect(onVetoed).toHaveBeenCalledWith({
+        questionId: testQuestion.id,
+      })
+    })
+
+    it('should show confirmation when question is vetoed', async () => {
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Click Veto
+      await fireEvent.click(screen.getByRole('button', { name: /veto/i }))
+
+      expect(screen.getByText(/question vetoed/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('randomize handling', () => {
+    it('should show Randomize button when question is pending', async () => {
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Should show Randomize button
+      expect(screen.getByRole('button', { name: /randomize/i })).toBeInTheDocument()
+    })
+
+    it('should replace question with random question from same category when Randomize is clicked', async () => {
+      const store = useQuestionStore()
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+      const originalPendingId = store.pendingQuestion?.questionId
+
+      // Click Randomize
+      await fireEvent.click(screen.getByRole('button', { name: /randomize/i }))
+
+      // Should have a different pending question from same category
+      expect(store.hasPendingQuestion).toBe(true)
+      expect(store.pendingQuestion?.questionId).not.toBe(originalPendingId)
+      expect(store.pendingQuestion?.categoryId).toBe(testQuestion.categoryId)
+    })
+
+    it('should emit randomized event with new question when Randomize is clicked', async () => {
+      const onRandomized = vi.fn()
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          onRandomized,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Click Randomize
+      await fireEvent.click(screen.getByRole('button', { name: /randomize/i }))
+
+      expect(onRandomized).toHaveBeenCalled()
+      const calledWith = onRandomized.mock.calls[0]![0]
+      expect(calledWith.originalQuestionId).toBe(testQuestion.id)
+      expect(calledWith.newQuestionId).toBeDefined()
+      expect(calledWith.newQuestionId).not.toBe(testQuestion.id)
+    })
+
+    it('should show the new question text after Randomize', async () => {
+      const store = useQuestionStore()
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Click Randomize
+      await fireEvent.click(screen.getByRole('button', { name: /randomize/i }))
+
+      // Should display the new question
+      const newQuestion = store.getQuestionById(store.pendingQuestion!.questionId)
+      expect(screen.getByText(newQuestion!.text)).toBeInTheDocument()
+    })
+
+    it('should show confirmation when question is randomized', async () => {
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+        },
+      })
+
+      // Ask the question
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      // Click Randomize
+      await fireEvent.click(screen.getByRole('button', { name: /randomize/i }))
+
+      expect(screen.getByText(/question randomized/i)).toBeInTheDocument()
+    })
+  })
 })

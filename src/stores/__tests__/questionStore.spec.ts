@@ -404,6 +404,92 @@ describe('questionStore actions', () => {
       expect(result.error).toBe('No question is pending')
     })
   })
+
+  describe('randomizeQuestion', () => {
+    it('should replace pending question with a different question from same category', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
+
+      store.askQuestion(question.id)
+      const result = store.randomizeQuestion(question.id)
+
+      expect(result.success).toBe(true)
+      expect(store.hasPendingQuestion).toBe(true)
+      expect(store.pendingQuestion?.questionId).not.toBe(question.id)
+      expect(store.pendingQuestion?.categoryId).toBe(QuestionCategoryId.Matching)
+    })
+
+    it('should return the new question ID when randomized', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
+
+      store.askQuestion(question.id)
+      const result = store.randomizeQuestion(question.id)
+
+      expect(result.success).toBe(true)
+      expect(result.newQuestionId).toBeDefined()
+      expect(result.newQuestionId).not.toBe(question.id)
+    })
+
+    it('should return error if question id does not match pending', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+      const otherQuestion = ALL_QUESTIONS[1]!
+
+      store.askQuestion(question.id)
+      const result = store.randomizeQuestion(otherQuestion.id)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Question ID does not match pending question')
+    })
+
+    it('should return error if no question is pending', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      const result = store.randomizeQuestion(question.id)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No question is pending')
+    })
+
+    it('should return error if no other questions available in same category', () => {
+      const store = useQuestionStore()
+      // Get all matching questions and mark all but one as asked
+      const matchingQuestions = ALL_QUESTIONS.filter(
+        (q) => q.categoryId === QuestionCategoryId.Matching,
+      )
+
+      // Mark all but one as asked
+      for (let i = 1; i < matchingQuestions.length; i++) {
+        store.askedQuestions.push({
+          questionId: matchingQuestions[i]!.id,
+          categoryId: matchingQuestions[i]!.categoryId,
+          answer: 'Yes',
+          askedAt: new Date(),
+        })
+      }
+
+      // Ask the only remaining question
+      store.askQuestion(matchingQuestions[0]!.id)
+      const result = store.randomizeQuestion(matchingQuestions[0]!.id)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No other questions available in this category')
+    })
+
+    it('should preserve the original askedAt timestamp', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
+
+      store.askQuestion(question.id)
+      const originalAskedAt = store.pendingQuestion!.askedAt
+
+      store.randomizeQuestion(question.id)
+
+      expect(store.pendingQuestion?.askedAt).toEqual(originalAskedAt)
+    })
+  })
 })
 
 describe('questionStore persistence', () => {

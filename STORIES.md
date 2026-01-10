@@ -509,18 +509,52 @@ describe('AskQuestionModal', () => {
 
 ### Q-004b: Answer and Veto/Randomize Handling
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-004a, CARD-002
 
 **Story:** As a player, I need to record the answer and handle Veto/Randomize responses so that the game flow continues.
 
 **Acceptance Criteria:**
-- [ ] "Submit Answer" records answer, triggers hider card draw
-- [ ] Hider can play Veto (returns question to available, still draws cards)
-- [ ] Hider can play Randomize (replaces with random question from same category)
-- [ ] Toast/notification confirms answer was recorded
+- [x] "Submit Answer" records answer, triggers hider card draw
+- [x] Hider can play Veto (returns question to available, still draws cards)
+- [x] Hider can play Randomize (replaces with random question from same category)
+- [x] Toast/notification confirms answer was recorded
 
 **Size:** S
+
+**Tests Written (12 tests):**
+```typescript
+describe('answer submission and card draw', () => {
+  it('should emit cardDraw event when answer is submitted')
+  it('should show confirmation toast when answer is recorded')
+})
+describe('veto handling', () => {
+  it('should show Veto button when question is pending')
+  it('should return question to available when Veto is clicked')
+  it('should emit cardDraw event when Veto is clicked (hider still gets cards)')
+  it('should emit vetoed event when Veto is clicked')
+  it('should show confirmation when question is vetoed')
+})
+describe('randomize handling', () => {
+  it('should show Randomize button when question is pending')
+  it('should replace question with random question from same category')
+  it('should emit randomized event with new question')
+  it('should show the new question text after Randomize')
+  it('should show confirmation when question is randomized')
+})
+```
+
+**Additional Tests (6 tests in questionStore):**
+```typescript
+describe('randomizeQuestion', () => {
+  it('should replace pending question with a different question from same category')
+  it('should return the new question ID when randomized')
+  it('should return error if question id does not match pending')
+  it('should return error if no question is pending')
+  it('should return error if no other questions available in same category')
+  it('should preserve the original askedAt timestamp')
+})
+```
 
 ---
 
@@ -1511,12 +1545,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 11 | 8 | 3 |
+| 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 1 | 3 |
 | 3: Card Management | 12 | 2 | 10 |
 | 4: Game State | 7 | 1 | 6 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **16** | **31** |
+| **Total** | **47** | **17** | **30** |
 
 ---
 
@@ -1550,14 +1584,15 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, GS-001, T-001, CARD-001, and CARD-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, T-001, CARD-001, and CARD-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-002**: Hiding Period Timer
 - **T-003**: Hiding Duration Timer
-- **Q-004b**: Answer and Veto/Randomize Handling (newly unblocked by Q-004a)
+- **T-004**: Question Response Timer (newly unblocked by Q-004b)
 - **Q-005**: Question History View
+- **Q-006**: Re-ask Question with Double Cost (newly unblocked by Q-004b)
 - **CARD-003**: Card Hand Display
 - **CARD-004**: Card Draw Simulation
 - **CARD-005**: Time Bonus Calculator
@@ -1570,7 +1605,7 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **GS-002**: Game Setup Flow
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** Q-004a completion unblocks Q-004b. T-004 (Question Response Timer) depends on T-001 + Q-004b (not yet complete).
+**Note:** Q-004b completion unblocks T-004 (Question Response Timer) and Q-006 (Re-ask Question with Double Cost).
 
 ---
 

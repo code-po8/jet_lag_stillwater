@@ -28,6 +28,7 @@ export interface ActionResult {
   error?: string
   cardsDraw?: number
   cardsKeep?: number
+  newQuestionId?: string
 }
 
 /**
@@ -281,6 +282,51 @@ export const useQuestionStore = defineStore('questions', () => {
     }
   }
 
+  /**
+   * Randomize a pending question - replaces it with a random unasked question from the same category.
+   */
+  function randomizeQuestion(questionId: string): ActionResult {
+    // Check if a question is pending
+    if (pendingQuestion.value === null) {
+      return { success: false, error: 'No question is pending' }
+    }
+
+    // Check if the question ID matches
+    if (pendingQuestion.value.questionId !== questionId) {
+      return { success: false, error: 'Question ID does not match pending question' }
+    }
+
+    const categoryId = pendingQuestion.value.categoryId
+    const originalAskedAt = pendingQuestion.value.askedAt
+
+    // Get available questions from the same category (excluding the current one)
+    const availableInCategory = getAvailableQuestions(categoryId).filter(
+      (q) => q.id !== questionId,
+    )
+
+    if (availableInCategory.length === 0) {
+      return { success: false, error: 'No other questions available in this category' }
+    }
+
+    // Pick a random question from the available ones
+    const randomIndex = Math.floor(Math.random() * availableInCategory.length)
+    const newQuestion = availableInCategory[randomIndex]!
+
+    // Update the pending question to the new one
+    pendingQuestion.value = {
+      questionId: newQuestion.id,
+      categoryId: newQuestion.categoryId,
+      answer: '',
+      askedAt: originalAskedAt, // Preserve the original timestamp
+      vetoed: false,
+    }
+
+    return {
+      success: true,
+      newQuestionId: newQuestion.id,
+    }
+  }
+
   return {
     // State
     askedQuestions,
@@ -295,6 +341,7 @@ export const useQuestionStore = defineStore('questions', () => {
     askQuestion,
     answerQuestion,
     vetoQuestion,
+    randomizeQuestion,
     // Persistence
     rehydrate,
   }

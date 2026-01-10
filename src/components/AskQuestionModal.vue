@@ -13,6 +13,9 @@ const emit = defineEmits<{
   cancel: []
   asked: [{ questionId: string; cardsDraw: number; cardsKeep: number }]
   answered: [{ questionId: string; answer: string }]
+  cardDraw: [{ cardsDraw: number; cardsKeep: number }]
+  vetoed: [{ questionId: string }]
+  randomized: [{ originalQuestionId: string; newQuestionId: string }]
 }>()
 
 const questionStore = useQuestionStore()
@@ -20,6 +23,7 @@ const questionStore = useQuestionStore()
 // State for answer input
 const answerText = ref('')
 const showConfirmation = ref(false)
+const confirmationMessage = ref('')
 
 // Get category info for the question
 const category = computed(() => {
@@ -30,6 +34,20 @@ const category = computed(() => {
 // Check if this question is already pending (to show answer mode directly)
 const isAlreadyPending = computed(() => {
   return questionStore.pendingQuestion?.questionId === props.question?.id
+})
+
+// Get the currently displayed question (may differ from prop after randomize)
+const displayedQuestion = computed(() => {
+  // If there's a pending question in the store that matches our initial question's category,
+  // use the pending question (it may have been randomized)
+  if (
+    questionStore.pendingQuestion &&
+    props.question &&
+    questionStore.pendingQuestion.categoryId === props.question.categoryId
+  ) {
+    return questionStore.getQuestionById(questionStore.pendingQuestion.questionId)
+  }
+  return props.question
 })
 
 // Show answer section when question is pending
@@ -43,6 +61,7 @@ watch(
   () => {
     answerText.value = ''
     showConfirmation.value = false
+    confirmationMessage.value = ''
   },
 )
 
@@ -56,6 +75,7 @@ function handleAsk() {
   const result = questionStore.askQuestion(props.question.id)
   if (result.success) {
     showConfirmation.value = true
+    confirmationMessage.value = 'Question asked! Waiting for hider\'s response.'
     emit('asked', {
       questionId: props.question.id,
       cardsDraw: result.cardsDraw!,
@@ -65,13 +85,48 @@ function handleAsk() {
 }
 
 function handleSubmitAnswer() {
-  if (!props.question) return
+  if (!displayedQuestion.value || !category.value) return
 
-  const result = questionStore.answerQuestion(props.question.id, answerText.value)
+  const result = questionStore.answerQuestion(displayedQuestion.value.id, answerText.value)
   if (result.success) {
+    confirmationMessage.value = 'Answer recorded! Hider draws cards.'
     emit('answered', {
-      questionId: props.question.id,
+      questionId: displayedQuestion.value.id,
       answer: answerText.value,
+    })
+    emit('cardDraw', {
+      cardsDraw: category.value.cardsDraw,
+      cardsKeep: category.value.cardsKeep,
+    })
+  }
+}
+
+function handleVeto() {
+  if (!displayedQuestion.value || !category.value) return
+
+  const result = questionStore.vetoQuestion(displayedQuestion.value.id)
+  if (result.success) {
+    confirmationMessage.value = 'Question vetoed! Returned to available.'
+    emit('vetoed', {
+      questionId: displayedQuestion.value.id,
+    })
+    emit('cardDraw', {
+      cardsDraw: result.cardsDraw!,
+      cardsKeep: result.cardsKeep!,
+    })
+  }
+}
+
+function handleRandomize() {
+  if (!displayedQuestion.value) return
+
+  const originalId = displayedQuestion.value.id
+  const result = questionStore.randomizeQuestion(originalId)
+  if (result.success) {
+    confirmationMessage.value = 'Question randomized! Answer the new question.'
+    emit('randomized', {
+      originalQuestionId: originalId,
+      newQuestionId: result.newQuestionId!,
     })
   }
 }
@@ -79,7 +134,7 @@ function handleSubmitAnswer() {
 
 <template>
   <div
-    v-if="question && category"
+    v-if="displayedQuestion && category"
     data-testid="ask-question-modal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
   >
@@ -97,14 +152,14 @@ function handleSubmitAnswer() {
 
       <!-- Content -->
       <div class="px-6 py-4">
-        <p class="mb-4 text-gray-800">{{ question.text }}</p>
+        <p class="mb-4 text-gray-800">{{ displayedQuestion.text }}</p>
 
-        <!-- Confirmation message when question is asked -->
+        <!-- Confirmation message -->
         <div
-          v-if="showConfirmation"
+          v-if="confirmationMessage"
           class="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800"
         >
-          Question asked! Waiting for hider's response.
+          {{ confirmationMessage }}
         </div>
 
         <!-- Answer section (shown after question is asked) -->
@@ -120,7 +175,7 @@ function handleSubmitAnswer() {
       </div>
 
       <!-- Footer / Actions -->
-      <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4">
+      <div class="flex flex-wrap justify-end gap-3 border-t border-gray-200 px-6 py-4">
         <template v-if="!showAnswerSection">
           <button
             type="button"
@@ -138,6 +193,20 @@ function handleSubmitAnswer() {
           </button>
         </template>
         <template v-else>
+          <button
+            type="button"
+            class="rounded-md border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100"
+            @click="handleVeto"
+          >
+            Veto
+          </button>
+          <button
+            type="button"
+            class="rounded-md border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100"
+            @click="handleRandomize"
+          >
+            Randomize
+          </button>
           <button
             type="button"
             class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
