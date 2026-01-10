@@ -1306,18 +1306,63 @@ describe('gameStore persistence', () => {
 
 ### GS-002: Game Setup Flow
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** GS-001, FOUND-003
 
 **Story:** As a player, I need to set up a new game so that tracking can begin.
 
 **Acceptance Criteria:**
-- [ ] Enter player names (2-4 players)
-- [ ] Select game size (Small for Stillwater)
-- [ ] Randomize or select first hider
-- [ ] Confirmation before starting
+- [x] Enter player names (2-4 players)
+- [x] Select game size (Small for Stillwater)
+- [x] Randomize or select first hider
+- [x] Confirmation before starting
 
 **Size:** M
+
+**Tests Written (27 tests):**
+```typescript
+describe('GameSetupView', () => {
+  describe('player management', () => {
+    it('should display player name input')
+    it('should display add player button')
+    it('should add player when name is entered and add button clicked')
+    it('should display added players in a list')
+    it('should clear input after adding player')
+    it('should allow removing a player')
+    it('should limit players to 4 maximum')
+    it('should require at least 2 players to start')
+    it('should not add empty player names')
+    it('should trim whitespace from player names')
+  })
+  describe('game size selection', () => {
+    it('should display game size options')
+    it('should default to Small game size for Stillwater')
+    it('should allow selecting a game size')
+  })
+  describe('hider selection', () => {
+    it('should display hider selection options after players are added')
+    it('should allow selecting a player as hider')
+    it('should have a randomize button for hider selection')
+    it('should select a random player when randomize is clicked')
+  })
+  describe('game start', () => {
+    it('should display start game button')
+    it('should require a hider to be selected before starting')
+    it('should start game and transition to hiding-period phase after confirmation')
+    it('should show confirmation before starting game')
+    it('should not start game if confirmation is cancelled')
+    it('should start game when confirmation is approved')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly button sizes')
+    it('should be scrollable when content overflows')
+  })
+  describe('accessibility', () => {
+    it('should have proper heading structure')
+    it('should have proper form labels')
+  })
+})
+```
 
 ---
 
@@ -1548,9 +1593,9 @@ User experience improvements.
 | 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 1 | 3 |
 | 3: Card Management | 12 | 2 | 10 |
-| 4: Game State | 7 | 1 | 6 |
+| 4: Game State | 7 | 2 | 5 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **17** | **30** |
+| **Total** | **47** | **18** | **29** |
 
 ---
 
@@ -1584,15 +1629,15 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, T-001, CARD-001, and CARD-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, T-001, CARD-001, and CARD-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-002**: Hiding Period Timer
 - **T-003**: Hiding Duration Timer
-- **T-004**: Question Response Timer (newly unblocked by Q-004b)
+- **T-004**: Question Response Timer
 - **Q-005**: Question History View
-- **Q-006**: Re-ask Question with Double Cost (newly unblocked by Q-004b)
+- **Q-006**: Re-ask Question with Double Cost
 - **CARD-003**: Card Hand Display
 - **CARD-004**: Card Draw Simulation
 - **CARD-005**: Time Bonus Calculator
@@ -1602,10 +1647,10 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-007c**: Duplicate Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
 - **UX-004**: Visual Design System
-- **GS-002**: Game Setup Flow
+- **GS-003**: Role-Based Views (newly unblocked by GS-002)
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** Q-004b completion unblocks T-004 (Question Response Timer) and Q-006 (Re-ask Question with Double Cost).
+**Note:** GS-002 completion unblocks GS-003 (Role-Based Views).
 
 ---
 
