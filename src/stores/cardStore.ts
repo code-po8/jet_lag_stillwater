@@ -27,30 +27,22 @@ const DEFAULT_HAND_LIMIT = 6
 /**
  * Card instance in hand - includes unique instance ID for tracking
  */
-export interface CardInstance extends Card {
-  instanceId: string
-}
+export type CardInstance = Card & { instanceId: string }
 
 /**
  * Time bonus card instance
  */
-export interface TimeBonusCardInstance extends TimeBonusCard {
-  instanceId: string
-}
+export type TimeBonusCardInstance = TimeBonusCard & { instanceId: string }
 
 /**
  * Powerup card instance
  */
-export interface PowerupCardInstance extends PowerupCard {
-  instanceId: string
-}
+export type PowerupCardInstance = PowerupCard & { instanceId: string }
 
 /**
  * Curse card instance
  */
-export interface CurseCardInstance extends CurseCard {
-  instanceId: string
-}
+export type CurseCardInstance = CurseCard & { instanceId: string }
 
 /**
  * Result type for card actions
@@ -141,8 +133,12 @@ function drawSingleCard(composition: DeckComposition): CardInstance | null {
     if (count <= 0) continue
     if (roll < count) {
       const tier = parseInt(tierStr, 10)
-      const tierData = TIME_BONUS_TIERS.find(t => t.tier === tier)!
-      composition.timeBonusByTier[tier]--
+      const tierData = TIME_BONUS_TIERS.find(t => t.tier === tier)
+      if (!tierData) continue
+      const currentCount = composition.timeBonusByTier[tier]
+      if (currentCount !== undefined) {
+        composition.timeBonusByTier[tier] = currentCount - 1
+      }
       return {
         id: `time-bonus-tier-${tier}`,
         instanceId: generateInstanceId(),
@@ -160,8 +156,12 @@ function drawSingleCard(composition: DeckComposition): CardInstance | null {
   for (const [powerupType, count] of Object.entries(composition.powerupByType)) {
     if (count <= 0) continue
     if (roll < count) {
-      const card = POWERUP_CARDS.find(c => c.powerupType === powerupType)!
-      composition.powerupByType[powerupType]--
+      const card = POWERUP_CARDS.find(c => c.powerupType === powerupType)
+      if (!card) continue
+      const currentCount = composition.powerupByType[powerupType]
+      if (currentCount !== undefined) {
+        composition.powerupByType[powerupType] = currentCount - 1
+      }
       return {
         ...card,
         instanceId: generateInstanceId(),
@@ -174,8 +174,12 @@ function drawSingleCard(composition: DeckComposition): CardInstance | null {
   for (const [curseId, count] of Object.entries(composition.curseById)) {
     if (count <= 0) continue
     if (roll < count) {
-      const card = CURSE_CARDS.find(c => c.id === curseId)!
-      composition.curseById[curseId]--
+      const card = CURSE_CARDS.find(c => c.id === curseId)
+      if (!card) continue
+      const currentCount = composition.curseById[curseId]
+      if (currentCount !== undefined) {
+        composition.curseById[curseId] = currentCount - 1
+      }
       return {
         ...card,
         instanceId: generateInstanceId(),

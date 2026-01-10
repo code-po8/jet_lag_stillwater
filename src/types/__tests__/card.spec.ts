@@ -62,23 +62,23 @@ describe('TIME_BONUS_TIERS', () => {
   })
 
   it('should have correct quantities per tier', () => {
-    expect(TIME_BONUS_TIERS[0].quantity).toBe(25) // Tier 1
-    expect(TIME_BONUS_TIERS[1].quantity).toBe(15) // Tier 2
-    expect(TIME_BONUS_TIERS[2].quantity).toBe(10) // Tier 3
-    expect(TIME_BONUS_TIERS[3].quantity).toBe(3)  // Tier 4
-    expect(TIME_BONUS_TIERS[4].quantity).toBe(2)  // Tier 5
+    expect(TIME_BONUS_TIERS[0]!.quantity).toBe(25) // Tier 1
+    expect(TIME_BONUS_TIERS[1]!.quantity).toBe(15) // Tier 2
+    expect(TIME_BONUS_TIERS[2]!.quantity).toBe(10) // Tier 3
+    expect(TIME_BONUS_TIERS[3]!.quantity).toBe(3)  // Tier 4
+    expect(TIME_BONUS_TIERS[4]!.quantity).toBe(2)  // Tier 5
   })
 
   it('should have game-size-specific minutes for each tier', () => {
     // Tier 1: S:2, M:3, L:5
-    expect(TIME_BONUS_TIERS[0].minutes[GameSize.Small]).toBe(2)
-    expect(TIME_BONUS_TIERS[0].minutes[GameSize.Medium]).toBe(3)
-    expect(TIME_BONUS_TIERS[0].minutes[GameSize.Large]).toBe(5)
+    expect(TIME_BONUS_TIERS[0]!.minutes[GameSize.Small]).toBe(2)
+    expect(TIME_BONUS_TIERS[0]!.minutes[GameSize.Medium]).toBe(3)
+    expect(TIME_BONUS_TIERS[0]!.minutes[GameSize.Large]).toBe(5)
 
     // Tier 5: S:12, M:18, L:30
-    expect(TIME_BONUS_TIERS[4].minutes[GameSize.Small]).toBe(12)
-    expect(TIME_BONUS_TIERS[4].minutes[GameSize.Medium]).toBe(18)
-    expect(TIME_BONUS_TIERS[4].minutes[GameSize.Large]).toBe(30)
+    expect(TIME_BONUS_TIERS[4]!.minutes[GameSize.Small]).toBe(12)
+    expect(TIME_BONUS_TIERS[4]!.minutes[GameSize.Medium]).toBe(18)
+    expect(TIME_BONUS_TIERS[4]!.minutes[GameSize.Large]).toBe(30)
   })
 })
 

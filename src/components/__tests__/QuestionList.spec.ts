@@ -152,8 +152,8 @@ describe('QuestionList', () => {
 
       // Get two matching questions
       const matchingQuestions = ALL_QUESTIONS.filter((q) => q.categoryId === 'matching')
-      const firstQuestion = matchingQuestions[0]
-      const secondQuestion = matchingQuestions[1]
+      const firstQuestion = matchingQuestions[0]!
+      const secondQuestion = matchingQuestions[1]!
 
       // Mark first question as pending
       store.askQuestion(firstQuestion.id)
