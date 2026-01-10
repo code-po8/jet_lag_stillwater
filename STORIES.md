@@ -457,20 +457,53 @@ describe('QuestionList status indicators', () => {
 
 ### Q-004a: Ask Question Modal
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-003b
 
 **Story:** As a seeker, I need to select a question and confirm asking it so that the hider knows to respond.
 
 **Acceptance Criteria:**
-- [ ] Tapping a question opens a confirmation modal
-- [ ] Modal shows: question text, category, draw/keep values
-- [ ] "Ask" button marks question as pending, starts response timer
-- [ ] "Cancel" button closes modal without asking
-- [ ] Once pending, modal for recording answer appears
-- [ ] Toast/notification confirms question was asked
+- [x] Tapping a question opens a confirmation modal
+- [x] Modal shows: question text, category, draw/keep values
+- [x] "Ask" button marks question as pending, starts response timer
+- [x] "Cancel" button closes modal without asking
+- [x] Once pending, modal for recording answer appears
+- [x] Toast/notification confirms question was asked
 
 **Size:** S
+
+**Tests Written (15 tests):**
+```typescript
+describe('AskQuestionModal', () => {
+  describe('modal display', () => {
+    it('should not render when no question is provided')
+    it('should render modal when question is provided')
+    it('should display question text')
+    it('should display category name')
+    it('should display draw/keep values')
+  })
+  describe('confirmation flow', () => {
+    it('should show Ask and Cancel buttons')
+    it('should emit cancel event when Cancel button is clicked')
+    it('should mark question as pending when Ask button is clicked')
+    it('should emit asked event with draw/keep values when Ask button is clicked')
+  })
+  describe('answer recording', () => {
+    it('should show answer input after question is asked')
+    it('should show Submit Answer button after question is asked')
+    it('should record answer when Submit Answer is clicked')
+    it('should emit answered event when answer is submitted')
+  })
+  describe('toast/notification', () => {
+    it('should show confirmation message after question is asked')
+  })
+  describe('pending question state', () => {
+    it('should show answer mode when question is already pending')
+  })
+})
+```
+
+**Note:** Response timer integration (T-004) is a separate card.
 
 ---
 
@@ -1478,12 +1511,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 11 | 7 | 4 |
+| 1: Question Tracking | 11 | 8 | 3 |
 | 2: Timers | 4 | 1 | 3 |
 | 3: Card Management | 12 | 2 | 10 |
 | 4: Game State | 7 | 1 | 6 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **15** | **32** |
+| **Total** | **47** | **16** | **31** |
 
 ---
 
@@ -1517,28 +1550,27 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, GS-001, T-001, CARD-001, and CARD-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, GS-001, T-001, CARD-001, and CARD-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-002**: Hiding Period Timer
 - **T-003**: Hiding Duration Timer
-- **T-004**: Question Response Timer (depends on T-001 + Q-004, Q-004 not complete)
-- **Q-004a**: Ask Question Modal
+- **Q-004b**: Answer and Veto/Randomize Handling (newly unblocked by Q-004a)
 - **Q-005**: Question History View
-- **CARD-003**: Card Hand Display (newly unblocked by CARD-002)
-- **CARD-004**: Card Draw Simulation (newly unblocked by CARD-002)
-- **CARD-005**: Time Bonus Calculator (newly unblocked by CARD-002)
+- **CARD-003**: Card Hand Display
+- **CARD-004**: Card Draw Simulation
+- **CARD-005**: Time Bonus Calculator
 - **CARD-006a**: Curse Display
-- **CARD-007a**: Discard/Draw Powerup Effect (newly unblocked by CARD-002)
-- **CARD-007b**: Draw 1, Expand Powerup Effect (newly unblocked by CARD-002)
-- **CARD-007c**: Duplicate Powerup Effect (newly unblocked by CARD-002)
-- **CARD-008**: Time Trap Card Implementation (depends on CARD-002 + GS-001, both complete)
+- **CARD-007a**: Discard/Draw Powerup Effect
+- **CARD-007b**: Draw 1, Expand Powerup Effect
+- **CARD-007c**: Duplicate Powerup Effect
+- **CARD-008**: Time Trap Card Implementation
 - **UX-004**: Visual Design System
 - **GS-002**: Game Setup Flow
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** CARD-002 completion unblocks CARD-003, CARD-004, CARD-005, CARD-007a-c, and CARD-008.
+**Note:** Q-004a completion unblocks Q-004b. T-004 (Question Response Timer) depends on T-001 + Q-004b (not yet complete).
 
 ---
 
