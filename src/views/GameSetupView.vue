@@ -140,7 +140,7 @@ function confirmStart() {
             <span>{{ player.name }}</span>
             <button
               type="button"
-              class="px-3 py-1 text-sm text-red-400 hover:text-red-300 transition-colors"
+              class="px-3 py-2 min-h-11 text-sm text-red-400 hover:text-red-300 transition-colors"
               aria-label="Remove"
               @click="removePlayer(player.id)"
             >
@@ -169,7 +169,7 @@ function confirmStart() {
             :key="size"
             :data-testid="`game-size-${size}`"
             :aria-selected="selectedGameSize === size"
-            class="flex-1 px-4 py-2 rounded-lg font-medium transition-colors"
+            class="flex-1 px-4 py-3 min-h-11 rounded-lg font-medium transition-colors"
             :class="
               selectedGameSize === size
                 ? 'bg-blue-600 text-white'
@@ -199,7 +199,7 @@ function confirmStart() {
           <h2 class="text-lg font-semibold">Choose First Hider</h2>
           <button
             type="button"
-            class="px-3 py-1 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+            class="px-4 py-2 min-h-11 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
             @click="randomizeHider"
           >
             Random
@@ -211,7 +211,7 @@ function confirmStart() {
             :key="player.id"
             :data-testid="`hider-option-${playerIndex}`"
             :aria-selected="selectedHiderIndex === playerIndex"
-            class="px-4 py-3 rounded-lg font-medium transition-colors"
+            class="px-4 py-3 min-h-11 rounded-lg font-medium transition-colors"
             :class="
               selectedHiderIndex === playerIndex
                 ? 'bg-amber-600 text-white'
@@ -253,14 +253,14 @@ function confirmStart() {
           <div class="flex gap-3">
             <button
               type="button"
-              class="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg font-medium hover:bg-slate-600 transition-colors"
+              class="flex-1 px-4 py-3 min-h-11 bg-slate-700 text-slate-300 rounded-lg font-medium hover:bg-slate-600 transition-colors"
               @click="cancelConfirmation"
             >
               Cancel
             </button>
             <button
               type="button"
-              class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+              class="flex-1 px-4 py-3 min-h-11 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
               @click="confirmStart"
             >
               Confirm

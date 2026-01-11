@@ -200,18 +200,18 @@ function handleRandomize() {
       </div>
 
       <!-- Footer / Actions -->
-      <div class="flex flex-wrap justify-end gap-3 border-t border-gray-200 px-6 py-4">
+      <div class="flex flex-col gap-3 border-t border-gray-200 px-6 py-4 sm:flex-row sm:flex-wrap sm:justify-end">
         <template v-if="!showAnswerSection">
           <button
             type="button"
-            class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            class="min-h-11 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
             @click="handleCancel"
           >
             Cancel
           </button>
           <button
             type="button"
-            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            class="min-h-11 rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700"
             @click="handleAsk"
           >
             Ask
@@ -220,21 +220,21 @@ function handleRandomize() {
         <template v-else>
           <button
             type="button"
-            class="rounded-md border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100"
+            class="min-h-11 rounded-md border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-medium text-orange-700 hover:bg-orange-100"
             @click="handleVeto"
           >
             Veto
           </button>
           <button
             type="button"
-            class="rounded-md border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100"
+            class="min-h-11 rounded-md border border-purple-300 bg-purple-50 px-4 py-3 text-sm font-medium text-purple-700 hover:bg-purple-100"
             @click="handleRandomize"
           >
             Randomize
           </button>
           <button
             type="button"
-            class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            class="min-h-11 rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700"
             @click="handleSubmitAnswer"
           >
             Submit Answer
