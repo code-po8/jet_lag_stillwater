@@ -1742,19 +1742,19 @@ describe('Move Powerup', () => {
 
 ### CARD-008: Time Trap Card Implementation
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002, GS-001
 
 **Story:** As a hider, I need to play Time Trap cards to designate stations as traps so that I gain bonus time if seekers visit them.
 
 **Acceptance Criteria:**
-- [ ] Time Trap card can be played from hand
-- [ ] Playing prompts hider to select/enter a transit station name
-- [ ] Trapped station is publicly announced (seekers see it)
-- [ ] If seekers visit trapped station, hider gains bonus time (amount TBD from rulebook)
-- [ ] "Triggered" traps show as triggered with time bonus applied
-- [ ] Multiple traps can be active simultaneously
-- [ ] Traps persist across app restarts
+- [x] Time Trap card can be played from hand
+- [x] Playing prompts hider to select/enter a transit station name
+- [x] Trapped station is publicly announced (seekers see it)
+- [x] If seekers visit trapped station, hider gains bonus time (15 minutes)
+- [x] "Triggered" traps show as triggered with time bonus applied
+- [x] Multiple traps can be active simultaneously
+- [x] Traps persist across app restarts
 
 **Size:** M
 
@@ -1762,14 +1762,107 @@ describe('Move Powerup', () => {
 - See GAME_RULES.md "Time Trap Cards (Expansion Pack)" section
 - Can be used as misdirection (trap a station far from hiding spot)
 
-**Tests to Write:**
+**Tests Written (63 tests):**
 ```typescript
-describe('Time Trap Cards', () => {
-  it('should allow setting a station as trapped')
-  it('should publicly display trapped stations')
-  it('should grant bonus time when seekers visit trap')
-  it('should mark trap as triggered after visit')
-  it('should allow multiple active traps')
+describe('cardStore Time Trap functionality (CARD-008)', () => {
+  describe('activeTimeTraps initialization', () => {
+    it('should initialize with empty active time traps')
+  })
+  describe('playTimeTrapCard', () => {
+    it('should remove Time Trap card from hand')
+    it('should add Time Trap card to discard pile')
+    it('should add trap to active time traps with station name')
+    it('should set isTriggered to false when trap is created')
+    it('should set bonus minutes on the trap')
+    it('should assign unique instance ID to trap')
+    it('should set createdAt timestamp')
+    it('should allow multiple traps to be active simultaneously')
+    it('should return error if card not in hand')
+    it('should return error if card is not a Time Trap')
+    it('should return error if station name is empty')
+    it('should return error if station name is only whitespace')
+    it('should return the played card')
+  })
+  describe('triggerTimeTrap', () => {
+    it('should mark trap as triggered')
+    it('should set triggeredAt timestamp')
+    it('should return bonus minutes when triggered')
+    it('should return error if trap not found')
+    it('should return error if trap already triggered')
+  })
+  describe('getActiveTraps getter', () => {
+    it('should return only untriggered traps when filtered')
+    it('should return only triggered traps when filtered')
+  })
+  describe('totalTimeTrapBonus getter', () => {
+    it('should return 0 when no traps have been triggered')
+    it('should return sum of triggered trap bonuses')
+  })
+  describe('reset clears time traps', () => {
+    it('should clear active time traps on reset')
+  })
+})
+
+describe('TimeTrapModal', () => {
+  describe('visibility', () => {
+    it('should not render when timeTrapCard is null')
+    it('should render when timeTrapCard is provided')
+  })
+  describe('header and content', () => {
+    it('should display the card name in header')
+    it('should display instructions for entering station name')
+    it('should display the bonus minutes')
+  })
+  describe('station name input', () => {
+    it('should have an input field for station name')
+    it('should allow typing in the station name input')
+    it('should have a placeholder text')
+  })
+  describe('confirm button', () => {
+    it('should display confirm button')
+    it('should disable confirm button when station name is empty')
+    it('should enable confirm button when station name is entered')
+    it('should emit confirm event with station name when clicked')
+    it('should not emit confirm when station name is only whitespace')
+  })
+  describe('cancel button', () => {
+    it('should display cancel button')
+    it('should emit cancel event when clicked')
+  })
+  describe('mobile-friendly design', () => {
+    // touch-friendly button tests
+  })
+  describe('accessibility', () => {
+    // ARIA label tests
+  })
+  describe('trap information display', () => {
+    it('should display that trap is publicly visible')
+    it('should explain what happens when trap is triggered')
+  })
+})
+
+describe('TimeTrapDisplay', () => {
+  describe('with no traps', () => {
+    it('should not render when traps array is empty')
+  })
+  describe('with active traps', () => {
+    it('should render when there are traps')
+    it('should display all traps')
+    it('should show header indicating active traps')
+    it('should display station name for each trap')
+    it('should show bonus minutes for untriggered traps')
+  })
+  describe('triggered vs untriggered traps', () => {
+    it('should visually differentiate untriggered traps')
+    it('should visually differentiate triggered traps')
+    it('should show triggered indicator for triggered traps')
+  })
+  describe('hider vs seeker view', () => {
+    it('should show trigger button for seekers on untriggered traps')
+    it('should not show trigger button for hiders')
+    it('should not show trigger button for already triggered traps')
+    it('should emit trigger event when seeker clicks trigger button')
+  })
 })
 ```
 
@@ -2455,10 +2548,10 @@ describe('Design System Colors', () => {
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 4 | 0 |
-| 3: Card Management | 12 | 11 | 1 |
+| 3: Card Management | 12 | 12 | 0 |
 | 4: Game State | 7 | 7 | 0 |
 | 5: Mobile UX Polish | 4 | 2 | 2 |
-| **Total** | **47** | **39** | **8** |
+| **Total** | **47** | **40** | **7** |
 
 ---
 

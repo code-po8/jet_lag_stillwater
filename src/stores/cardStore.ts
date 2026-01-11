@@ -13,6 +13,7 @@ import {
   type TimeBonusCard,
   type PowerupCard,
   type CurseCard,
+  type TimeTrapCard,
   CardType,
   PowerupType,
   TIME_BONUS_TIERS,
@@ -84,6 +85,29 @@ export type PowerupCardInstance = PowerupCard & { instanceId: string }
 export type CurseCardInstance = CurseCard & { instanceId: string }
 
 /**
+ * Time Trap card instance
+ */
+export type TimeTrapCardInstance = TimeTrapCard & { instanceId: string }
+
+/**
+ * Active time trap - a trap that has been placed and may be triggered by seekers
+ */
+export interface ActiveTimeTrap {
+  /** Unique instance ID for this active trap */
+  instanceId: string
+  /** Name of the trapped station (publicly visible) */
+  stationName: string
+  /** Bonus minutes the hider gains if seekers visit this station */
+  bonusMinutes: number
+  /** Whether this trap has been triggered by seekers */
+  isTriggered: boolean
+  /** When the trap was created */
+  createdAt: Date
+  /** When the trap was triggered (if triggered) */
+  triggeredAt?: Date
+}
+
+/**
  * Result type for card actions
  */
 export interface CardActionResult {
@@ -92,6 +116,8 @@ export interface CardActionResult {
   drawnCards?: CardInstance[]
   playedCard?: CardInstance
   duplicatedCard?: CardInstance
+  /** Bonus minutes gained (for time trap triggers) */
+  bonusMinutes?: number
 }
 
 /**
@@ -111,6 +137,14 @@ interface PersistedActiveCurse extends Omit<ActiveCurse, 'activatedAt'> {
 }
 
 /**
+ * Persisted active time trap - dates stored as ISO strings
+ */
+interface PersistedActiveTimeTrap extends Omit<ActiveTimeTrap, 'createdAt' | 'triggeredAt'> {
+  createdAt: string
+  triggeredAt?: string
+}
+
+/**
  * Persisted state shape for localStorage
  */
 interface PersistedCardState {
@@ -119,6 +153,7 @@ interface PersistedCardState {
   discardPile: CardInstance[]
   deckComposition: DeckComposition
   activeCurses?: PersistedActiveCurse[]
+  activeTimeTraps?: PersistedActiveTimeTrap[]
 }
 
 /**
@@ -249,6 +284,7 @@ export const useCardStore = defineStore('cards', () => {
   const discardPile = ref<CardInstance[]>([])
   const deckComposition = ref<DeckComposition>(createInitialDeckComposition())
   const activeCurses = ref<ActiveCurse[]>([])
+  const activeTimeTraps = ref<ActiveTimeTrap[]>([])
 
   // Getters
   const handCount = computed(() => hand.value.length)
@@ -266,6 +302,23 @@ export const useCardStore = defineStore('cards', () => {
 
   const curseCards = computed(() =>
     hand.value.filter((card): card is CurseCardInstance => card.type === CardType.Curse)
+  )
+
+  const timeTrapCards = computed(() =>
+    hand.value.filter((card): card is TimeTrapCardInstance => card.type === CardType.TimeTrap)
+  )
+
+  // Time Trap getters
+  const untriggeredTraps = computed(() =>
+    activeTimeTraps.value.filter(trap => !trap.isTriggered)
+  )
+
+  const triggeredTraps = computed(() =>
+    activeTimeTraps.value.filter(trap => trap.isTriggered)
+  )
+
+  const totalTimeTrapBonus = computed(() =>
+    triggeredTraps.value.reduce((sum, trap) => sum + trap.bonusMinutes, 0)
   )
 
   /**
@@ -289,6 +342,11 @@ export const useCardStore = defineStore('cards', () => {
       activeCurses: activeCurses.value.map(curse => ({
         ...curse,
         activatedAt: curse.activatedAt.toISOString(),
+      })),
+      activeTimeTraps: activeTimeTraps.value.map(trap => ({
+        ...trap,
+        createdAt: trap.createdAt.toISOString(),
+        triggeredAt: trap.triggeredAt?.toISOString(),
       })),
     }
     persistenceService.save(STORAGE_KEY, state)
@@ -314,6 +372,14 @@ export const useCardStore = defineStore('cards', () => {
             activatedAt: new Date(curse.activatedAt),
           }))
         }
+        // Rehydrate active time traps with date conversion
+        if (persisted.activeTimeTraps) {
+          activeTimeTraps.value = persisted.activeTimeTraps.map(trap => ({
+            ...trap,
+            createdAt: new Date(trap.createdAt),
+            triggeredAt: trap.triggeredAt ? new Date(trap.triggeredAt) : undefined,
+          }))
+        }
       }
     } catch {
       // If rehydration fails, keep default state
@@ -322,7 +388,7 @@ export const useCardStore = defineStore('cards', () => {
 
   // Watch for state changes and persist automatically
   watch(
-    [hand, handLimit, discardPile, deckComposition, activeCurses],
+    [hand, handLimit, discardPile, deckComposition, activeCurses, activeTimeTraps],
     () => {
       persist()
     },
@@ -536,6 +602,7 @@ export const useCardStore = defineStore('cards', () => {
     discardPile.value = []
     deckComposition.value = createInitialDeckComposition()
     activeCurses.value = []
+    activeTimeTraps.value = []
   }
 
   /**
@@ -692,12 +759,83 @@ export const useCardStore = defineStore('cards', () => {
     }
   }
 
+  /**
+   * Play a Time Trap card from hand
+   * Designates a station as a trap - if seekers visit it, hider gains bonus time
+   */
+  function playTimeTrapCard(instanceId: string, stationName: string): CardActionResult {
+    // Validate station name
+    if (!stationName || stationName.trim() === '') {
+      return { success: false, error: 'Station name is required' }
+    }
+
+    // Validate card exists in hand
+    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    if (cardIndex === -1) {
+      return { success: false, error: 'Card not found in hand' }
+    }
+
+    const card = hand.value[cardIndex]
+
+    // Validate it's a Time Trap card
+    if (card?.type !== CardType.TimeTrap) {
+      return { success: false, error: 'Card is not a Time Trap card' }
+    }
+
+    const timeTrapCard = card as TimeTrapCardInstance
+
+    // Remove from hand and add to discard pile
+    const [playedCard] = hand.value.splice(cardIndex, 1)
+    discardPile.value.push(playedCard!)
+
+    // Create active time trap
+    const activeTrap: ActiveTimeTrap = {
+      instanceId: generateInstanceId(),
+      stationName: stationName.trim(),
+      bonusMinutes: timeTrapCard.bonusMinutesWhenTriggered,
+      isTriggered: false,
+      createdAt: new Date(),
+    }
+
+    activeTimeTraps.value.push(activeTrap)
+
+    return {
+      success: true,
+      playedCard: playedCard!,
+    }
+  }
+
+  /**
+   * Trigger a time trap (when seekers visit the trapped station)
+   * Returns the bonus minutes gained
+   */
+  function triggerTimeTrap(trapInstanceId: string): CardActionResult {
+    const trap = activeTimeTraps.value.find(t => t.instanceId === trapInstanceId)
+    if (!trap) {
+      return { success: false, error: 'Time trap not found' }
+    }
+
+    if (trap.isTriggered) {
+      return { success: false, error: 'Time trap has already been triggered' }
+    }
+
+    // Mark trap as triggered
+    trap.isTriggered = true
+    trap.triggeredAt = new Date()
+
+    return {
+      success: true,
+      bonusMinutes: trap.bonusMinutes,
+    }
+  }
+
   return {
     // State
     hand,
     handLimit,
     discardPile,
     activeCurses,
+    activeTimeTraps,
     deckComposition,
     // Getters
     handCount,
@@ -707,6 +845,10 @@ export const useCardStore = defineStore('cards', () => {
     timeBonusCards,
     powerupCards,
     curseCards,
+    timeTrapCards,
+    untriggeredTraps,
+    triggeredTraps,
+    totalTimeTrapBonus,
     // Methods
     totalTimeBonus,
     drawCards,
@@ -720,6 +862,8 @@ export const useCardStore = defineStore('cards', () => {
     playDrawExpandPowerup,
     playDuplicatePowerup,
     playMovePowerup,
+    playTimeTrapCard,
+    triggerTimeTrap,
     reset,
     // Persistence
     rehydrate,

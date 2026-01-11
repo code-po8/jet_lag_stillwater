@@ -648,6 +648,320 @@ describe('cardStore playMovePowerup (CARD-007d)', () => {
   })
 })
 
+describe('cardStore Time Trap functionality (CARD-008)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  function addTimeTrapToHand(store: ReturnType<typeof useCardStore>) {
+    // Manually add a Time Trap card to the hand
+    const timeTrapCard: CardInstance = {
+      id: 'time-trap',
+      instanceId: 'time-trap-test-instance',
+      type: CardType.TimeTrap,
+      name: 'Time Trap',
+      description: 'Designate a transit station as a trap. If seekers visit it, you gain bonus time.',
+      bonusMinutesWhenTriggered: 15,
+    } as CardInstance
+    store.hand.push(timeTrapCard)
+    return timeTrapCard
+  }
+
+  describe('activeTimeTraps initialization', () => {
+    it('should initialize with empty active time traps', () => {
+      const store = useCardStore()
+      expect(store.activeTimeTraps).toEqual([])
+    })
+  })
+
+  describe('playTimeTrapCard', () => {
+    it('should remove Time Trap card from hand', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+      const initialHandSize = store.hand.length
+
+      const result = store.playTimeTrapCard(timeTrap.instanceId, 'Main Street Station')
+
+      expect(result.success).toBe(true)
+      expect(store.hand.length).toBe(initialHandSize - 1)
+    })
+
+    it('should add Time Trap card to discard pile', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+      const initialDiscardSize = store.discardPile.length
+
+      store.playTimeTrapCard(timeTrap.instanceId, 'Central Station')
+
+      expect(store.discardPile.length).toBe(initialDiscardSize + 1)
+    })
+
+    it('should add trap to active time traps with station name', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+
+      store.playTimeTrapCard(timeTrap.instanceId, 'Library Stop')
+
+      expect(store.activeTimeTraps.length).toBe(1)
+      expect(store.activeTimeTraps[0]!.stationName).toBe('Library Stop')
+    })
+
+    it('should set isTriggered to false when trap is created', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+
+      store.playTimeTrapCard(timeTrap.instanceId, 'Test Station')
+
+      expect(store.activeTimeTraps[0]!.isTriggered).toBe(false)
+    })
+
+    it('should set bonus minutes on the trap', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+
+      store.playTimeTrapCard(timeTrap.instanceId, 'Test Station')
+
+      expect(store.activeTimeTraps[0]!.bonusMinutes).toBe(15)
+    })
+
+    it('should assign unique instance ID to trap', () => {
+      const store = useCardStore()
+      const timeTrap1 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(timeTrap1.instanceId, 'Station A')
+
+      const timeTrap2 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(timeTrap2.instanceId, 'Station B')
+
+      expect(store.activeTimeTraps[0]!.instanceId).not.toBe(store.activeTimeTraps[1]!.instanceId)
+    })
+
+    it('should set createdAt timestamp', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+      const beforeTime = new Date()
+
+      store.playTimeTrapCard(timeTrap.instanceId, 'Test Station')
+
+      const afterTime = new Date()
+      expect(store.activeTimeTraps[0]!.createdAt.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime())
+      expect(store.activeTimeTraps[0]!.createdAt.getTime()).toBeLessThanOrEqual(afterTime.getTime())
+    })
+
+    it('should allow multiple traps to be active simultaneously', () => {
+      const store = useCardStore()
+
+      const trap1 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap1.instanceId, 'Station A')
+
+      const trap2 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap2.instanceId, 'Station B')
+
+      const trap3 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap3.instanceId, 'Station C')
+
+      expect(store.activeTimeTraps.length).toBe(3)
+    })
+
+    it('should return error if card not in hand', () => {
+      const store = useCardStore()
+
+      const result = store.playTimeTrapCard('non-existent-id', 'Station X')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Card not found in hand')
+    })
+
+    it('should return error if card is not a Time Trap', () => {
+      const store = useCardStore()
+      // Add a different card type
+      const otherCard: CardInstance = {
+        id: 'time-bonus-tier-1',
+        instanceId: 'test-instance',
+        type: CardType.TimeBonus,
+        name: 'Time Bonus',
+        description: 'Test',
+        tier: 1,
+        bonusMinutes: { [GameSize.Small]: 2, [GameSize.Medium]: 3, [GameSize.Large]: 5 },
+      } as CardInstance
+      store.hand.push(otherCard)
+
+      const result = store.playTimeTrapCard(otherCard.instanceId, 'Station X')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Card is not a Time Trap card')
+    })
+
+    it('should return error if station name is empty', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+
+      const result = store.playTimeTrapCard(timeTrap.instanceId, '')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Station name is required')
+    })
+
+    it('should return error if station name is only whitespace', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+
+      const result = store.playTimeTrapCard(timeTrap.instanceId, '   ')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Station name is required')
+    })
+
+    it('should return the played card', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+
+      const result = store.playTimeTrapCard(timeTrap.instanceId, 'Station Y')
+
+      expect(result.playedCard).toBeDefined()
+      expect(result.playedCard!.id).toBe('time-trap')
+    })
+  })
+
+  describe('triggerTimeTrap', () => {
+    it('should mark trap as triggered', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+      store.playTimeTrapCard(timeTrap.instanceId, 'Test Station')
+      const trapId = store.activeTimeTraps[0]!.instanceId
+
+      const result = store.triggerTimeTrap(trapId)
+
+      expect(result.success).toBe(true)
+      expect(store.activeTimeTraps[0]!.isTriggered).toBe(true)
+    })
+
+    it('should set triggeredAt timestamp', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+      store.playTimeTrapCard(timeTrap.instanceId, 'Test Station')
+      const trapId = store.activeTimeTraps[0]!.instanceId
+      const beforeTime = new Date()
+
+      store.triggerTimeTrap(trapId)
+
+      const afterTime = new Date()
+      expect(store.activeTimeTraps[0]!.triggeredAt).toBeDefined()
+      expect(store.activeTimeTraps[0]!.triggeredAt!.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime())
+      expect(store.activeTimeTraps[0]!.triggeredAt!.getTime()).toBeLessThanOrEqual(afterTime.getTime())
+    })
+
+    it('should return bonus minutes when triggered', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+      store.playTimeTrapCard(timeTrap.instanceId, 'Test Station')
+      const trapId = store.activeTimeTraps[0]!.instanceId
+
+      const result = store.triggerTimeTrap(trapId)
+
+      expect(result.bonusMinutes).toBe(15)
+    })
+
+    it('should return error if trap not found', () => {
+      const store = useCardStore()
+
+      const result = store.triggerTimeTrap('non-existent-trap')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Time trap not found')
+    })
+
+    it('should return error if trap already triggered', () => {
+      const store = useCardStore()
+      const timeTrap = addTimeTrapToHand(store)
+      store.playTimeTrapCard(timeTrap.instanceId, 'Test Station')
+      const trapId = store.activeTimeTraps[0]!.instanceId
+
+      store.triggerTimeTrap(trapId)
+      const result = store.triggerTimeTrap(trapId)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Time trap has already been triggered')
+    })
+  })
+
+  describe('getActiveTraps getter', () => {
+    it('should return only untriggered traps when filtered', () => {
+      const store = useCardStore()
+
+      const trap1 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap1.instanceId, 'Station A')
+
+      const trap2 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap2.instanceId, 'Station B')
+
+      // Trigger one trap
+      store.triggerTimeTrap(store.activeTimeTraps[0]!.instanceId)
+
+      const untriggeredTraps = store.untriggeredTraps
+
+      expect(untriggeredTraps.length).toBe(1)
+      expect(untriggeredTraps[0]!.stationName).toBe('Station B')
+    })
+
+    it('should return only triggered traps when filtered', () => {
+      const store = useCardStore()
+
+      const trap1 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap1.instanceId, 'Station A')
+
+      const trap2 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap2.instanceId, 'Station B')
+
+      // Trigger one trap
+      store.triggerTimeTrap(store.activeTimeTraps[0]!.instanceId)
+
+      const triggeredTraps = store.triggeredTraps
+
+      expect(triggeredTraps.length).toBe(1)
+      expect(triggeredTraps[0]!.stationName).toBe('Station A')
+    })
+  })
+
+  describe('totalTimeTrapBonus getter', () => {
+    it('should return 0 when no traps have been triggered', () => {
+      const store = useCardStore()
+      const trap = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap.instanceId, 'Station A')
+
+      expect(store.totalTimeTrapBonus).toBe(0)
+    })
+
+    it('should return sum of triggered trap bonuses', () => {
+      const store = useCardStore()
+
+      const trap1 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap1.instanceId, 'Station A')
+
+      const trap2 = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap2.instanceId, 'Station B')
+
+      // Trigger both traps
+      store.triggerTimeTrap(store.activeTimeTraps[0]!.instanceId)
+      store.triggerTimeTrap(store.activeTimeTraps[1]!.instanceId)
+
+      expect(store.totalTimeTrapBonus).toBe(30) // 15 + 15
+    })
+  })
+
+  describe('reset clears time traps', () => {
+    it('should clear active time traps on reset', () => {
+      const store = useCardStore()
+      const trap = addTimeTrapToHand(store)
+      store.playTimeTrapCard(trap.instanceId, 'Station A')
+      expect(store.activeTimeTraps.length).toBe(1)
+
+      store.reset()
+
+      expect(store.activeTimeTraps).toEqual([])
+    })
+  })
+})
+
 describe('cardStore persistence', () => {
   let mockStorage: Record<string, string>
 
@@ -754,5 +1068,66 @@ describe('cardStore persistence', () => {
     expect(() => store.rehydrate()).not.toThrow()
     expect(store.hand).toEqual([])
     expect(store.handLimit).toBe(6)
+  })
+
+  it('should persist active time traps to localStorage', async () => {
+    const store = useCardStore()
+
+    // Add a time trap to hand and play it
+    const timeTrapCard: CardInstance = {
+      id: 'time-trap',
+      instanceId: 'time-trap-persist-test',
+      type: CardType.TimeTrap,
+      name: 'Time Trap',
+      description: 'Test trap',
+      bonusMinutesWhenTriggered: 15,
+    } as CardInstance
+    store.hand.push(timeTrapCard)
+    store.playTimeTrapCard(timeTrapCard.instanceId, 'Persisted Station')
+
+    // Wait for Vue's watcher to trigger
+    await nextTick()
+
+    // State should be persisted to localStorage
+    expect(localStorage.setItem).toHaveBeenCalled()
+
+    // Verify persisted data includes time traps
+    const persistedKey = Object.keys(mockStorage).find(key => key.includes('cards'))
+    expect(persistedKey).toBeDefined()
+
+    const persistedData = JSON.parse(mockStorage[persistedKey!]!)
+    expect(persistedData.activeTimeTraps).toBeDefined()
+    expect(persistedData.activeTimeTraps.length).toBe(1)
+    expect(persistedData.activeTimeTraps[0].stationName).toBe('Persisted Station')
+  })
+
+  it('should rehydrate time traps with correct date objects', () => {
+    const testDate = new Date('2025-01-15T10:30:00.000Z')
+    const triggeredDate = new Date('2025-01-15T11:00:00.000Z')
+
+    mockStorage['jet-lag-stillwater:cards'] = JSON.stringify({
+      hand: [],
+      handLimit: 6,
+      discardPile: [],
+      deckComposition: {},
+      activeTimeTraps: [{
+        instanceId: 'trap-rehydrate-test',
+        stationName: 'Rehydrated Station',
+        bonusMinutes: 15,
+        isTriggered: true,
+        createdAt: testDate.toISOString(),
+        triggeredAt: triggeredDate.toISOString(),
+      }],
+    })
+
+    const store = useCardStore()
+    store.rehydrate()
+
+    expect(store.activeTimeTraps.length).toBe(1)
+    expect(store.activeTimeTraps[0]!.stationName).toBe('Rehydrated Station')
+    expect(store.activeTimeTraps[0]!.createdAt).toBeInstanceOf(Date)
+    expect(store.activeTimeTraps[0]!.createdAt.toISOString()).toBe(testDate.toISOString())
+    expect(store.activeTimeTraps[0]!.triggeredAt).toBeInstanceOf(Date)
+    expect(store.activeTimeTraps[0]!.triggeredAt!.toISOString()).toBe(triggeredDate.toISOString())
   })
 })
