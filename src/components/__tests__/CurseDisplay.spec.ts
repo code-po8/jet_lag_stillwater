@@ -431,4 +431,275 @@ describe('CurseDisplay', () => {
       expect(persistedData.activeCurses.length).toBe(1)
     })
   })
+
+  // CARD-006b: Curse Clearing Tests
+  describe('curse clearing (CARD-006b)', () => {
+    describe('time-based curse countdown', () => {
+      it('should show countdown timer for time-based curses', async () => {
+        render(CurseDisplay, {
+          props: { gameSize: GameSize.Small },
+        })
+        const store = useCardStore()
+
+        const curse = createActiveCurse({
+          name: 'Right Turn',
+          durationMinutes: { [GameSize.Small]: 20, [GameSize.Medium]: 40, [GameSize.Large]: 60 },
+          activatedAt: new Date(), // Just activated
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        // Should show a countdown timer with remaining time
+        expect(within(curseElement).getByTestId('curse-countdown')).toBeInTheDocument()
+      })
+
+      it('should display remaining time in countdown format', async () => {
+        render(CurseDisplay, {
+          props: { gameSize: GameSize.Small },
+        })
+        const store = useCardStore()
+
+        // Curse activated 5 minutes ago with 20 minute duration = 15 minutes remaining
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+        const curse = createActiveCurse({
+          name: 'Right Turn',
+          durationMinutes: { [GameSize.Small]: 20, [GameSize.Medium]: 40, [GameSize.Large]: 60 },
+          activatedAt: fiveMinutesAgo,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        const countdown = within(curseElement).getByTestId('curse-countdown')
+        // Should show approximately 15 minutes remaining (could be 14:59 due to timing)
+        expect(countdown.textContent).toMatch(/1[45]:\d{2}/)
+      })
+
+      it('should auto-clear time-based curse when countdown expires', async () => {
+        vi.useFakeTimers()
+
+        render(CurseDisplay, {
+          props: { gameSize: GameSize.Small },
+        })
+        const store = useCardStore()
+
+        // Curse with 1 second remaining
+        const almostExpired = new Date(Date.now() - (20 * 60 * 1000 - 1000))
+        const curse = createActiveCurse({
+          name: 'Right Turn',
+          durationMinutes: { [GameSize.Small]: 20, [GameSize.Medium]: 40, [GameSize.Large]: 60 },
+          activatedAt: almostExpired,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        expect(store.activeCurses.length).toBe(1)
+
+        // Advance time past expiration
+        vi.advanceTimersByTime(2000)
+        await nextTick()
+
+        expect(store.activeCurses.length).toBe(0)
+
+        vi.useRealTimers()
+      })
+
+      it('should not show countdown for non-time-based curses', async () => {
+        render(CurseDisplay, {
+          props: { gameSize: GameSize.Small },
+        })
+        const store = useCardStore()
+
+        const curse = createActiveCurse({
+          name: 'Lemon Phylactery',
+          durationMinutes: undefined, // No duration - action-based curse
+          blocksQuestions: true,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        expect(within(curseElement).queryByTestId('curse-countdown')).not.toBeInTheDocument()
+      })
+    })
+
+    describe('action-based curse manual clearing', () => {
+      it('should show Mark Complete button for action-based curses', async () => {
+        render(CurseDisplay)
+        const store = useCardStore()
+
+        const curse = createActiveCurse({
+          name: 'Cairn',
+          effect: 'Build a rock tower. Seekers must build one of same height.',
+          blocksQuestions: true,
+          durationMinutes: undefined, // Action-based, not time-based
+          untilFound: false,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        expect(within(curseElement).getByRole('button', { name: /mark complete|clear/i })).toBeInTheDocument()
+      })
+
+      it('should clear curse when Mark Complete button is clicked', async () => {
+        render(CurseDisplay)
+        const store = useCardStore()
+
+        const curse = createActiveCurse({
+          name: 'Cairn',
+          blocksQuestions: true,
+          untilFound: false,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        expect(store.activeCurses.length).toBe(1)
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        const clearButton = within(curseElement).getByRole('button', { name: /mark complete|clear/i })
+
+        const { fireEvent } = await import('@testing-library/vue')
+        await fireEvent.click(clearButton)
+
+        expect(store.activeCurses.length).toBe(0)
+      })
+
+      it('should not show Mark Complete button for time-based curses', async () => {
+        render(CurseDisplay, {
+          props: { gameSize: GameSize.Small },
+        })
+        const store = useCardStore()
+
+        const curse = createActiveCurse({
+          name: 'Right Turn',
+          durationMinutes: { [GameSize.Small]: 20, [GameSize.Medium]: 40, [GameSize.Large]: 60 },
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        expect(within(curseElement).queryByRole('button', { name: /mark complete|clear/i })).not.toBeInTheDocument()
+      })
+
+      it('should not show Mark Complete button for until-found curses', async () => {
+        render(CurseDisplay)
+        const store = useCardStore()
+
+        const curse = createActiveCurse({
+          name: 'Urban Explorer',
+          untilFound: true,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        expect(within(curseElement).queryByRole('button', { name: /mark complete|clear/i })).not.toBeInTheDocument()
+      })
+    })
+
+    describe('curse cleared notification', () => {
+      it('should emit curse-cleared event when curse is cleared manually', async () => {
+        const onCurseCleared = vi.fn()
+        render(CurseDisplay, {
+          props: {
+            gameSize: GameSize.Small,
+            onCurseCleared,
+          },
+        })
+        const store = useCardStore()
+
+        const curse = createActiveCurse({
+          name: 'Cairn',
+          blocksQuestions: true,
+          untilFound: false,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        const clearButton = within(curseElement).getByRole('button', { name: /mark complete|clear/i })
+
+        // Use fireEvent directly since userEvent isn't configured in render return
+        const { fireEvent } = await import('@testing-library/vue')
+        await fireEvent.click(clearButton)
+
+        expect(onCurseCleared).toHaveBeenCalledWith(expect.objectContaining({
+          curseName: 'Cairn',
+          reason: 'manual',
+        }))
+      })
+
+      it('should emit curse-cleared event when time-based curse expires', async () => {
+        vi.useFakeTimers()
+
+        const onCurseCleared = vi.fn()
+        render(CurseDisplay, {
+          props: {
+            gameSize: GameSize.Small,
+            onCurseCleared,
+          },
+        })
+        const store = useCardStore()
+
+        // Curse with 1 second remaining
+        const almostExpired = new Date(Date.now() - (20 * 60 * 1000 - 1000))
+        const curse = createActiveCurse({
+          name: 'Right Turn',
+          durationMinutes: { [GameSize.Small]: 20, [GameSize.Medium]: 40, [GameSize.Large]: 60 },
+          activatedAt: almostExpired,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        // Advance time past expiration
+        vi.advanceTimersByTime(2000)
+        await nextTick()
+
+        expect(onCurseCleared).toHaveBeenCalledWith(expect.objectContaining({
+          curseName: 'Right Turn',
+          reason: 'expired',
+        }))
+
+        vi.useRealTimers()
+      })
+
+      it('should show visual feedback when curse is cleared', async () => {
+        render(CurseDisplay)
+        const store = useCardStore()
+
+        const curse = createActiveCurse({
+          name: 'Cairn',
+          blocksQuestions: true,
+          untilFound: false,
+        })
+        store.activeCurses.push(curse)
+
+        await nextTick()
+
+        const curseElement = screen.getByTestId(`curse-${curse.instanceId}`)
+        const clearButton = within(curseElement).getByRole('button', { name: /mark complete|clear/i })
+
+        const { fireEvent } = await import('@testing-library/vue')
+        await fireEvent.click(clearButton)
+        await nextTick()
+
+        // After clearing, the curse should be removed from the list
+        expect(screen.queryByTestId(`curse-${curse.instanceId}`)).not.toBeInTheDocument()
+        // And we should be back to empty state
+        expect(screen.getByText(/no active curses/i)).toBeInTheDocument()
+      })
+    })
+  })
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useCardStore, type ActiveCurse } from '@/stores/cardStore'
 import { GameSize } from '@/types/question'
 
@@ -13,7 +13,16 @@ const props = withDefaults(
   }
 )
 
+// Emits
+const emit = defineEmits<{
+  (e: 'curseCleared', payload: { curseName: string; reason: 'manual' | 'expired' }): void
+}>()
+
 const cardStore = useCardStore()
+
+// State for countdown updates
+const now = ref(Date.now())
+let countdownInterval: ReturnType<typeof setInterval> | null = null
 
 // Computed
 const activeCurses = computed(() => cardStore.activeCurses)
@@ -53,6 +62,92 @@ function getPenalty(curse: ActiveCurse): number | null {
       return curse.penaltyMinutes.small
   }
 }
+
+/**
+ * Check if a curse is time-based (has duration)
+ */
+function isTimeBased(curse: ActiveCurse): boolean {
+  return !!curse.durationMinutes
+}
+
+/**
+ * Check if a curse can be manually cleared (action-based, not until-found, not time-based)
+ */
+function canManualClear(curse: ActiveCurse): boolean {
+  return !curse.untilFound && !isTimeBased(curse)
+}
+
+/**
+ * Get remaining time in milliseconds for a time-based curse
+ */
+function getRemainingMs(curse: ActiveCurse): number {
+  const durationMin = getDuration(curse)
+  if (durationMin === null) return 0
+
+  const durationMs = durationMin * 60 * 1000
+  const elapsed = now.value - curse.activatedAt.getTime()
+  return Math.max(0, durationMs - elapsed)
+}
+
+/**
+ * Format remaining time as MM:SS
+ */
+function formatRemainingTime(curse: ActiveCurse): string {
+  const remainingMs = getRemainingMs(curse)
+  const totalSeconds = Math.floor(remainingMs / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+}
+
+/**
+ * Handle manual clearing of a curse
+ */
+function handleClearCurse(curse: ActiveCurse): void {
+  cardStore.clearCurse(curse.instanceId)
+  emit('curseCleared', { curseName: curse.name, reason: 'manual' })
+}
+
+/**
+ * Check for expired curses and auto-clear them
+ */
+function checkExpiredCurses(): void {
+  const cursesToClear: ActiveCurse[] = []
+
+  for (const curse of activeCurses.value) {
+    if (isTimeBased(curse)) {
+      const remaining = getRemainingMs(curse)
+      if (remaining <= 0) {
+        cursesToClear.push(curse)
+      }
+    }
+  }
+
+  for (const curse of cursesToClear) {
+    cardStore.clearCurse(curse.instanceId)
+    emit('curseCleared', { curseName: curse.name, reason: 'expired' })
+  }
+}
+
+// Update countdown timer every second
+onMounted(() => {
+  countdownInterval = setInterval(() => {
+    now.value = Date.now()
+    checkExpiredCurses()
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+    countdownInterval = null
+  }
+})
+
+// Also check for expired curses when curses change
+watch(activeCurses, () => {
+  checkExpiredCurses()
+}, { immediate: true })
 </script>
 
 <template>
@@ -125,7 +220,7 @@ function getPenalty(curse: ActiveCurse): number | null {
             Blocks Transit
           </span>
 
-          <!-- Duration -->
+          <!-- Duration (static display, shown for time-based curses) -->
           <span
             v-if="getDuration(curse)"
             class="rounded bg-blue-900/50 px-2 py-1 text-blue-300"
@@ -140,6 +235,28 @@ function getPenalty(curse: ActiveCurse): number | null {
           >
             +{{ getPenalty(curse) }} min penalty
           </span>
+        </div>
+
+        <!-- Countdown Timer for Time-Based Curses -->
+        <div v-if="isTimeBased(curse)" class="mt-3 flex items-center gap-2">
+          <span
+            data-testid="curse-countdown"
+            class="rounded-lg bg-blue-800/50 px-3 py-2 font-mono text-lg font-bold text-blue-200"
+          >
+            {{ formatRemainingTime(curse) }}
+          </span>
+          <span class="text-sm text-blue-300">remaining</span>
+        </div>
+
+        <!-- Mark Complete Button for Action-Based Curses -->
+        <div v-if="canManualClear(curse)" class="mt-3">
+          <button
+            type="button"
+            class="rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+            @click="handleClearCurse(curse)"
+          >
+            Mark Complete
+          </button>
         </div>
       </article>
     </div>
