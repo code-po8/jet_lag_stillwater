@@ -1190,17 +1190,34 @@ describe('CardDrawModal', () => {
 
 ### CARD-005: Time Bonus Calculator
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002
 
 **Story:** As a hider, I need to see my total time bonus so that I know my potential score.
 
 **Acceptance Criteria:**
-- [ ] Sum of all time bonus cards in hand
-- [ ] Displayed prominently on hider view
-- [ ] Updates when cards drawn or discarded
+- [x] Sum of all time bonus cards in hand
+- [x] Displayed prominently on hider view
+- [x] Updates when cards drawn or discarded
 
 **Size:** S
+
+**Tests Written (5 tests):**
+```typescript
+describe('time bonus display (CARD-005)', () => {
+  it('should display total time bonus prominently')
+  it('should show 0 min when no time bonus cards in hand')
+  it('should display correct time bonus sum from cards in hand')
+  it('should update display when cards are drawn')
+  it('should update display when cards are discarded')
+  it('should display the time bonus label')
+})
+```
+
+**Notes:**
+- Display implemented in HiderView.vue with green-styled prominent display
+- Uses `totalTimeBonus(gameSize)` from cardStore computed property
+- Auto-updates reactively via Vue computed property when cards change
 
 ---
 
@@ -2010,10 +2027,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 3 | 1 |
-| 3: Card Management | 12 | 4 | 8 |
+| 3: Card Management | 12 | 5 | 7 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **27** | **20** |
+| **Total** | **47** | **28** | **19** |
 
 ---
 
@@ -2047,14 +2064,13 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-004**: Question Response Timer
 - **Q-005**: Question History View
 - **Q-006**: Re-ask Question with Double Cost
-- **CARD-005**: Time Bonus Calculator
 - **CARD-006a**: Curse Display
 - **CARD-007a**: Discard/Draw Powerup Effect
 - **CARD-007b**: Draw 1, Expand Powerup Effect

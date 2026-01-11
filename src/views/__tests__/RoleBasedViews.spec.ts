@@ -13,6 +13,8 @@ import HiderView from '../HiderView.vue'
 import SeekerView from '../SeekerView.vue'
 import GamePlayView from '../GamePlayView.vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
+import { useCardStore } from '@/stores/cardStore'
+import { GameSize } from '@/types/question'
 
 // Create a mock router
 function createMockRouter() {
@@ -57,10 +59,98 @@ describe('HiderView', () => {
     })
   })
 
-  describe('time bonus display', () => {
+  describe('time bonus display (CARD-005)', () => {
     it('should display total time bonus prominently', () => {
       renderHiderView()
       expect(screen.getByTestId('time-bonus-total')).toBeInTheDocument()
+    })
+
+    it('should show 0 min when no time bonus cards in hand', () => {
+      renderHiderView()
+      const timeBonusElement = screen.getByTestId('time-bonus-total')
+      expect(timeBonusElement).toHaveTextContent('+0 min')
+    })
+
+    it('should display correct time bonus sum from cards in hand', async () => {
+      // Initialize stores before rendering
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const cardStore = useCardStore()
+
+      // Draw cards until we have some time bonus cards
+      cardStore.drawCards(6)
+      const expectedTotal = cardStore.totalTimeBonus(GameSize.Small)
+
+      const router = createMockRouter()
+      render(HiderView, {
+        global: {
+          plugins: [router, pinia],
+        },
+      })
+
+      await nextTick()
+      const timeBonusElement = screen.getByTestId('time-bonus-total')
+      expect(timeBonusElement).toHaveTextContent(`+${expectedTotal} min`)
+    })
+
+    it('should update display when cards are drawn', async () => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const cardStore = useCardStore()
+
+      const router = createMockRouter()
+      render(HiderView, {
+        global: {
+          plugins: [router, pinia],
+        },
+      })
+
+      // Initially should be 0
+      const timeBonusElement = screen.getByTestId('time-bonus-total')
+      expect(timeBonusElement).toHaveTextContent('+0 min')
+
+      // Draw cards
+      cardStore.drawCards(6)
+      const expectedTotal = cardStore.totalTimeBonus(GameSize.Small)
+
+      await nextTick()
+      expect(timeBonusElement).toHaveTextContent(`+${expectedTotal} min`)
+    })
+
+    it('should update display when cards are discarded', async () => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const cardStore = useCardStore()
+
+      // Draw some cards first
+      cardStore.drawCards(6)
+      const initialTotal = cardStore.totalTimeBonus(GameSize.Small)
+
+      const router = createMockRouter()
+      render(HiderView, {
+        global: {
+          plugins: [router, pinia],
+        },
+      })
+
+      await nextTick()
+      const timeBonusElement = screen.getByTestId('time-bonus-total')
+      expect(timeBonusElement).toHaveTextContent(`+${initialTotal} min`)
+
+      // Discard all time bonus cards
+      const timeBonusCards = cardStore.timeBonusCards
+      for (const card of timeBonusCards) {
+        cardStore.discardCard(card.instanceId)
+      }
+
+      await nextTick()
+      expect(timeBonusElement).toHaveTextContent('+0 min')
+    })
+
+    it('should display the time bonus label', () => {
+      renderHiderView()
+      const timeBonusElement = screen.getByTestId('time-bonus-total')
+      expect(timeBonusElement).toHaveTextContent('Total Time Bonus')
     })
   })
 
