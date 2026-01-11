@@ -1592,19 +1592,72 @@ describe('GamePlayView (role toggle)', () => {
 
 ### GS-004: Round Summary
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** GS-001, T-003
 
 **Story:** As a player, I need to see a summary when a round ends so that scores are clear.
 
 **Acceptance Criteria:**
-- [ ] Shows hider's final hiding time
-- [ ] Shows time bonuses applied
-- [ ] Shows total score for round
-- [ ] Running leaderboard of all players
-- [ ] Option to start next round or end game
+- [x] Shows hider's final hiding time
+- [x] Shows time bonuses applied
+- [x] Shows total score for round
+- [x] Running leaderboard of all players
+- [x] Option to start next round or end game
 
 **Size:** M
+
+**Tests Written (25 tests):**
+```typescript
+describe('RoundSummary', () => {
+  describe('visibility based on phase', () => {
+    it('should only display in round-complete phase')
+    it('should not display in seeking phase')
+  })
+  describe('final hiding time display', () => {
+    it('should display the hiders final hiding time')
+    it('should format time correctly for under an hour')
+    it('should format time correctly for multiple hours')
+  })
+  describe('time bonuses applied', () => {
+    it('should display total time bonus from cards')
+    it('should show zero bonus when no time bonus cards')
+    it('should calculate time bonus based on game size')
+  })
+  describe('total score for round', () => {
+    it('should display total round score (hiding time + time bonus)')
+    it('should show score label')
+  })
+  describe('running leaderboard', () => {
+    it('should display all players ranked by total hiding time')
+    it('should show rank numbers for players')
+    it('should highlight the current hiders result')
+  })
+  describe('current hider display', () => {
+    it('should show hiders name prominently')
+  })
+  describe('next round button', () => {
+    it('should show Start Next Round button when not all players have been hider')
+    it('should emit start-next-round event when button is clicked and confirmed')
+    it('should call gameStore.endRound with hiding time when starting next round')
+  })
+  describe('end game button', () => {
+    it('should show End Game button when all players have been hider')
+    it('should emit end-game event when End Game button is clicked')
+    it('should not show End Game button when not all players have been hider')
+  })
+  describe('round number display', () => {
+    it('should display current round number')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly button sizes (min 44px)')
+    it('should be scrollable when content overflows')
+  })
+  describe('accessibility', () => {
+    it('should have proper heading structure')
+    it('should have proper ARIA labels for buttons')
+  })
+})
+```
 
 ---
 
@@ -1849,9 +1902,9 @@ User experience improvements.
 | 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 3 | 1 |
 | 3: Card Management | 12 | 3 | 9 |
-| 4: Game State | 7 | 4 | 3 |
+| 4: Game State | 7 | 5 | 2 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **24** | **23** |
+| **Total** | **47** | **25** | **22** |
 
 ---
 
@@ -1885,7 +1938,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-005, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-004, GS-005, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
@@ -1902,10 +1955,10 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-008**: Time Trap Card Implementation
 - **UX-003**: Notifications and Alerts (partially - still needs CARD-006b)
 - **UX-004**: Visual Design System
-- **GS-004**: Round Summary (now unblocked by GS-005)
+- **GS-006**: Multi-Round Scoring & Winner Declaration (now unblocked by GS-004)
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** GS-005 completion unblocks GS-004 (Round Summary).
+**Note:** GS-004 completion unblocks GS-006 (Multi-Round Scoring & Winner Declaration).
 
 ---
 

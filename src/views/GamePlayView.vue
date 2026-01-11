@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import HiderView from './HiderView.vue'
 import SeekerView from './SeekerView.vue'
 import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
+import RoundSummary from '@/components/RoundSummary.vue'
+import HidingDurationTimer from '@/components/HidingDurationTimer.vue'
 import { GameSize } from '@/types/question'
 
 // Props
@@ -16,6 +19,7 @@ const props = withDefaults(
   }
 )
 
+const router = useRouter()
 const gameStore = useGameStore()
 
 // Current role being viewed (for single-device play)
@@ -25,10 +29,14 @@ const currentViewRole = ref<ViewRole>('seeker')
 // Current navigation tab
 const currentTab = ref<NavTab>('questions')
 
+// Track the final hiding time for round summary
+const finalHidingTimeMs = ref<number>(0)
+
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
 const currentHider = computed(() => gameStore.currentHider)
 const seekers = computed(() => gameStore.seekers)
+const isRoundComplete = computed(() => currentPhase.value === GamePhase.RoundComplete)
 
 /**
  * Get display text for the phase badge
@@ -94,6 +102,29 @@ function handleTabChange(tab: NavTab) {
     currentViewRole.value = 'seeker'
   }
 }
+
+/**
+ * Handle final time from HidingDurationTimer
+ */
+function handleFinalTime(timeMs: number) {
+  finalHidingTimeMs.value = timeMs
+}
+
+/**
+ * Handle starting the next round
+ */
+function handleStartNextRound() {
+  // Navigate to setup for next round's hider selection
+  router.push('/setup')
+}
+
+/**
+ * Handle ending the game
+ */
+function handleEndGame() {
+  // Navigate back to home for now (TODO: final results view in GS-006)
+  router.push('/')
+}
 </script>
 
 <template>
@@ -129,78 +160,94 @@ function handleTabChange(tab: NavTab) {
       </div>
     </header>
 
-    <!-- Role Toggle -->
-    <div
-      data-testid="role-toggle"
-      class="flex border-b border-slate-700 bg-slate-800/50"
-    >
-      <button
-        type="button"
-        :class="[
-          'flex-1 py-3 text-center font-medium transition-colors',
-          currentViewRole === 'hider'
-            ? 'active bg-amber-600 text-white'
-            : 'text-slate-400 hover:bg-slate-700 hover:text-white',
-        ]"
-        @click="switchToHider"
-      >
-        Hider
-      </button>
-      <button
-        type="button"
-        :class="[
-          'flex-1 py-3 text-center font-medium transition-colors',
-          currentViewRole === 'seeker'
-            ? 'active bg-blue-600 text-white'
-            : 'text-slate-400 hover:bg-slate-700 hover:text-white',
-        ]"
-        @click="switchToSeeker"
-      >
-        Seeker
-      </button>
-    </div>
+    <!-- Hidden timer to track hiding duration (always present during seeking/end-game) -->
+    <HidingDurationTimer
+      v-show="false"
+      @final-time="handleFinalTime"
+    />
 
-    <!-- Current Role Display -->
-    <div
-      data-testid="current-role-display"
-      class="bg-slate-800/30 py-2 text-center text-sm text-slate-400"
-    >
-      Viewing as: <span class="font-medium text-white">{{ currentViewRole === 'hider' ? 'Hider' : 'Seeker' }}</span>
-    </div>
+    <!-- Round Summary (shown in round-complete phase) -->
+    <RoundSummary
+      v-if="isRoundComplete"
+      :hiding-time-ms="finalHidingTimeMs"
+      :game-size="props.gameSize"
+      @start-next-round="handleStartNextRound"
+      @end-game="handleEndGame"
+    />
 
-    <!-- Main Content Area with tab-based content -->
-    <div
-      data-testid="main-content-area"
-      class="flex-1 overflow-y-auto transition-opacity duration-200"
-    >
-      <!-- Questions Tab - Shows SeekerView with questions -->
-      <SeekerView v-if="currentTab === 'questions'" />
-
-      <!-- Timers Tab - Placeholder for now -->
+    <!-- Regular gameplay UI (hidden during round-complete) -->
+    <template v-else>
+      <!-- Role Toggle -->
       <div
-        v-else-if="currentTab === 'timers'"
-        class="flex flex-col items-center justify-center p-8 text-center"
+        data-testid="role-toggle"
+        class="flex border-b border-slate-700 bg-slate-800/50"
       >
-        <div class="text-4xl mb-4">⏱</div>
-        <h2 class="text-xl font-semibold text-white mb-2">Timers</h2>
-        <p class="text-slate-400">Timer functionality coming soon</p>
+        <button
+          type="button"
+          :class="[
+            'flex-1 py-3 text-center font-medium transition-colors',
+            currentViewRole === 'hider'
+              ? 'active bg-amber-600 text-white'
+              : 'text-slate-400 hover:bg-slate-700 hover:text-white',
+          ]"
+          @click="switchToHider"
+        >
+          Hider
+        </button>
+        <button
+          type="button"
+          :class="[
+            'flex-1 py-3 text-center font-medium transition-colors',
+            currentViewRole === 'seeker'
+              ? 'active bg-blue-600 text-white'
+              : 'text-slate-400 hover:bg-slate-700 hover:text-white',
+          ]"
+          @click="switchToSeeker"
+        >
+          Seeker
+        </button>
       </div>
 
-      <!-- Cards Tab - Shows HiderView with cards -->
-      <HiderView v-else-if="currentTab === 'cards'" :game-size="props.gameSize" />
-
-      <!-- History Tab - Placeholder for now -->
+      <!-- Current Role Display -->
       <div
-        v-else-if="currentTab === 'history'"
-        class="flex flex-col items-center justify-center p-8 text-center"
+        data-testid="current-role-display"
+        class="bg-slate-800/30 py-2 text-center text-sm text-slate-400"
       >
-        <div class="text-4xl mb-4">📋</div>
-        <h2 class="text-xl font-semibold text-white mb-2">Question History</h2>
-        <p class="text-slate-400">History view coming soon</p>
+        Viewing as: <span class="font-medium text-white">{{ currentViewRole === 'hider' ? 'Hider' : 'Seeker' }}</span>
       </div>
-    </div>
 
-    <!-- Bottom Navigation -->
-    <BottomNav :current-tab="currentTab" @tab-change="handleTabChange" />
+      <!-- Main Content Area with tab-based content -->
+      <div
+        data-testid="main-content-area"
+        class="flex-1 overflow-y-auto transition-opacity duration-200"
+      >
+        <!-- Questions Tab - Shows SeekerView with questions -->
+        <SeekerView v-if="currentTab === 'questions'" />
+
+        <!-- Timers Tab - Shows timer display -->
+        <div
+          v-else-if="currentTab === 'timers'"
+          class="flex flex-col items-center gap-4 p-4"
+        >
+          <HidingDurationTimer />
+        </div>
+
+        <!-- Cards Tab - Shows HiderView with cards -->
+        <HiderView v-else-if="currentTab === 'cards'" :game-size="props.gameSize" />
+
+        <!-- History Tab - Placeholder for now -->
+        <div
+          v-else-if="currentTab === 'history'"
+          class="flex flex-col items-center justify-center p-8 text-center"
+        >
+          <div class="text-4xl mb-4">📋</div>
+          <h2 class="text-xl font-semibold text-white mb-2">Question History</h2>
+          <p class="text-slate-400">History view coming soon</p>
+        </div>
+      </div>
+
+      <!-- Bottom Navigation -->
+      <BottomNav :current-tab="currentTab" @tab-change="handleTabChange" />
+    </template>
   </main>
 </template>
