@@ -4,6 +4,7 @@ import { useQuestionStore } from '@/stores/questionStore'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { QUESTION_CATEGORIES, QuestionCategoryId, type Question } from '@/types/question'
 import { ALL_QUESTIONS } from '@/data/questions'
+import { getCategoryColor } from '@/design/colors'
 
 // Emit event when question is selected or re-ask is clicked
 const emit = defineEmits<{
@@ -137,51 +138,61 @@ function handleReaskClick(event: Event, question: Question) {
  */
 function getQuestionClasses(questionId: string): string {
   const status = getQuestionStatus(questionId)
-  const baseClasses = 'py-3 text-sm'
+  const baseClasses = 'py-3 text-sm text-slate-200'
 
   switch (status) {
     case 'asked':
-      return `${baseClasses} opacity-50 line-through cursor-not-allowed`
+      return `${baseClasses} opacity-50 line-through cursor-not-allowed text-slate-500`
     case 'pending':
-      return `${baseClasses} bg-yellow-100 font-medium`
+      return `${baseClasses} bg-brand-gold/20 font-medium text-brand-gold`
     case 'available':
       return pendingQuestionId.value
-        ? `${baseClasses} cursor-not-allowed`
-        : `${baseClasses} cursor-pointer hover:bg-gray-50`
+        ? `${baseClasses} cursor-not-allowed opacity-75`
+        : `${baseClasses} cursor-pointer hover:bg-slate-700/50`
+  }
+}
+
+/**
+ * Get the background color style for a category header
+ */
+function getCategoryHeaderStyle(categoryId: string): Record<string, string> {
+  return {
+    backgroundColor: getCategoryColor(categoryId as QuestionCategoryId),
   }
 }
 </script>
 
 <template>
-  <div data-testid="question-list-container" class="overflow-y-auto">
+  <div data-testid="question-list-container" class="overflow-y-auto p-4">
     <div
       v-for="category in QUESTION_CATEGORIES"
       :key="category.id"
       :data-testid="`category-${category.id}`"
-      class="mb-4 rounded-lg border border-gray-200 bg-white"
+      class="mb-4 overflow-hidden rounded-lg border border-slate-700 bg-slate-800"
     >
-      <!-- Category Header -->
+      <!-- Category Header with category-specific color -->
       <button
         :data-testid="`category-header-${category.id}`"
-        class="flex w-full items-center justify-between p-4 text-left"
+        :style="getCategoryHeaderStyle(category.id)"
+        class="flex w-full items-center justify-between p-4 text-left text-white transition-opacity"
         :class="{ 'opacity-50': isCategoryDisabled(category.id) }"
         @click="toggleCategory(category.id)"
       >
         <div class="flex flex-col">
           <span class="text-lg font-semibold">{{ category.name }}</span>
-          <span v-if="isCategoryDisabled(category.id)" class="text-sm text-red-500">
+          <span v-if="isCategoryDisabled(category.id)" class="text-sm text-red-200">
             Not available in end-game
           </span>
-          <span v-else class="text-sm text-gray-500">
+          <span v-else class="text-sm text-white/80">
             {{ getCategoryStats(category.id)?.available ?? 0 }} questions available
           </span>
         </div>
         <div class="flex items-center gap-4">
-          <div class="text-right text-sm">
+          <div class="text-right text-sm font-medium">
             <div>Draw {{ category.cardsDraw }}</div>
             <div>Keep {{ category.cardsKeep }}</div>
           </div>
-          <span class="text-gray-400">
+          <span class="text-white/70">
             {{ isCategoryExpanded(category.id) ? '▼' : '▶' }}
           </span>
         </div>
@@ -190,9 +201,9 @@ function getQuestionClasses(questionId: string): string {
       <!-- Questions List (collapsible) -->
       <div
         v-if="isCategoryExpanded(category.id)"
-        class="border-t border-gray-100 px-4 pb-4"
+        class="border-t border-slate-700 px-4 pb-4"
       >
-        <ul class="divide-y divide-gray-100">
+        <ul class="divide-y divide-slate-700/50">
           <li
             v-for="question in questionsByCategory.get(category.id)"
             :key="question.id"
@@ -210,13 +221,13 @@ function getQuestionClasses(questionId: string): string {
               <div class="flex shrink-0 items-center gap-2">
                 <span
                   v-if="getQuestionStatus(question.id) === 'asked'"
-                  class="shrink-0 rounded bg-gray-200 px-2 py-0.5 text-xs text-gray-600"
+                  class="shrink-0 rounded bg-slate-600 px-2 py-0.5 text-xs text-slate-300"
                 >
                   Asked
                 </span>
                 <span
                   v-else-if="getQuestionStatus(question.id) === 'pending'"
-                  class="shrink-0 rounded bg-yellow-500 px-2 py-0.5 text-xs text-white"
+                  class="shrink-0 rounded bg-brand-gold px-2 py-0.5 text-xs font-medium text-slate-900"
                 >
                   Pending
                 </span>
@@ -224,7 +235,7 @@ function getQuestionClasses(questionId: string): string {
                 <button
                   v-if="getQuestionStatus(question.id) === 'asked'"
                   type="button"
-                  class="shrink-0 rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="shrink-0 rounded bg-brand-cyan/20 px-2 py-0.5 text-xs font-medium text-brand-cyan hover:bg-brand-cyan/30 disabled:cursor-not-allowed disabled:opacity-50"
                   :disabled="isReaskDisabled()"
                   @click="handleReaskClick($event, question)"
                 >
@@ -235,7 +246,7 @@ function getQuestionClasses(questionId: string): string {
           </li>
           <li
             v-if="!questionsByCategory.get(category.id)?.length"
-            class="py-3 text-center text-sm italic text-gray-400"
+            class="py-3 text-center text-sm italic text-slate-500"
           >
             No questions available
           </li>

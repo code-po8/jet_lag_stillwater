@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useCardStore, type CardInstance } from '@/stores/cardStore'
 import { CardType } from '@/types/card'
 import { GameSize } from '@/types/question'
+import { getCardTypeColor } from '@/design/colors'
 
 // Props
 const props = withDefaults(
@@ -28,20 +29,52 @@ const handLimit = computed(() => cardStore.handLimit)
 const isHandFull = computed(() => cardStore.isHandFull)
 
 /**
- * Get CSS class for card type visual distinction
+ * Get inline styles for card type visual distinction using design tokens
+ */
+function getCardTypeStyle(card: CardInstance): Record<string, string> {
+  const colors = getCardTypeColor(card.type)
+  return {
+    backgroundColor: colors.bg,
+    borderColor: colors.border,
+  }
+}
+
+/**
+ * Get badge inline styles for card type
+ */
+function getCardBadgeStyle(card: CardInstance): Record<string, string> {
+  const colors = getCardTypeColor(card.type)
+  return {
+    backgroundColor: colors.bg,
+    color: colors.text,
+  }
+}
+
+/**
+ * Get CSS class for card type (for test selectors and hover states)
  */
 function getCardTypeClass(card: CardInstance): string {
   switch (card.type) {
     case CardType.TimeBonus:
-      return 'card-time-bonus border-green-300 bg-green-50'
+      return 'card-time-bonus'
     case CardType.Powerup:
-      return 'card-powerup border-blue-300 bg-blue-50'
+      return 'card-powerup'
     case CardType.Curse:
-      return 'card-curse border-purple-300 bg-purple-50'
+      return 'card-curse'
     case CardType.TimeTrap:
-      return 'card-time-trap border-orange-300 bg-orange-50'
+      return 'card-time-trap'
     default:
       return ''
+  }
+}
+
+/**
+ * Get the accent color for time bonus display
+ */
+function getTimeBonusAccentStyle(): Record<string, string> {
+  const colors = getCardTypeColor(CardType.TimeBonus)
+  return {
+    color: colors.accent,
   }
 }
 
@@ -117,17 +150,17 @@ function handleKeyDown(event: KeyboardEvent, card: CardInstance) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-4 p-4">
     <!-- Hand limit indicator -->
     <div
       data-testid="hand-limit-indicator"
       :class="[
-        'flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2',
-        { 'hand-full bg-amber-100': isHandFull },
+        'flex items-center justify-between rounded-lg bg-slate-700 px-4 py-2 text-slate-200',
+        { 'hand-full bg-brand-gold/20 text-brand-gold': isHandFull },
       ]"
     >
       <span class="font-medium">Cards in Hand</span>
-      <span :class="['text-lg font-bold', { 'text-amber-600': isHandFull }]">
+      <span :class="['text-lg font-bold', { 'text-brand-gold': isHandFull }]">
         {{ handCount }}/{{ handLimit }}
       </span>
     </div>
@@ -140,7 +173,7 @@ function handleKeyDown(event: KeyboardEvent, card: CardInstance) {
       <!-- Empty state -->
       <div
         v-if="cards.length === 0"
-        class="col-span-full flex flex-col items-center justify-center py-12 text-gray-400"
+        class="col-span-full flex flex-col items-center justify-center py-12 text-slate-500"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -164,8 +197,9 @@ function handleKeyDown(event: KeyboardEvent, card: CardInstance) {
         v-for="card in cards"
         :key="card.instanceId"
         :data-testid="`card-${card.instanceId}`"
+        :style="getCardTypeStyle(card)"
         :class="[
-          'cursor-pointer rounded-lg border-2 p-4 shadow-sm transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+          'cursor-pointer rounded-lg border-2 p-4 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-brand-cyan',
           getCardTypeClass(card),
         ]"
         role="button"
@@ -177,15 +211,8 @@ function handleKeyDown(event: KeyboardEvent, card: CardInstance) {
         <!-- Card type badge -->
         <div class="mb-2 flex items-center justify-between">
           <span
-            :class="[
-              'rounded px-2 py-0.5 text-xs font-medium',
-              {
-                'bg-green-100 text-green-800': card.type === CardType.TimeBonus,
-                'bg-blue-100 text-blue-800': card.type === CardType.Powerup,
-                'bg-purple-100 text-purple-800': card.type === CardType.Curse,
-                'bg-orange-100 text-orange-800': card.type === CardType.TimeTrap,
-              },
-            ]"
+            :style="getCardBadgeStyle(card)"
+            class="rounded px-2 py-0.5 text-xs font-medium"
           >
             {{ getCardTypeLabel(card) }}
           </span>
@@ -193,17 +220,18 @@ function handleKeyDown(event: KeyboardEvent, card: CardInstance) {
           <!-- Bonus minutes for time bonus cards -->
           <span
             v-if="getBonusMinutes(card) !== null"
-            class="font-bold text-green-600"
+            :style="getTimeBonusAccentStyle()"
+            class="font-bold"
           >
             +{{ getBonusMinutes(card) }} min
           </span>
         </div>
 
         <!-- Card name -->
-        <h3 class="mb-1 font-semibold">{{ card.name }}</h3>
+        <h3 class="mb-1 font-semibold text-slate-800">{{ card.name }}</h3>
 
         <!-- Effect summary -->
-        <p class="text-sm text-gray-600">{{ getEffectSummary(card) }}</p>
+        <p class="text-sm text-slate-600">{{ getEffectSummary(card) }}</p>
       </div>
     </div>
   </div>

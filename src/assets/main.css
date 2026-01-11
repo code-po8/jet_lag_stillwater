@@ -1,1 +1,66 @@
 @import 'tailwindcss';
+
+/*
+ * Jet Lag Stillwater Design System
+ *
+ * Custom color tokens and theme configuration.
+ * See src/design/colors.ts for color definitions.
+ * See RESEARCH_NOTES.md for design research.
+ */
+
+/* Tailwind v4 theme configuration using @theme */
+@theme {
+  /* Brand Colors (from Jet Lag logo) */
+  --color-brand-navy: #1a1a2e;
+  --color-brand-red: #c73e3e;
+  --color-brand-orange: #f07d2e;
+  --color-brand-gold: #f5b830;
+  --color-brand-cyan: #00aaff;
+
+  /* Question Category Colors (from Nebula show, adjusted for WCAG contrast) */
+  --color-category-matching: #1e3a5f;
+  --color-category-measuring: #2d8a4e;
+  --color-category-radar: #e07830;
+  --color-category-thermometer: #b38b0f;
+  --color-category-tentacle: #7b4d9e;
+  --color-category-photo: #3d8ab3;
+
+  /* Card Type Colors - Time Bonus (green) */
+  --color-card-time-bonus-bg: #dcfce7;
+  --color-card-time-bonus-border: #86efac;
+  --color-card-time-bonus-text: #166534;
+  --color-card-time-bonus-accent: #22c55e;
+
+  /* Card Type Colors - Powerup (cyan) */
+  --color-card-powerup-bg: #cffafe;
+  --color-card-powerup-border: #67e8f9;
+  --color-card-powerup-text: #155e75;
+  --color-card-powerup-accent: #06b6d4;
+
+  /* Card Type Colors - Curse (purple) */
+  --color-card-curse-bg: #f3e8ff;
+  --color-card-curse-border: #d8b4fe;
+  --color-card-curse-text: #6b21a8;
+  --color-card-curse-accent: #a855f7;
+
+  /* Card Type Colors - Time Trap (orange) */
+  --color-card-time-trap-bg: #ffedd5;
+  --color-card-time-trap-border: #fdba74;
+  --color-card-time-trap-text: #9a3412;
+  --color-card-time-trap-accent: #f97316;
+
+  /* UI Colors */
+  --color-ui-background: #0f172a;
+  --color-ui-surface: #1e293b;
+  --color-ui-surface-raised: #334155;
+  --color-ui-border: #475569;
+  --color-ui-text-primary: #f8fafc;
+  --color-ui-text-secondary: #94a3b8;
+  --color-ui-text-muted: #64748b;
+
+  /* Status Colors */
+  --color-status-success: #22c55e;
+  --color-status-warning: #f59e0b;
+  --color-status-error: #ef4444;
+  --color-status-info: #3b82f6;
+}

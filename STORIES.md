@@ -2328,19 +2328,19 @@ User experience improvements.
 
 ### UX-004: Visual Design System
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-001
 
 **Story:** As a player, I need a consistent visual theme with distinct category colors so that the app is easy to navigate and visually appealing.
 
 **Acceptance Criteria:**
-- [ ] Tailwind theme extended with custom color palette
-- [ ] Primary accent color defined (inspired by Jet Lag branding)
-- [ ] Each question category has a distinct, accessible color
-- [ ] Dark/navy background theme for game feel
-- [ ] All colors meet WCAG 2.1 AA contrast requirements
-- [ ] Category colors work in bright outdoor sunlight
-- [ ] Design tokens documented in Tailwind config
+- [x] Tailwind theme extended with custom color palette
+- [x] Primary accent color defined (inspired by Jet Lag branding)
+- [x] Each question category has a distinct, accessible color
+- [x] Dark/navy background theme for game feel
+- [x] All colors meet WCAG 2.1 AA contrast requirements
+- [x] Category colors work in bright outdoor sunlight
+- [x] Design tokens documented in Tailwind config
 
 **Size:** S
 
@@ -2350,6 +2350,42 @@ User experience improvements.
 - See RESEARCH_NOTES.md "Question Icon Reference" for icon descriptions per category
 - Official Jet Lag logo palette: #1a1a2e (navy), #c73e3e (red), #f07d2e (orange), #f5b830 (gold), #00aaff (cyan)
 - Prioritize accessibility and outdoor visibility
+
+**Tests Written (10 tests):**
+```typescript
+describe('Design System Colors', () => {
+  describe('BRAND_COLORS', () => {
+    it('should define all Jet Lag brand colors')
+    it('should use correct hex values from official branding')
+  })
+  describe('CATEGORY_COLORS', () => {
+    it('should define colors for all six question categories')
+    it('should use correct hex values from Nebula show UI (adjusted for contrast)')
+  })
+  describe('getCategoryColor', () => {
+    it('should return correct color for each category')
+  })
+  describe('CARD_TYPE_COLORS', () => {
+    it('should define colors for all card types')
+    it('should use brand-consistent colors')
+  })
+  describe('getCardTypeColor', () => {
+    it('should return correct color object for each card type')
+  })
+  describe('WCAG contrast requirements', () => {
+    it('should have category colors with sufficient contrast against white text')
+    it('should have brand colors with sufficient contrast')
+  })
+})
+```
+
+**Implementation Notes:**
+- Created `src/design/colors.ts` with typed color constants and helper functions
+- Tailwind v4 @theme configuration in `src/assets/main.css` with CSS custom properties
+- QuestionList uses category-specific header colors with white text
+- CardHand uses card type colors with inline styles for flexibility
+- Thermometer (#d4a012 → #b38b0f) and Photo (#5ba4c9 → #3d8ab3) colors adjusted for WCAG 3:1 contrast
+- Brand colors: navy, red, orange, gold, cyan from Jet Lag logo
 
 ---
 
@@ -2362,8 +2398,8 @@ User experience improvements.
 | 2: Timers | 4 | 4 | 0 |
 | 3: Card Management | 12 | 10 | 2 |
 | 4: Game State | 7 | 6 | 1 |
-| 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **36** | **11** |
+| 5: Mobile UX Polish | 4 | 2 | 2 |
+| **Total** | **47** | **37** | **10** |
 
 ---
 
@@ -2397,14 +2433,13 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, UX-002, and UX-004 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **CARD-007d**: Move Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
 - **UX-003**: Notifications and Alerts
-- **UX-004**: Visual Design System
 - **GS-007**: Unified Game Pause/Resume
 
 ---

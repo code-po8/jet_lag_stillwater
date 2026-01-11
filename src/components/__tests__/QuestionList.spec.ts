@@ -142,9 +142,9 @@ describe('QuestionList', () => {
       // Wait for Vue to update the DOM
       await nextTick()
 
-      // The pending question should be highlighted
+      // The pending question should be highlighted with brand gold color
       const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
-      expect(questionElement).toHaveClass('bg-yellow-100')
+      expect(questionElement).toHaveClass('bg-brand-gold/20')
     })
 
     it('should disable selection while question is pending', async () => {
