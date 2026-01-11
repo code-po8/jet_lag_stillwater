@@ -263,4 +263,57 @@ describe('GamePlayView (role toggle)', () => {
       })
     })
   })
+
+  describe('bottom navigation (UX-002)', () => {
+    it('should display bottom navigation component', () => {
+      renderGamePlayView()
+      expect(screen.getByTestId('bottom-nav')).toBeInTheDocument()
+    })
+
+    it('should display all navigation tabs', () => {
+      renderGamePlayView()
+      expect(screen.getByTestId('nav-tab-questions')).toBeInTheDocument()
+      expect(screen.getByTestId('nav-tab-timers')).toBeInTheDocument()
+      expect(screen.getByTestId('nav-tab-cards')).toBeInTheDocument()
+      expect(screen.getByTestId('nav-tab-history')).toBeInTheDocument()
+    })
+
+    it('should highlight the current tab', async () => {
+      renderGamePlayView()
+      // Default should have questions tab active
+      const questionsTab = screen.getByTestId('nav-tab-questions')
+      expect(questionsTab).toHaveClass('active')
+    })
+
+    it('should switch to cards section when cards tab clicked', async () => {
+      renderGamePlayView()
+      const cardsTab = screen.getByTestId('nav-tab-cards')
+      await fireEvent.click(cardsTab)
+      await nextTick()
+      expect(cardsTab).toHaveClass('active')
+      // Should show cards content
+      expect(screen.getByTestId('card-hand-container')).toBeInTheDocument()
+    })
+
+    it('should switch to questions section when questions tab clicked', async () => {
+      renderGamePlayView()
+      // First switch to cards
+      const cardsTab = screen.getByTestId('nav-tab-cards')
+      await fireEvent.click(cardsTab)
+      await nextTick()
+      // Then switch back to questions
+      const questionsTab = screen.getByTestId('nav-tab-questions')
+      await fireEvent.click(questionsTab)
+      await nextTick()
+      expect(questionsTab).toHaveClass('active')
+      // Should show questions content
+      expect(screen.getByTestId('question-list-container')).toBeInTheDocument()
+    })
+
+    it('should have smooth transition class on content area', () => {
+      renderGamePlayView()
+      const contentArea = screen.getByTestId('main-content-area')
+      expect(contentArea.className).toMatch(/transition/)
+    })
+  })
 })

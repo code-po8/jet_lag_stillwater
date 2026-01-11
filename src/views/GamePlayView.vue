@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import HiderView from './HiderView.vue'
 import SeekerView from './SeekerView.vue'
+import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
 import { GameSize } from '@/types/question'
 
 // Props
@@ -20,6 +21,9 @@ const gameStore = useGameStore()
 // Current role being viewed (for single-device play)
 type ViewRole = 'hider' | 'seeker'
 const currentViewRole = ref<ViewRole>('seeker')
+
+// Current navigation tab
+const currentTab = ref<NavTab>('questions')
 
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
@@ -67,6 +71,7 @@ function getPhaseBadgeClass(): string {
  */
 function switchToHider() {
   currentViewRole.value = 'hider'
+  currentTab.value = 'cards'
 }
 
 /**
@@ -74,11 +79,25 @@ function switchToHider() {
  */
 function switchToSeeker() {
   currentViewRole.value = 'seeker'
+  currentTab.value = 'questions'
+}
+
+/**
+ * Handle tab change from bottom navigation
+ */
+function handleTabChange(tab: NavTab) {
+  currentTab.value = tab
+  // Automatically switch role based on tab for better UX
+  if (tab === 'cards') {
+    currentViewRole.value = 'hider'
+  } else if (tab === 'questions') {
+    currentViewRole.value = 'seeker'
+  }
 }
 </script>
 
 <template>
-  <main class="flex min-h-screen flex-col bg-slate-900 text-white">
+  <main class="flex min-h-screen flex-col bg-slate-900 pb-16 text-white">
     <!-- Header with game info -->
     <header class="border-b border-slate-700 bg-slate-800 p-4">
       <div class="mx-auto max-w-2xl">
@@ -149,13 +168,39 @@ function switchToSeeker() {
       Viewing as: <span class="font-medium text-white">{{ currentViewRole === 'hider' ? 'Hider' : 'Seeker' }}</span>
     </div>
 
-    <!-- Role-specific content -->
-    <div class="flex-1 overflow-y-auto">
-      <HiderView
-        v-if="currentViewRole === 'hider'"
-        :game-size="props.gameSize"
-      />
-      <SeekerView v-else />
+    <!-- Main Content Area with tab-based content -->
+    <div
+      data-testid="main-content-area"
+      class="flex-1 overflow-y-auto transition-opacity duration-200"
+    >
+      <!-- Questions Tab - Shows SeekerView with questions -->
+      <SeekerView v-if="currentTab === 'questions'" />
+
+      <!-- Timers Tab - Placeholder for now -->
+      <div
+        v-else-if="currentTab === 'timers'"
+        class="flex flex-col items-center justify-center p-8 text-center"
+      >
+        <div class="text-4xl mb-4">⏱</div>
+        <h2 class="text-xl font-semibold text-white mb-2">Timers</h2>
+        <p class="text-slate-400">Timer functionality coming soon</p>
+      </div>
+
+      <!-- Cards Tab - Shows HiderView with cards -->
+      <HiderView v-else-if="currentTab === 'cards'" :game-size="props.gameSize" />
+
+      <!-- History Tab - Placeholder for now -->
+      <div
+        v-else-if="currentTab === 'history'"
+        class="flex flex-col items-center justify-center p-8 text-center"
+      >
+        <div class="text-4xl mb-4">📋</div>
+        <h2 class="text-xl font-semibold text-white mb-2">Question History</h2>
+        <p class="text-slate-400">History view coming soon</p>
+      </div>
     </div>
+
+    <!-- Bottom Navigation -->
+    <BottomNav :current-tab="currentTab" @tab-change="handleTabChange" />
   </main>
 </template>

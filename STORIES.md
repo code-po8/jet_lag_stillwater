@@ -1626,18 +1626,31 @@ User experience improvements.
 
 ### UX-002: Navigation Structure
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** GS-003
 
 **Story:** As a player, I need intuitive navigation so that I can quickly access different features.
 
 **Acceptance Criteria:**
-- [ ] Bottom tab navigation for main sections
-- [ ] Tabs: Questions, Timers, Cards (hider), History
-- [ ] Current tab clearly indicated
-- [ ] Smooth transitions between views
+- [x] Bottom tab navigation for main sections
+- [x] Tabs: Questions, Timers, Cards (hider), History
+- [x] Current tab clearly indicated
+- [x] Smooth transitions between views
 
 **Size:** M
+
+**Tests Written (24 tests):**
+- BottomNav component tests (18 tests):
+  - Tab display: displays all tabs, labels, and touch-friendly buttons
+  - Current tab indication: highlights active tab correctly
+  - Tab switching: emits tab-change events
+  - Mobile-friendly layout: fixed bottom bar, full width, flex layout
+  - Accessibility: nav role, aria-label, aria-current
+  - Visual icons: displays icons for each tab
+- GamePlayView integration tests (6 tests):
+  - Bottom navigation display and tabs
+  - Tab switching with content updates
+  - Smooth transitions
 
 ---
 
@@ -1694,8 +1707,8 @@ User experience improvements.
 | 2: Timers | 4 | 1 | 3 |
 | 3: Card Management | 12 | 3 | 9 |
 | 4: Game State | 7 | 3 | 4 |
-| 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **20** | **27** |
+| 5: Mobile UX Polish | 4 | 1 | 3 |
+| **Total** | **47** | **21** | **26** |
 
 ---
 
@@ -1729,7 +1742,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, T-001, CARD-001, CARD-002, and CARD-003 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, T-001, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
@@ -1747,9 +1760,8 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-008**: Time Trap Card Implementation
 - **UX-004**: Visual Design System
 - **GS-007**: Unified Game Pause/Resume
-- **UX-002**: Navigation Structure (newly unblocked by GS-003)
 
-**Note:** GS-003 completion unblocks UX-002 (Navigation Structure).
+**Note:** UX-002 completion doesn't unblock any new cards (UX-003 still depends on T-002 and CARD-006b).
 
 ---
 
