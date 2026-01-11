@@ -607,6 +607,261 @@ describe('gameStore persistence', () => {
   })
 })
 
+describe('gameStore move powerup (CARD-007d)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  function setupGameInSeeking() {
+    const store = useGameStore()
+    store.addPlayer('Alice')
+    store.addPlayer('Bob')
+    store.startRound(store.players[0]!.id)
+    store.startSeeking()
+    return store
+  }
+
+  describe('isHiderMoving state', () => {
+    it('should initialize with isHiderMoving as false', () => {
+      const store = useGameStore()
+
+      expect(store.isHiderMoving).toBe(false)
+    })
+  })
+
+  describe('moveStartedAt state', () => {
+    it('should initialize with moveStartedAt as null', () => {
+      const store = useGameStore()
+
+      expect(store.moveStartedAt).toBeNull()
+    })
+  })
+
+  describe('canStartMove getter', () => {
+    it('should return false during setup phase', () => {
+      const store = useGameStore()
+      store.addPlayer('Alice')
+      store.addPlayer('Bob')
+
+      expect(store.canStartMove).toBe(false)
+    })
+
+    it('should return true during hiding-period phase', () => {
+      const store = useGameStore()
+      store.addPlayer('Alice')
+      store.addPlayer('Bob')
+      store.startRound(store.players[0]!.id)
+
+      expect(store.canStartMove).toBe(true)
+    })
+
+    it('should return true during seeking phase', () => {
+      const store = setupGameInSeeking()
+
+      expect(store.canStartMove).toBe(true)
+    })
+
+    it('should return false during end-game phase', () => {
+      const store = setupGameInSeeking()
+      store.enterHidingZone()
+
+      expect(store.canStartMove).toBe(false)
+    })
+
+    it('should return false during round-complete phase', () => {
+      const store = setupGameInSeeking()
+      store.enterHidingZone()
+      store.hiderFound()
+
+      expect(store.canStartMove).toBe(false)
+    })
+
+    it('should return false if hider is already moving', () => {
+      const store = setupGameInSeeking()
+      store.startMove()
+
+      expect(store.canStartMove).toBe(false)
+    })
+  })
+
+  describe('startMove action', () => {
+    it('should set isHiderMoving to true', () => {
+      const store = setupGameInSeeking()
+
+      const result = store.startMove()
+
+      expect(result.success).toBe(true)
+      expect(store.isHiderMoving).toBe(true)
+    })
+
+    it('should record move timestamp', () => {
+      const now = Date.now()
+      vi.useFakeTimers()
+      vi.setSystemTime(now)
+
+      const store = setupGameInSeeking()
+      store.startMove()
+
+      expect(store.moveStartedAt).toBe(now)
+
+      vi.useRealTimers()
+    })
+
+    it('should fail if not in a moveable phase', () => {
+      const store = useGameStore()
+      store.addPlayer('Alice')
+      store.addPlayer('Bob')
+      // Still in setup phase
+
+      const result = store.startMove()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Cannot start move in current phase')
+    })
+
+    it('should fail if hider is already moving', () => {
+      const store = setupGameInSeeking()
+      store.startMove()
+
+      const result = store.startMove()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Hider is already moving')
+    })
+
+    it('should fail during end-game phase', () => {
+      const store = setupGameInSeeking()
+      store.enterHidingZone()
+
+      const result = store.startMove()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Cannot start move in current phase')
+    })
+  })
+
+  describe('confirmNewZone action', () => {
+    it('should set isHiderMoving to false', () => {
+      const store = setupGameInSeeking()
+      store.startMove()
+
+      const result = store.confirmNewZone()
+
+      expect(result.success).toBe(true)
+      expect(store.isHiderMoving).toBe(false)
+    })
+
+    it('should clear move timestamp', () => {
+      const store = setupGameInSeeking()
+      store.startMove()
+
+      store.confirmNewZone()
+
+      expect(store.moveStartedAt).toBeNull()
+    })
+
+    it('should fail if hider is not moving', () => {
+      const store = setupGameInSeeking()
+
+      const result = store.confirmNewZone()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Hider is not currently moving')
+    })
+  })
+
+  describe('move state persistence', () => {
+    let mockStorage: Record<string, string>
+
+    beforeEach(() => {
+      mockStorage = {}
+
+      vi.stubGlobal('localStorage', {
+        getItem: vi.fn((key: string) => mockStorage[key] ?? null),
+        setItem: vi.fn((key: string, value: string) => {
+          mockStorage[key] = value
+        }),
+        removeItem: vi.fn((key: string) => {
+          delete mockStorage[key]
+        }),
+        clear: vi.fn(() => {
+          mockStorage = {}
+        }),
+      })
+
+      setActivePinia(createPinia())
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('should persist move state to localStorage', async () => {
+      const store = useGameStore()
+      store.addPlayer('Alice')
+      store.addPlayer('Bob')
+      store.startRound(store.players[0]!.id)
+      store.startSeeking()
+      store.startMove()
+
+      await nextTick()
+
+      const persistedData = JSON.parse(mockStorage['jet-lag-stillwater:game'] || '{}')
+      expect(persistedData.isHiderMoving).toBe(true)
+      expect(persistedData.moveStartedAt).toBeDefined()
+    })
+
+    it('should rehydrate move state from localStorage', () => {
+      const now = Date.now()
+      const persistedState = {
+        currentPhase: GamePhase.Seeking,
+        currentHiderId: 'player-1',
+        roundNumber: 1,
+        players: [
+          { id: 'player-1', name: 'Alice', hasBeenHider: true, totalHidingTimeMs: 0 },
+          { id: 'player-2', name: 'Bob', hasBeenHider: false, totalHidingTimeMs: 0 },
+        ],
+        isGamePaused: false,
+        pausedAt: null,
+        isHiderMoving: true,
+        moveStartedAt: now,
+      }
+
+      mockStorage['jet-lag-stillwater:game'] = JSON.stringify(persistedState)
+
+      const store = useGameStore()
+      store.rehydrate()
+
+      expect(store.isHiderMoving).toBe(true)
+      expect(store.moveStartedAt).toBe(now)
+    })
+  })
+
+  describe('move clears on phase transitions', () => {
+    it('should clear move state when transitioning to round-complete', () => {
+      const store = setupGameInSeeking()
+      store.startMove()
+      store.confirmNewZone()
+      store.enterHidingZone()
+
+      store.hiderFound()
+
+      expect(store.isHiderMoving).toBe(false)
+      expect(store.moveStartedAt).toBeNull()
+    })
+
+    it('should clear move state when game is reset', () => {
+      const store = setupGameInSeeking()
+      store.startMove()
+
+      store.resetGame()
+
+      expect(store.isHiderMoving).toBe(false)
+      expect(store.moveStartedAt).toBeNull()
+    })
+  })
+})
+
 describe('gameStore pause/resume (GS-007)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

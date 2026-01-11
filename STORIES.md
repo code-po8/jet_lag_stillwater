@@ -1707,19 +1707,19 @@ describe('cardStore playDuplicatePowerup', () => {
 
 ### CARD-007d: Move Powerup Effect
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002, GS-001, T-003
 
 **Story:** As a hider, I need to play the Move powerup so that I can establish a new hiding zone while seekers wait.
 
 **Acceptance Criteria:**
-- [ ] Move card can be played from hand
-- [ ] Playing pauses the hiding duration timer
-- [ ] Seekers view shows notification: "Hider is moving - stay put"
-- [ ] Hider can travel to new location and establish new hiding zone
-- [ ] "Confirm New Zone" action resumes hiding timer
-- [ ] Move state persists if app is closed mid-move
-- [ ] Card removed from hand after playing
+- [x] Move card can be played from hand
+- [x] Playing pauses the hiding duration timer
+- [x] Seekers view shows notification: "Hider is moving - stay put"
+- [x] Hider can travel to new location and establish new hiding zone
+- [x] "Confirm New Zone" action resumes hiding timer
+- [x] Move state persists if app is closed mid-move
+- [x] Card removed from hand after playing
 
 **Size:** M
 
@@ -2455,10 +2455,10 @@ describe('Design System Colors', () => {
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 4 | 0 |
-| 3: Card Management | 12 | 10 | 2 |
+| 3: Card Management | 12 | 11 | 1 |
 | 4: Game State | 7 | 7 | 0 |
 | 5: Mobile UX Polish | 4 | 2 | 2 |
-| **Total** | **47** | **38** | **9** |
+| **Total** | **47** | **39** | **8** |
 
 ---
 
@@ -2492,14 +2492,12 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, UX-002, and UX-004 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, UX-002, and UX-004 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
-- **CARD-007d**: Move Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
 - **UX-003**: Notifications and Alerts
-- **GS-007**: Unified Game Pause/Resume
 
 ---
 

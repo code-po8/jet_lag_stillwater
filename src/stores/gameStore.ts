@@ -51,6 +51,8 @@ interface PersistedGameState {
   players: Player[]
   isGamePaused: boolean
   pausedAt: number | null
+  isHiderMoving: boolean
+  moveStartedAt: number | null
 }
 
 /**
@@ -71,6 +73,8 @@ export const useGameStore = defineStore('game', () => {
   const players = ref<Player[]>([])
   const isGamePaused = ref(false)
   const pausedAt = ref<number | null>(null)
+  const isHiderMoving = ref(false)
+  const moveStartedAt = ref<number | null>(null)
 
   // Getters
   const currentHider = computed<Player | null>(() => {
@@ -110,6 +114,20 @@ export const useGameStore = defineStore('game', () => {
   })
 
   /**
+   * Check if the hider can start a move in the current phase.
+   * Move can only be played during hiding-period or seeking phases (not end-game or later).
+   * Also cannot start a move if already moving.
+   */
+  const canStartMove = computed<boolean>(() => {
+    if (isHiderMoving.value) return false
+    const moveablePhases = [
+      GamePhase.HidingPeriod,
+      GamePhase.Seeking,
+    ]
+    return moveablePhases.includes(currentPhase.value)
+  })
+
+  /**
    * Persist current state to localStorage
    */
   function persist(): void {
@@ -120,6 +138,8 @@ export const useGameStore = defineStore('game', () => {
       players: players.value,
       isGamePaused: isGamePaused.value,
       pausedAt: pausedAt.value,
+      isHiderMoving: isHiderMoving.value,
+      moveStartedAt: moveStartedAt.value,
     }
     persistenceService.save(STORAGE_KEY, state)
   }
@@ -138,6 +158,8 @@ export const useGameStore = defineStore('game', () => {
         players.value = persisted.players
         isGamePaused.value = persisted.isGamePaused ?? false
         pausedAt.value = persisted.pausedAt ?? null
+        isHiderMoving.value = persisted.isHiderMoving ?? false
+        moveStartedAt.value = persisted.moveStartedAt ?? null
       }
     } catch {
       // If rehydration fails (e.g., corrupted data), keep default state
@@ -147,7 +169,7 @@ export const useGameStore = defineStore('game', () => {
 
   // Watch for state changes and persist automatically
   watch(
-    [currentPhase, currentHiderId, roundNumber, players, isGamePaused, pausedAt],
+    [currentPhase, currentHiderId, roundNumber, players, isGamePaused, pausedAt, isHiderMoving, moveStartedAt],
     () => {
       persist()
     },
@@ -241,7 +263,7 @@ export const useGameStore = defineStore('game', () => {
   /**
    * Mark the hider as found.
    * Transitions from end-game to round-complete.
-   * Clears any active pause state.
+   * Clears any active pause state and move state.
    */
   function hiderFound(): ActionResult {
     if (currentPhase.value !== GamePhase.EndGame) {
@@ -251,6 +273,10 @@ export const useGameStore = defineStore('game', () => {
     // Clear pause state when transitioning to round-complete
     isGamePaused.value = false
     pausedAt.value = null
+
+    // Clear move state when transitioning to round-complete
+    isHiderMoving.value = false
+    moveStartedAt.value = null
 
     currentPhase.value = GamePhase.RoundComplete
     return { success: true }
@@ -289,6 +315,39 @@ export const useGameStore = defineStore('game', () => {
     players.value = []
     isGamePaused.value = false
     pausedAt.value = null
+    isHiderMoving.value = false
+    moveStartedAt.value = null
+  }
+
+  /**
+   * Start a move action (hider is relocating to a new hiding zone).
+   * Pauses the hiding timer and notifies seekers to stay put.
+   */
+  function startMove(): ActionResult {
+    if (!canStartMove.value) {
+      if (isHiderMoving.value) {
+        return { success: false, error: 'Hider is already moving' }
+      }
+      return { success: false, error: 'Cannot start move in current phase' }
+    }
+
+    isHiderMoving.value = true
+    moveStartedAt.value = Date.now()
+    return { success: true }
+  }
+
+  /**
+   * Confirm the new hiding zone after a move.
+   * Resumes the hiding timer.
+   */
+  function confirmNewZone(): ActionResult {
+    if (!isHiderMoving.value) {
+      return { success: false, error: 'Hider is not currently moving' }
+    }
+
+    isHiderMoving.value = false
+    moveStartedAt.value = null
+    return { success: true }
   }
 
   /**
@@ -331,6 +390,8 @@ export const useGameStore = defineStore('game', () => {
     players,
     isGamePaused,
     pausedAt,
+    isHiderMoving,
+    moveStartedAt,
     // Getters
     currentHider,
     seekers,
@@ -338,6 +399,7 @@ export const useGameStore = defineStore('game', () => {
     playersRankedByTime,
     playersWhoHaventBeenHider,
     canPauseGame,
+    canStartMove,
     // Actions
     addPlayer,
     removePlayer,
@@ -350,6 +412,8 @@ export const useGameStore = defineStore('game', () => {
     resetGame,
     pauseGame,
     resumeGame,
+    startMove,
+    confirmNewZone,
     // Persistence
     rehydrate,
   }

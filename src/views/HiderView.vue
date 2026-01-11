@@ -7,6 +7,7 @@ import CardDrawModal from '@/components/CardDrawModal.vue'
 import PowerupDiscardDrawModal from '@/components/PowerupDiscardDrawModal.vue'
 import PowerupDrawExpandModal from '@/components/PowerupDrawExpandModal.vue'
 import PowerupDuplicateModal from '@/components/PowerupDuplicateModal.vue'
+import PowerupMoveModal from '@/components/PowerupMoveModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionResponseTimer from '@/components/QuestionResponseTimer.vue'
 import { GameSize } from '@/types/question'
@@ -24,6 +25,7 @@ const cardStore = useCardStore()
 const selectedPowerupCard = ref<CardInstance | null>(null)
 const selectedDrawExpandCard = ref<CardInstance | null>(null)
 const selectedDuplicateCard = ref<CardInstance | null>(null)
+const selectedMoveCard = ref<CardInstance | null>(null)
 const drawnCards = ref<CardInstance[]>([])
 const keepCount = ref(0)
 
@@ -86,6 +88,12 @@ function handleCardSelect(card: CardInstance) {
     // Handle Duplicate powerup
     if (powerupType === PowerupType.Duplicate) {
       selectedDuplicateCard.value = card
+      return
+    }
+
+    // Handle Move powerup (only if can start move)
+    if (powerupType === PowerupType.Move && gameStore.canStartMove) {
+      selectedMoveCard.value = card
       return
     }
   }
@@ -182,6 +190,36 @@ function handleDuplicateConfirm(targetCard: CardInstance) {
 function handleDuplicateCancel() {
   selectedDuplicateCard.value = null
 }
+
+/**
+ * Handle confirm from move modal
+ */
+function handleMoveConfirm() {
+  if (!selectedMoveCard.value) return
+
+  // Play the powerup (discards entire hand)
+  cardStore.playMovePowerup(selectedMoveCard.value.instanceId)
+
+  // Start the move in game state (notifies seekers, pauses timer)
+  gameStore.startMove()
+
+  // Close the move modal
+  selectedMoveCard.value = null
+}
+
+/**
+ * Handle cancel from move modal
+ */
+function handleMoveCancel() {
+  selectedMoveCard.value = null
+}
+
+/**
+ * Handle confirming the new hiding zone after a move
+ */
+function handleConfirmNewZone() {
+  gameStore.confirmNewZone()
+}
 </script>
 
 <template>
@@ -197,6 +235,30 @@ function handleDuplicateCancel() {
       class="rounded-lg bg-slate-800 p-3 text-center text-slate-300"
     >
       {{ getPhaseDisplayText() }}
+    </div>
+
+    <!-- Move In Progress Banner -->
+    <div
+      v-if="gameStore.isHiderMoving"
+      data-testid="move-in-progress-banner"
+      class="rounded-lg bg-amber-900 p-4"
+    >
+      <div class="mb-3 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+        </svg>
+        <span class="text-lg font-bold text-amber-200">Moving to New Zone</span>
+      </div>
+      <p class="mb-4 text-amber-200">
+        Travel to your new hiding spot. The hiding timer is paused and seekers are frozen.
+      </p>
+      <button
+        data-testid="confirm-new-zone-btn"
+        class="min-h-11 w-full rounded-lg bg-amber-500 px-4 py-3 font-bold text-white transition-colors hover:bg-amber-400"
+        @click="handleConfirmNewZone"
+      >
+        Confirm New Zone
+      </button>
     </div>
 
     <!-- Hiding Period Timer -->
@@ -243,6 +305,15 @@ function handleDuplicateCancel() {
       :game-size="props.gameSize ?? GameSize.Small"
       @confirm="handleDuplicateConfirm"
       @cancel="handleDuplicateCancel"
+    />
+
+    <!-- Powerup Move Modal -->
+    <PowerupMoveModal
+      :powerup-card="selectedMoveCard"
+      :hand-size="cardStore.handCount"
+      :game-size="props.gameSize ?? GameSize.Small"
+      @confirm="handleMoveConfirm"
+      @cancel="handleMoveCancel"
     />
 
     <!-- Card Draw Modal (shows drawn cards after powerup effect) -->

@@ -528,6 +528,126 @@ describe('cardStore time bonus calculations', () => {
   })
 })
 
+describe('cardStore playMovePowerup (CARD-007d)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  function addMovePowerupToHand(store: ReturnType<typeof useCardStore>) {
+    // Manually add a Move powerup card to the hand
+    const moveCard: CardInstance = {
+      id: 'powerup-move',
+      instanceId: 'move-test-instance',
+      type: CardType.Powerup,
+      name: 'Move',
+      description: 'Establish a new hiding zone',
+      powerupType: 'move',
+      effect: 'Discard your hand and send the seekers the location of your transit station.',
+      quantity: 1,
+      canPlayDuringEndgame: false,
+    } as CardInstance
+    store.hand.push(moveCard)
+    return moveCard
+  }
+
+  it('should clear hand when Move powerup is played', () => {
+    const store = useCardStore()
+    store.drawCards(4) // Draw some cards first
+    const moveCard = addMovePowerupToHand(store)
+    expect(store.hand.length).toBe(5)
+
+    const result = store.playMovePowerup(moveCard.instanceId)
+
+    expect(result.success).toBe(true)
+    expect(store.hand.length).toBe(0)
+  })
+
+  it('should add cleared cards to discard pile', () => {
+    const store = useCardStore()
+    store.drawCards(3)
+    const moveCard = addMovePowerupToHand(store)
+    const initialDiscardSize = store.discardPile.length
+
+    store.playMovePowerup(moveCard.instanceId)
+
+    // All cards including Move should be in discard pile
+    expect(store.discardPile.length).toBe(initialDiscardSize + 4)
+  })
+
+  it('should return the Move powerup card as playedCard', () => {
+    const store = useCardStore()
+    const moveCard = addMovePowerupToHand(store)
+
+    const result = store.playMovePowerup(moveCard.instanceId)
+
+    expect(result.playedCard).toBeDefined()
+    expect(result.playedCard!.id).toBe('powerup-move')
+  })
+
+  it('should return error if card not in hand', () => {
+    const store = useCardStore()
+
+    const result = store.playMovePowerup('non-existent-id')
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Card not found in hand')
+  })
+
+  it('should return error if card is not a Move powerup', () => {
+    const store = useCardStore()
+    // Add a different powerup to hand
+    const otherPowerup: CardInstance = {
+      id: 'powerup-veto',
+      instanceId: 'veto-test-instance',
+      type: CardType.Powerup,
+      name: 'Veto Question',
+      description: 'Decline to answer a question',
+      powerupType: 'veto',
+      effect: 'Test effect',
+      quantity: 4,
+      canPlayDuringEndgame: true,
+    } as CardInstance
+    store.hand.push(otherPowerup)
+
+    const result = store.playMovePowerup(otherPowerup.instanceId)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Card is not a Move powerup')
+  })
+
+  it('should return error if card is not a powerup type', () => {
+    const store = useCardStore()
+    // Add a time bonus card
+    const timeBonusCard: CardInstance = {
+      id: 'time-bonus-tier-1',
+      instanceId: 'time-bonus-test-instance',
+      type: CardType.TimeBonus,
+      name: 'Time Bonus',
+      description: 'Test',
+      tier: 1,
+      bonusMinutes: { [GameSize.Small]: 2, [GameSize.Medium]: 3, [GameSize.Large]: 5 },
+    } as CardInstance
+    store.hand.push(timeBonusCard)
+
+    const result = store.playMovePowerup(timeBonusCard.instanceId)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Card is not a Move powerup')
+  })
+
+  it('should work even when Move is the only card in hand', () => {
+    const store = useCardStore()
+    const moveCard = addMovePowerupToHand(store)
+    expect(store.hand.length).toBe(1)
+
+    const result = store.playMovePowerup(moveCard.instanceId)
+
+    expect(result.success).toBe(true)
+    expect(store.hand.length).toBe(0)
+    expect(store.discardPile.length).toBe(1)
+  })
+})
+
 describe('cardStore persistence', () => {
   let mockStorage: Record<string, string>
 

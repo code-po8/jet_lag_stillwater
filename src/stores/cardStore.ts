@@ -656,6 +656,42 @@ export const useCardStore = defineStore('cards', () => {
     }
   }
 
+  /**
+   * Play the Move powerup
+   * Discards entire hand and signals that hider is relocating
+   */
+  function playMovePowerup(instanceId: string): CardActionResult {
+    // Validate card exists in hand
+    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    if (cardIndex === -1) {
+      return { success: false, error: 'Card not found in hand' }
+    }
+
+    const card = hand.value[cardIndex]
+
+    // Validate it's a Move powerup
+    if (card?.type !== CardType.Powerup) {
+      return { success: false, error: 'Card is not a Move powerup' }
+    }
+
+    const powerupCard = card as PowerupCardInstance
+    if (powerupCard.powerupType !== PowerupType.Move) {
+      return { success: false, error: 'Card is not a Move powerup' }
+    }
+
+    // Get the move card before clearing
+    const playedCard = hand.value[cardIndex]!
+
+    // Clear entire hand (including the Move card) and add to discard pile
+    discardPile.value.push(...hand.value)
+    hand.value = []
+
+    return {
+      success: true,
+      playedCard,
+    }
+  }
+
   return {
     // State
     hand,
@@ -683,6 +719,7 @@ export const useCardStore = defineStore('cards', () => {
     clearCurse,
     playDrawExpandPowerup,
     playDuplicatePowerup,
+    playMovePowerup,
     reset,
     // Persistence
     rehydrate,
