@@ -2223,18 +2223,18 @@ describe('gameStore resetGame action', () => {
 
 ### GS-007: Unified Game Pause/Resume
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** GS-001, T-001
 
 **Story:** As a player, I need to pause the entire game so that all timers stop for safety or comfort breaks.
 
 **Acceptance Criteria:**
-- [ ] "Pause Game" action available during active gameplay
-- [ ] Pausing stops ALL timers (hiding period, hiding duration, response timer)
-- [ ] Visual indicator shows game is paused
-- [ ] "Resume Game" action restarts all timers from where they stopped
-- [ ] Pause state persists if app is closed
-- [ ] Both hider and seeker views show pause status
+- [x] "Pause Game" action available during active gameplay
+- [x] Pausing stops ALL timers (hiding period, hiding duration, response timer)
+- [x] Visual indicator shows game is paused
+- [x] "Resume Game" action restarts all timers from where they stopped
+- [x] Pause state persists if app is closed
+- [x] Both hider and seeker views show pause status
 
 **Size:** S
 
@@ -2243,15 +2243,74 @@ describe('gameStore resetGame action', () => {
 - Game can be paused if needed for safety/comfort
 - When paused, ALL timers stop
 
-**Tests to Write:**
+**Tests Written (40 tests):**
 ```typescript
-describe('Game Pause/Resume', () => {
-  it('should pause all active timers')
-  it('should show pause indicator')
-  it('should resume all timers from paused state')
-  it('should persist pause state across app restart')
+describe('gameStore pause/resume', () => {
+  describe('isGamePaused state', () => {
+    it('should initialize with isGamePaused as false')
+  })
+  describe('canPauseGame getter', () => {
+    it('should return false during setup phase')
+    it('should return true during hiding-period phase')
+    it('should return true during seeking phase')
+    it('should return true during end-game phase')
+    it('should return false during round-complete phase')
+  })
+  describe('pauseGame action', () => {
+    it('should set isGamePaused to true')
+    it('should fail if game is already paused')
+    it('should fail if not in a pauseable phase')
+    it('should record pause timestamp')
+  })
+  describe('resumeGame action', () => {
+    it('should set isGamePaused to false')
+    it('should fail if game is not paused')
+    it('should clear pause timestamp on resume')
+  })
+  describe('pause state persistence', () => {
+    it('should persist pause state to localStorage')
+    it('should rehydrate pause state from localStorage')
+  })
+  describe('pause clears on phase transitions', () => {
+    it('should clear pause state when transitioning to round-complete')
+    it('should clear pause state when game is reset')
+  })
+})
+describe('GamePauseOverlay', () => {
+  describe('visibility', () => {
+    it('should not render when game is not paused')
+    it('should render when game is paused')
+    it('should not render during setup phase')
+  })
+  describe('pause button', () => {
+    it('should display pause button during active gameplay')
+    it('should not display pause button during setup phase')
+    it('should pause game when pause button is clicked')
+    // ... additional button tests for all phases
+  })
+  describe('overlay content', () => {
+    it('should display Game Paused title when paused')
+    it('should display pause indicator message')
+    it('should display resume button when paused')
+  })
+  describe('resume functionality', () => {
+    it('should resume game when resume button is clicked')
+    it('should hide overlay after resume')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA label for overlay')
+    it('should have proper heading structure')
+    it('should trap focus within overlay when paused')
+  })
 })
 ```
+
+**Implementation Notes:**
+- GamePauseOverlay component with Teleport for fullscreen overlay
+- Pause button shown in header during active gameplay phases
+- All three timer components watch gameStore.isGamePaused and pause/resume accordingly
+- Pause state persisted to localStorage alongside game state
+- Automatically clears pause when transitioning to round-complete phase
 
 ---
 
@@ -2397,9 +2456,9 @@ describe('Design System Colors', () => {
 | 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 4 | 0 |
 | 3: Card Management | 12 | 10 | 2 |
-| 4: Game State | 7 | 6 | 1 |
+| 4: Game State | 7 | 7 | 0 |
 | 5: Mobile UX Polish | 4 | 2 | 2 |
-| **Total** | **47** | **37** | **10** |
+| **Total** | **47** | **38** | **9** |
 
 ---
 

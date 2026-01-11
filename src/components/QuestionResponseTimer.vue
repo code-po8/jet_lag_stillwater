@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useQuestionStore } from '@/stores/questionStore'
+import { useGameStore } from '@/stores/gameStore'
 import { formatTimeShort } from '@/utils/formatTime'
 import { getCategoryById, getResponseTime, GameSize } from '@/types/question'
 
@@ -22,16 +23,21 @@ const emit = defineEmits<{
 }>()
 
 const questionStore = useQuestionStore()
+const gameStore = useGameStore()
 
 // Timer state - managed manually for dynamic initial times
 const elapsed = ref(0)
 const isRunning = ref(false)
+const isPaused = ref(false)
 const initialTimeMs = ref(5 * 60 * 1000) // Default to 5 minutes
 const hasAlerted = ref(false)
 const hasExpired = ref(false)
 
 let intervalId: ReturnType<typeof setInterval> | null = null
 let startTimestamp: number | null = null
+let pausedElapsed = 0
+
+const isGamePaused = computed(() => gameStore.isGamePaused)
 
 // Computed values
 const hasPendingQuestion = computed(() => questionStore.hasPendingQuestion)
@@ -96,8 +102,10 @@ function getResponseTimeMs(): number {
  * Handle timer tick
  */
 function tick() {
+  if (isPaused.value) return
+
   if (startTimestamp !== null) {
-    elapsed.value = Date.now() - startTimestamp
+    elapsed.value = pausedElapsed + (Date.now() - startTimestamp)
 
     // Check for low time alert
     if (!hasAlerted.value && remaining.value <= LOW_TIME_THRESHOLD_MS) {
@@ -115,6 +123,27 @@ function tick() {
 }
 
 /**
+ * Pause the timer
+ */
+function pauseTimer() {
+  if (!isRunning.value || isPaused.value) return
+
+  isPaused.value = true
+  pausedElapsed = elapsed.value
+  startTimestamp = null
+}
+
+/**
+ * Resume the timer
+ */
+function resumeTimer() {
+  if (!isRunning.value || !isPaused.value) return
+
+  isPaused.value = false
+  startTimestamp = Date.now()
+}
+
+/**
  * Start the timer for the current pending question
  */
 function startTimer() {
@@ -123,6 +152,8 @@ function startTimer() {
   const responseTimeMs = getResponseTimeMs()
   initialTimeMs.value = responseTimeMs
   elapsed.value = 0
+  pausedElapsed = 0
+  isPaused.value = false
   hasAlerted.value = false
   hasExpired.value = false
   isRunning.value = true
@@ -140,7 +171,9 @@ function stopTimer() {
     intervalId = null
   }
   isRunning.value = false
+  isPaused.value = false
   startTimestamp = null
+  pausedElapsed = 0
 }
 
 // Watch for pending question changes
@@ -171,6 +204,20 @@ watch(
     if (hasPendingQuestion.value && isRunning.value) {
       // Restart with new response time
       startTimer()
+    }
+  },
+)
+
+// Watch for game-level pause/resume
+watch(
+  isGamePaused,
+  (paused) => {
+    if (!hasPendingQuestion.value || !isRunning.value) return
+
+    if (paused && !isPaused.value) {
+      pauseTimer()
+    } else if (!paused && isPaused.value) {
+      resumeTimer()
     }
   },
 )

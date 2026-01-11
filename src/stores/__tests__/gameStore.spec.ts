@@ -606,3 +606,226 @@ describe('gameStore persistence', () => {
     expect(store.currentPhase).toBe(GamePhase.Setup)
   })
 })
+
+describe('gameStore pause/resume (GS-007)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  function setupGameInProgress() {
+    const store = useGameStore()
+    store.addPlayer('Alice')
+    store.addPlayer('Bob')
+    store.startRound(store.players[0]!.id)
+    store.startSeeking()
+    return store
+  }
+
+  describe('isGamePaused state', () => {
+    it('should initialize with isGamePaused as false', () => {
+      const store = useGameStore()
+
+      expect(store.isGamePaused).toBe(false)
+    })
+  })
+
+  describe('canPauseGame getter', () => {
+    it('should return false during setup phase', () => {
+      const store = useGameStore()
+      store.addPlayer('Alice')
+      store.addPlayer('Bob')
+
+      expect(store.canPauseGame).toBe(false)
+    })
+
+    it('should return true during hiding-period phase', () => {
+      const store = useGameStore()
+      store.addPlayer('Alice')
+      store.addPlayer('Bob')
+      store.startRound(store.players[0]!.id)
+
+      expect(store.canPauseGame).toBe(true)
+    })
+
+    it('should return true during seeking phase', () => {
+      const store = setupGameInProgress()
+
+      expect(store.canPauseGame).toBe(true)
+    })
+
+    it('should return true during end-game phase', () => {
+      const store = setupGameInProgress()
+      store.enterHidingZone()
+
+      expect(store.canPauseGame).toBe(true)
+    })
+
+    it('should return false during round-complete phase', () => {
+      const store = setupGameInProgress()
+      store.enterHidingZone()
+      store.hiderFound()
+
+      expect(store.canPauseGame).toBe(false)
+    })
+  })
+
+  describe('pauseGame action', () => {
+    it('should set isGamePaused to true', () => {
+      const store = setupGameInProgress()
+
+      const result = store.pauseGame()
+
+      expect(result.success).toBe(true)
+      expect(store.isGamePaused).toBe(true)
+    })
+
+    it('should fail if game is already paused', () => {
+      const store = setupGameInProgress()
+      store.pauseGame()
+
+      const result = store.pauseGame()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Game is already paused')
+    })
+
+    it('should fail if not in a pauseable phase', () => {
+      const store = useGameStore()
+      store.addPlayer('Alice')
+      store.addPlayer('Bob')
+      // Still in setup phase
+
+      const result = store.pauseGame()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Cannot pause game in current phase')
+    })
+
+    it('should record pause timestamp', () => {
+      const now = Date.now()
+      vi.useFakeTimers()
+      vi.setSystemTime(now)
+
+      const store = setupGameInProgress()
+      store.pauseGame()
+
+      expect(store.pausedAt).toBe(now)
+
+      vi.useRealTimers()
+    })
+  })
+
+  describe('resumeGame action', () => {
+    it('should set isGamePaused to false', () => {
+      const store = setupGameInProgress()
+      store.pauseGame()
+
+      const result = store.resumeGame()
+
+      expect(result.success).toBe(true)
+      expect(store.isGamePaused).toBe(false)
+    })
+
+    it('should fail if game is not paused', () => {
+      const store = setupGameInProgress()
+
+      const result = store.resumeGame()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Game is not paused')
+    })
+
+    it('should clear pause timestamp on resume', () => {
+      const store = setupGameInProgress()
+      store.pauseGame()
+
+      store.resumeGame()
+
+      expect(store.pausedAt).toBeNull()
+    })
+  })
+
+  describe('pause state persistence', () => {
+    let mockStorage: Record<string, string>
+
+    beforeEach(() => {
+      mockStorage = {}
+
+      vi.stubGlobal('localStorage', {
+        getItem: vi.fn((key: string) => mockStorage[key] ?? null),
+        setItem: vi.fn((key: string, value: string) => {
+          mockStorage[key] = value
+        }),
+        removeItem: vi.fn((key: string) => {
+          delete mockStorage[key]
+        }),
+        clear: vi.fn(() => {
+          mockStorage = {}
+        }),
+      })
+
+      setActivePinia(createPinia())
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('should persist pause state to localStorage', async () => {
+      const store = useGameStore()
+      store.addPlayer('Alice')
+      store.addPlayer('Bob')
+      store.startRound(store.players[0]!.id)
+      store.pauseGame()
+
+      await nextTick()
+
+      const persistedData = JSON.parse(mockStorage['jet-lag-stillwater:game'] || '{}')
+      expect(persistedData.isGamePaused).toBe(true)
+    })
+
+    it('should rehydrate pause state from localStorage', () => {
+      const now = Date.now()
+      const persistedState = {
+        currentPhase: GamePhase.Seeking,
+        currentHiderId: 'player-1',
+        roundNumber: 1,
+        players: [
+          { id: 'player-1', name: 'Alice', hasBeenHider: true, totalHidingTimeMs: 0 },
+          { id: 'player-2', name: 'Bob', hasBeenHider: false, totalHidingTimeMs: 0 },
+        ],
+        isGamePaused: true,
+        pausedAt: now,
+      }
+
+      mockStorage['jet-lag-stillwater:game'] = JSON.stringify(persistedState)
+
+      const store = useGameStore()
+      store.rehydrate()
+
+      expect(store.isGamePaused).toBe(true)
+      expect(store.pausedAt).toBe(now)
+    })
+  })
+
+  describe('pause clears on phase transitions', () => {
+    it('should clear pause state when transitioning to round-complete', () => {
+      const store = setupGameInProgress()
+      store.enterHidingZone()
+      store.pauseGame()
+
+      store.hiderFound()
+
+      expect(store.isGamePaused).toBe(false)
+    })
+
+    it('should clear pause state when game is reset', () => {
+      const store = setupGameInProgress()
+      store.pauseGame()
+
+      store.resetGame()
+
+      expect(store.isGamePaused).toBe(false)
+    })
+  })
+})

@@ -40,6 +40,7 @@ const timer = useTimer({
 
 // Computed values
 const isHidingPeriod = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
+const isGamePaused = computed(() => gameStore.isGamePaused)
 
 const displayTime = computed(() => {
   return formatTimeShort(timer.remaining.value)
@@ -200,6 +201,22 @@ watch(
     }
   },
   { immediate: false }, // Don't run immediately - let rehydrate handle initial state
+)
+
+// Watch for game-level pause/resume
+watch(
+  isGamePaused,
+  (paused) => {
+    if (!isHidingPeriod.value || hasCompleted.value) return
+
+    if (paused && timer.isRunning.value && !timer.isPaused.value) {
+      timer.pause()
+      persist()
+    } else if (!paused && timer.isRunning.value && timer.isPaused.value) {
+      timer.resume()
+      persist()
+    }
+  },
 )
 
 // Handle visibility change for app backgrounding

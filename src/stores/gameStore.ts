@@ -49,6 +49,8 @@ interface PersistedGameState {
   currentHiderId: string | null
   roundNumber: number
   players: Player[]
+  isGamePaused: boolean
+  pausedAt: number | null
 }
 
 /**
@@ -67,6 +69,8 @@ export const useGameStore = defineStore('game', () => {
   const currentHiderId = ref<string | null>(null)
   const roundNumber = ref(0)
   const players = ref<Player[]>([])
+  const isGamePaused = ref(false)
+  const pausedAt = ref<number | null>(null)
 
   // Getters
   const currentHider = computed<Player | null>(() => {
@@ -93,6 +97,19 @@ export const useGameStore = defineStore('game', () => {
   })
 
   /**
+   * Check if the game can be paused in the current phase.
+   * Only active gameplay phases (hiding-period, seeking, end-game) allow pausing.
+   */
+  const canPauseGame = computed<boolean>(() => {
+    const pauseablePhases = [
+      GamePhase.HidingPeriod,
+      GamePhase.Seeking,
+      GamePhase.EndGame,
+    ]
+    return pauseablePhases.includes(currentPhase.value)
+  })
+
+  /**
    * Persist current state to localStorage
    */
   function persist(): void {
@@ -101,6 +118,8 @@ export const useGameStore = defineStore('game', () => {
       currentHiderId: currentHiderId.value,
       roundNumber: roundNumber.value,
       players: players.value,
+      isGamePaused: isGamePaused.value,
+      pausedAt: pausedAt.value,
     }
     persistenceService.save(STORAGE_KEY, state)
   }
@@ -117,6 +136,8 @@ export const useGameStore = defineStore('game', () => {
         currentHiderId.value = persisted.currentHiderId
         roundNumber.value = persisted.roundNumber
         players.value = persisted.players
+        isGamePaused.value = persisted.isGamePaused ?? false
+        pausedAt.value = persisted.pausedAt ?? null
       }
     } catch {
       // If rehydration fails (e.g., corrupted data), keep default state
@@ -126,7 +147,7 @@ export const useGameStore = defineStore('game', () => {
 
   // Watch for state changes and persist automatically
   watch(
-    [currentPhase, currentHiderId, roundNumber, players],
+    [currentPhase, currentHiderId, roundNumber, players, isGamePaused, pausedAt],
     () => {
       persist()
     },
@@ -220,11 +241,16 @@ export const useGameStore = defineStore('game', () => {
   /**
    * Mark the hider as found.
    * Transitions from end-game to round-complete.
+   * Clears any active pause state.
    */
   function hiderFound(): ActionResult {
     if (currentPhase.value !== GamePhase.EndGame) {
       return { success: false, error: 'Cannot mark hider found from current phase' }
     }
+
+    // Clear pause state when transitioning to round-complete
+    isGamePaused.value = false
+    pausedAt.value = null
 
     currentPhase.value = GamePhase.RoundComplete
     return { success: true }
@@ -261,6 +287,40 @@ export const useGameStore = defineStore('game', () => {
     currentHiderId.value = null
     roundNumber.value = 0
     players.value = []
+    isGamePaused.value = false
+    pausedAt.value = null
+  }
+
+  /**
+   * Pause the game.
+   * Stops all timers and shows pause overlay.
+   */
+  function pauseGame(): ActionResult {
+    if (!canPauseGame.value) {
+      return { success: false, error: 'Cannot pause game in current phase' }
+    }
+
+    if (isGamePaused.value) {
+      return { success: false, error: 'Game is already paused' }
+    }
+
+    isGamePaused.value = true
+    pausedAt.value = Date.now()
+    return { success: true }
+  }
+
+  /**
+   * Resume the game.
+   * Restarts all timers from where they were paused.
+   */
+  function resumeGame(): ActionResult {
+    if (!isGamePaused.value) {
+      return { success: false, error: 'Game is not paused' }
+    }
+
+    isGamePaused.value = false
+    pausedAt.value = null
+    return { success: true }
   }
 
   return {
@@ -269,12 +329,15 @@ export const useGameStore = defineStore('game', () => {
     currentHiderId,
     roundNumber,
     players,
+    isGamePaused,
+    pausedAt,
     // Getters
     currentHider,
     seekers,
     allPlayersHaveBeenHider,
     playersRankedByTime,
     playersWhoHaventBeenHider,
+    canPauseGame,
     // Actions
     addPlayer,
     removePlayer,
@@ -285,6 +348,8 @@ export const useGameStore = defineStore('game', () => {
     hiderFound,
     endRound,
     resetGame,
+    pauseGame,
+    resumeGame,
     // Persistence
     rehydrate,
   }

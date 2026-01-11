@@ -9,6 +9,7 @@ import RoundSummary from '@/components/RoundSummary.vue'
 import HidingDurationTimer from '@/components/HidingDurationTimer.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionHistory from '@/components/QuestionHistory.vue'
+import GamePauseOverlay from '@/components/GamePauseOverlay.vue'
 import { GameSize } from '@/types/question'
 
 // Props
@@ -135,14 +136,18 @@ function handleEndGame() {
     <!-- Header with game info -->
     <header class="border-b border-slate-700 bg-slate-800 p-4">
       <div class="mx-auto max-w-2xl">
-        <!-- Phase Badge -->
-        <div class="mb-3 flex items-center justify-center">
+        <!-- Phase Badge and Pause Button -->
+        <div class="mb-3 flex items-center justify-between">
+          <div class="w-24"></div>
           <span
             data-testid="phase-badge"
             :class="['rounded-full px-4 py-1 text-sm font-medium', getPhaseBadgeClass()]"
           >
             {{ getPhaseBadgeText() }}
           </span>
+          <div class="flex w-24 justify-end">
+            <GamePauseOverlay :role="currentViewRole" />
+          </div>
         </div>
 
         <!-- Player Info -->

@@ -33,6 +33,8 @@ const isActivePhase = computed(() => {
   )
 })
 
+const isGamePaused = computed(() => gameStore.isGamePaused)
+
 const isVisiblePhase = computed(() => {
   return (
     gameStore.currentPhase === GamePhase.Seeking ||
@@ -208,6 +210,22 @@ watch(
     }
   },
   { immediate: false },
+)
+
+// Watch for game-level pause/resume
+watch(
+  isGamePaused,
+  (paused) => {
+    if (!isActivePhase.value || isStopped.value) return
+
+    if (paused && timer.isRunning.value && !timer.isPaused.value) {
+      timer.pause()
+      persist()
+    } else if (!paused && timer.isRunning.value && timer.isPaused.value) {
+      timer.resume()
+      persist()
+    }
+  },
 )
 
 // Handle visibility change for app backgrounding
