@@ -3,12 +3,12 @@ import { render, screen, cleanup, within, fireEvent } from '@testing-library/vue
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import CardHand from '../CardHand.vue'
-import { useCardStore, type CardInstance } from '@/stores/cardStore'
+import { useCardStore, type CardInstance, type TimeBonusCardInstance } from '@/stores/cardStore'
 import { CardType, PowerupType } from '@/types/card'
 import { GameSize } from '@/types/question'
 
 // Helper to create card instances for testing
-function createTimeBonusCardInstance(tier: number = 1): CardInstance {
+function createTimeBonusCardInstance(tier: number = 1): TimeBonusCardInstance {
   return {
     id: `time-bonus-tier-${tier}`,
     instanceId: `test-time-bonus-${tier}-${Date.now()}`,
@@ -21,7 +21,7 @@ function createTimeBonusCardInstance(tier: number = 1): CardInstance {
       [GameSize.Medium]: 3 * tier,
       [GameSize.Large]: 5 * tier,
     },
-  } as CardInstance
+  }
 }
 
 function createPowerupCardInstance(powerupType: PowerupType = PowerupType.Veto): CardInstance {

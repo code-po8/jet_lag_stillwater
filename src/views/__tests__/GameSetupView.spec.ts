@@ -68,7 +68,7 @@ describe('GameSetupView', () => {
       await fireEvent.click(addButton)
 
       expect(store.players).toHaveLength(1)
-      expect(store.players[0].name).toBe('Alice')
+      expect(store.players[0]!.name).toBe('Alice')
     })
 
     it('should display added players in a list', async () => {
@@ -127,7 +127,7 @@ describe('GameSetupView', () => {
       expect(store.players).toHaveLength(1)
 
       // Remove Alice using the data-testid attribute
-      const aliceId = store.players[0].id
+      const aliceId = store.players[0]!.id
       const aliceItem = screen.getByTestId(`player-${aliceId}`)
       const removeButton = within(aliceItem).getByRole('button', {
         name: /remove/i,
@@ -239,7 +239,7 @@ describe('GameSetupView', () => {
       await fireEvent.click(addButton)
       await nextTick()
 
-      expect(store.players[0].name).toBe('Alice')
+      expect(store.players[0]!.name).toBe('Alice')
     })
   })
 
