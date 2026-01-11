@@ -479,6 +479,53 @@ export const useCardStore = defineStore('cards', () => {
   }
 
   /**
+   * Discard specified cards from hand and draw new ones
+   * Used for Discard 1 Draw 2 and Discard 2 Draw 3 powerups
+   */
+  function discardAndDraw(cardInstanceIds: string[], drawCountNum: number): CardActionResult {
+    // Validate all cards exist in hand
+    const cardsToDiscard: CardInstance[] = []
+    for (const instanceId of cardInstanceIds) {
+      const card = hand.value.find(c => c.instanceId === instanceId)
+      if (!card) {
+        return { success: false, error: 'One or more cards not found in hand' }
+      }
+      cardsToDiscard.push(card)
+    }
+
+    // Check if deck has enough cards to draw
+    if (deckSize.value < drawCountNum) {
+      return { success: false, error: 'Not enough cards in deck' }
+    }
+
+    // Discard the selected cards
+    for (const card of cardsToDiscard) {
+      const cardIndex = hand.value.findIndex(c => c.instanceId === card.instanceId)
+      if (cardIndex !== -1) {
+        const [removedCard] = hand.value.splice(cardIndex, 1)
+        discardPile.value.push(removedCard!)
+      }
+    }
+
+    // Draw new cards (respecting hand limit)
+    const drawnCards: CardInstance[] = []
+    const maxDraw = Math.min(drawCountNum, availableSlots.value, deckSize.value)
+
+    for (let i = 0; i < maxDraw; i++) {
+      const card = drawSingleCard(deckComposition.value)
+      if (card) {
+        drawnCards.push(card)
+        hand.value.push(card)
+      }
+    }
+
+    return {
+      success: true,
+      drawnCards,
+    }
+  }
+
+  /**
    * Reset the store to initial state (for new round)
    */
   function reset(): void {
@@ -508,6 +555,7 @@ export const useCardStore = defineStore('cards', () => {
     drawCards,
     playCard,
     discardCard,
+    discardAndDraw,
     expandHandLimit,
     clearHand,
     playCurseCard,

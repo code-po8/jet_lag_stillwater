@@ -1398,33 +1398,89 @@ describe('curse clearing (CARD-006b)', () => {
 
 ### CARD-007a: Discard/Draw Powerup Effect
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002
 
 **Story:** As a hider, I need to play the Discard/Draw powerup so that I can exchange unwanted cards for new ones.
 
 **Acceptance Criteria:**
-- [ ] Discard/Draw card can be played from hand
-- [ ] UI allows selecting which cards to discard (multi-select)
-- [ ] After discarding, draw equal number of new cards
-- [ ] Confirmation before finalizing the play
-- [ ] Card removed from hand after playing
-- [ ] Visual feedback showing cards discarded and drawn
+- [x] Discard/Draw card can be played from hand
+- [x] UI allows selecting which cards to discard (multi-select)
+- [x] After discarding, draw equal number of new cards
+- [x] Confirmation before finalizing the play
+- [x] Card removed from hand after playing
+- [x] Visual feedback showing cards discarded and drawn
 
 **Size:** S
 
 **Rules Reference:**
 - See GAME_RULES.md "Powerup Cards" section
 
-**Tests to Write:**
+**Tests Written (26 tests in PowerupDiscardDrawModal.spec.ts + 8 tests in cardStore):**
 ```typescript
-describe('Discard/Draw Powerup', () => {
-  it('should allow selecting multiple cards to discard')
-  it('should draw equal number of new cards')
-  it('should remove powerup card after playing')
-  it('should require confirmation before playing')
+describe('PowerupDiscardDrawModal', () => {
+  describe('visibility', () => {
+    it('should not render when powerupCard is null')
+    it('should render when powerupCard is provided')
+  })
+  describe('header and instructions', () => {
+    it('should display the powerup card name in header')
+    it('should display instructions for Discard 1 Draw 2')
+    it('should display instructions for Discard 2 Draw 3')
+  })
+  describe('card selection for discard', () => {
+    it('should display all selectable cards')
+    it('should allow selecting a card for discard')
+    it('should allow deselecting a card')
+    it('should prevent selecting more cards than required for Discard 1 Draw 2')
+    it('should allow selecting two cards for Discard 2 Draw 3')
+    it('should show selection counter')
+    it('should update selection counter when card is selected')
+  })
+  describe('confirm button', () => {
+    it('should display confirm button')
+    it('should disable confirm button when not enough cards selected')
+    it('should enable confirm button when correct number of cards selected')
+    it('should emit confirm event with selected cards when clicked')
+  })
+  describe('cancel button', () => {
+    it('should display cancel button')
+    it('should emit cancel event when clicked')
+  })
+  describe('not enough cards warning', () => {
+    it('should show warning when not enough cards to play Discard 2 Draw 3')
+    it('should not show warning when enough cards available')
+  })
+  describe('draw count display', () => {
+    it('should display how many cards will be drawn for Discard 1 Draw 2')
+    it('should display how many cards will be drawn for Discard 2 Draw 3')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly card sizes (min 44px)')
+    it('should have touch-friendly confirm button')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA labels for modal')
+    it('should have proper ARIA labels for selectable cards')
+  })
+})
+describe('cardStore discardAndDraw', () => {
+  it('should discard selected cards and draw new ones')
+  it('should return the drawn cards')
+  it('should add discarded cards to discard pile')
+  it('should return error if any card not in hand')
+  it('should return error if deck is empty and cannot draw')
+  it('should work with Discard 1 Draw 2 scenario')
+  it('should work with Discard 2 Draw 3 scenario')
+  it('should respect hand limit when drawing')
 })
 ```
+
+**Notes:**
+- Supports both Discard 1 Draw 2 and Discard 2 Draw 3 powerup variants
+- PowerupDiscardDrawModal component handles card selection UI
+- discardAndDraw action in cardStore handles the discard/draw logic
+- Integrated into HiderView via card selection handling
 
 ---
 
@@ -2148,10 +2204,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 3 | 1 |
-| 3: Card Management | 12 | 7 | 5 |
+| 3: Card Management | 12 | 8 | 4 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **32** | **15** |
+| **Total** | **47** | **33** | **14** |
 
 ---
 
@@ -2185,12 +2241,11 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-004**: Question Response Timer
-- **CARD-007a**: Discard/Draw Powerup Effect
 - **CARD-007b**: Draw 1, Expand Powerup Effect
 - **CARD-007c**: Duplicate Powerup Effect
 - **CARD-007d**: Move Powerup Effect

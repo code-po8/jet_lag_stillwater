@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { nextTick } from 'vue'
-import { useCardStore } from '../cardStore'
+import { useCardStore, type CardInstance } from '../cardStore'
 import {
   CardType,
   TOTAL_DECK_SIZE,
@@ -323,6 +323,123 @@ describe('cardStore actions', () => {
       store.clearHand()
 
       expect(store.discardPile.length).toBe(handSize)
+    })
+  })
+
+  describe('discardAndDraw', () => {
+    it('should discard selected cards and draw new ones', () => {
+      const store = useCardStore()
+      store.drawCards(4)
+      const cardsToDiscard = [store.hand[0]!.instanceId, store.hand[1]!.instanceId]
+      const initialDeckSize = store.deckSize
+
+      const result = store.discardAndDraw(cardsToDiscard, 3)
+
+      expect(result.success).toBe(true)
+      // Should have: 4 - 2 discarded + 3 drawn = 5 cards
+      expect(store.hand.length).toBe(5)
+      expect(store.deckSize).toBe(initialDeckSize - 3)
+    })
+
+    it('should return the drawn cards', () => {
+      const store = useCardStore()
+      store.drawCards(2)
+      const cardToDiscard = store.hand[0]!.instanceId
+
+      const result = store.discardAndDraw([cardToDiscard], 2)
+
+      expect(result.drawnCards).toBeDefined()
+      expect(result.drawnCards!.length).toBe(2)
+    })
+
+    it('should add discarded cards to discard pile', () => {
+      const store = useCardStore()
+      store.drawCards(3)
+      const cardsToDiscard = [store.hand[0]!.instanceId, store.hand[1]!.instanceId]
+      const initialDiscardSize = store.discardPile.length
+
+      store.discardAndDraw(cardsToDiscard, 2)
+
+      expect(store.discardPile.length).toBe(initialDiscardSize + 2)
+    })
+
+    it('should return error if any card not in hand', () => {
+      const store = useCardStore()
+      store.drawCards(2)
+
+      const result = store.discardAndDraw(['non-existent-id'], 2)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('One or more cards not found in hand')
+    })
+
+    it('should return error if deck is empty and cannot draw', () => {
+      const store = useCardStore()
+
+      // Empty the deck
+      for (let i = 0; i < TOTAL_DECK_SIZE; i++) {
+        store.drawCards(1)
+        if (store.hand.length > 0) {
+          store.discardCard(store.hand[0]!.instanceId)
+        }
+      }
+      expect(store.deckSize).toBe(0)
+
+      // Add a card back to hand manually to test
+      store.drawCards(0) // no-op but sets up state
+      // Since deck is empty, we need to test with no cards available
+      store.hand.push({
+        id: 'test-card',
+        instanceId: 'test-instance',
+        type: CardType.TimeBonus,
+        name: 'Test Card',
+        description: 'Test',
+        tier: 1,
+        bonusMinutes: { [GameSize.Small]: 2, [GameSize.Medium]: 3, [GameSize.Large]: 5 },
+      } as CardInstance)
+
+      const result = store.discardAndDraw(['test-instance'], 2)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Not enough cards in deck')
+    })
+
+    it('should work with Discard 1 Draw 2 scenario', () => {
+      const store = useCardStore()
+      store.drawCards(4)
+      const cardToDiscard = store.hand[0]!.instanceId
+      const initialHandSize = store.hand.length
+
+      const result = store.discardAndDraw([cardToDiscard], 2)
+
+      expect(result.success).toBe(true)
+      // 4 - 1 + 2 = 5 cards
+      expect(store.hand.length).toBe(initialHandSize - 1 + 2)
+    })
+
+    it('should work with Discard 2 Draw 3 scenario', () => {
+      const store = useCardStore()
+      store.drawCards(4)
+      const cardsToDiscard = [store.hand[0]!.instanceId, store.hand[1]!.instanceId]
+      const initialHandSize = store.hand.length
+
+      const result = store.discardAndDraw(cardsToDiscard, 3)
+
+      expect(result.success).toBe(true)
+      // 4 - 2 + 3 = 5 cards
+      expect(store.hand.length).toBe(initialHandSize - 2 + 3)
+    })
+
+    it('should respect hand limit when drawing', () => {
+      const store = useCardStore()
+      store.drawCards(6) // Fill hand to limit
+      const cardToDiscard = store.hand[0]!.instanceId
+
+      const result = store.discardAndDraw([cardToDiscard], 2)
+
+      expect(result.success).toBe(true)
+      // After discarding 1, we have 5 slots, so can only add 1 more to reach limit
+      expect(store.hand.length).toBeLessThanOrEqual(store.handLimit)
     })
   })
 

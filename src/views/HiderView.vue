@@ -1,23 +1,37 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
-import { useCardStore } from '@/stores/cardStore'
+import { useCardStore, type CardInstance } from '@/stores/cardStore'
 import CardHand from '@/components/CardHand.vue'
+import CardDrawModal from '@/components/CardDrawModal.vue'
+import PowerupDiscardDrawModal from '@/components/PowerupDiscardDrawModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import { GameSize } from '@/types/question'
+import { CardType, PowerupType } from '@/types/card'
 
 // Props
-defineProps<{
+const props = defineProps<{
   gameSize?: GameSize
 }>()
 
 const gameStore = useGameStore()
 const cardStore = useCardStore()
 
+// State for powerup modal
+const selectedPowerupCard = ref<CardInstance | null>(null)
+const drawnCards = ref<CardInstance[]>([])
+const keepCount = ref(0)
+
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
 const isHidingPeriod = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
-const totalTimeBonus = computed(() => cardStore.totalTimeBonus(GameSize.Small))
+const totalTimeBonus = computed(() => cardStore.totalTimeBonus(props.gameSize ?? GameSize.Small))
+
+// Get selectable cards (all cards except the powerup being played)
+const selectableCardsForDiscard = computed(() => {
+  if (!selectedPowerupCard.value) return []
+  return cardStore.hand.filter(card => card.instanceId !== selectedPowerupCard.value?.instanceId)
+})
 
 /**
  * Get display text for the current phase
@@ -33,6 +47,69 @@ function getPhaseDisplayText(): string {
     default:
       return currentPhase.value
   }
+}
+
+/**
+ * Handle card selection from CardHand
+ */
+function handleCardSelect(card: CardInstance) {
+  // Check if it's a Discard/Draw powerup
+  if (card.type === CardType.Powerup && 'powerupType' in card) {
+    const powerupType = (card as CardInstance & { powerupType: PowerupType }).powerupType
+    if (
+      powerupType === PowerupType.Discard1Draw2 ||
+      powerupType === PowerupType.Discard2Draw3
+    ) {
+      selectedPowerupCard.value = card
+      return
+    }
+  }
+  // For other cards, just show a basic confirmation (future feature)
+}
+
+/**
+ * Handle confirm from discard/draw modal
+ */
+function handleDiscardDrawConfirm(cardsToDiscard: CardInstance[]) {
+  if (!selectedPowerupCard.value) return
+
+  // Determine draw count based on powerup type
+  const powerupType = (selectedPowerupCard.value as CardInstance & { powerupType: PowerupType }).powerupType
+  const drawCountNum = powerupType === PowerupType.Discard1Draw2 ? 2 : 3
+
+  // First, play the powerup card (remove it from hand)
+  cardStore.playCard(selectedPowerupCard.value.instanceId)
+
+  // Then discard selected cards and draw new ones
+  const result = cardStore.discardAndDraw(
+    cardsToDiscard.map(c => c.instanceId),
+    drawCountNum
+  )
+
+  // Show drawn cards in CardDrawModal (keep all of them)
+  if (result.success && result.drawnCards && result.drawnCards.length > 0) {
+    drawnCards.value = result.drawnCards
+    keepCount.value = result.drawnCards.length // Keep all drawn cards
+  }
+
+  // Close the powerup modal
+  selectedPowerupCard.value = null
+}
+
+/**
+ * Handle cancel from discard/draw modal
+ */
+function handleDiscardDrawCancel() {
+  selectedPowerupCard.value = null
+}
+
+/**
+ * Handle confirm from card draw modal (after powerup effect)
+ */
+function handleCardDrawConfirm() {
+  // Cards are already in hand from discardAndDraw, just close the modal
+  drawnCards.value = []
+  keepCount.value = 0
 }
 </script>
 
@@ -66,7 +143,22 @@ function getPhaseDisplayText(): string {
     <!-- Cards Section -->
     <section data-testid="hider-cards-section" class="flex-1">
       <h2 class="mb-3 text-lg font-semibold text-white">Your Cards</h2>
-      <CardHand :game-size="gameSize ?? GameSize.Small" />
+      <CardHand :game-size="props.gameSize ?? GameSize.Small" @card-select="handleCardSelect" />
     </section>
+
+    <!-- Powerup Discard/Draw Modal -->
+    <PowerupDiscardDrawModal
+      :powerup-card="selectedPowerupCard"
+      :selectable-cards="selectableCardsForDiscard"
+      @confirm="handleDiscardDrawConfirm"
+      @cancel="handleDiscardDrawCancel"
+    />
+
+    <!-- Card Draw Modal (shows drawn cards after powerup effect) -->
+    <CardDrawModal
+      :drawn-cards="drawnCards"
+      :keep-count="keepCount"
+      @confirm="handleCardDrawConfirm"
+    />
   </div>
 </template>
