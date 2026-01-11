@@ -4,7 +4,7 @@
  * Tests for HiderView, SeekerView, and role toggle functionality.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, cleanup, fireEvent, within } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
@@ -404,6 +404,69 @@ describe('GamePlayView (role toggle)', () => {
       renderGamePlayView()
       const contentArea = screen.getByTestId('main-content-area')
       expect(contentArea.className).toMatch(/transition/)
+    })
+  })
+
+  describe('hiding period timer integration', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('should display and auto-start HidingPeriodTimer when game starts', async () => {
+      const router = createMockRouter()
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const gameStore = useGameStore()
+
+      // Set up game and start round (enters hiding-period phase)
+      gameStore.addPlayer('Alice')
+      gameStore.addPlayer('Bob')
+      gameStore.startRound(gameStore.players[0]!.id)
+
+      render(GamePlayView, {
+        global: {
+          plugins: [router, pinia],
+        },
+      })
+
+      await nextTick()
+
+      // Timer should be displayed during hiding-period phase
+      expect(screen.getByTestId('hiding-period-timer')).toBeInTheDocument()
+
+      // Timer should show approximately 30:00 (may have ticked a few times due to timing)
+      const timerText = screen.getByTestId('timer-display').textContent
+      expect(timerText).toMatch(/^29:5\d$/)
+    })
+
+    it('should count down the hiding period timer automatically', async () => {
+      const router = createMockRouter()
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const gameStore = useGameStore()
+
+      gameStore.addPlayer('Alice')
+      gameStore.addPlayer('Bob')
+      gameStore.startRound(gameStore.players[0]!.id)
+
+      render(GamePlayView, {
+        global: {
+          plugins: [router, pinia],
+        },
+      })
+
+      await nextTick()
+
+      // Advance timer by 1 minute
+      vi.advanceTimersByTime(60000)
+      await nextTick()
+
+      // Timer should show 29:00
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('29:00')
     })
   })
 })

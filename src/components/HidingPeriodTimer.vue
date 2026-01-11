@@ -138,6 +138,13 @@ function rehydrate(): boolean {
     }>(STORAGE_KEY)
 
     if (state && isHidingPeriod.value) {
+      // If the persisted state shows timer wasn't running and wasn't paused,
+      // it's stale data from a previous completed game - ignore it
+      if (!state.isRunning && !state.isPaused) {
+        persistenceService.remove(STORAGE_KEY)
+        return false
+      }
+
       isRehydrating.value = true
       hasWarned.value = state.hasWarned
       hasCompleted.value = state.hasCompleted
@@ -155,9 +162,10 @@ function rehydrate(): boolean {
           timer.start()
         } else {
           // Timer would have completed while app was closed
-          timer.elapsed.value = HIDING_PERIOD_MS
-          hasCompleted.value = true
-          hasWarned.value = true
+          // Clear stale state and start fresh for new game
+          persistenceService.remove(STORAGE_KEY)
+          isRehydrating.value = false
+          return false
         }
       } else if (state.isPaused) {
         // Timer was paused - restore that state

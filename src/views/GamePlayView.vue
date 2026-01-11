@@ -7,6 +7,7 @@ import SeekerView from './SeekerView.vue'
 import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
 import RoundSummary from '@/components/RoundSummary.vue'
 import HidingDurationTimer from '@/components/HidingDurationTimer.vue'
+import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionHistory from '@/components/QuestionHistory.vue'
 import { GameSize } from '@/types/question'
 
@@ -38,6 +39,7 @@ const currentPhase = computed(() => gameStore.currentPhase)
 const currentHider = computed(() => gameStore.currentHider)
 const seekers = computed(() => gameStore.seekers)
 const isRoundComplete = computed(() => currentPhase.value === GamePhase.RoundComplete)
+const isHidingPeriod = computed(() => currentPhase.value === GamePhase.HidingPeriod)
 
 /**
  * Get display text for the phase badge
@@ -230,7 +232,10 @@ function handleEndGame() {
           v-else-if="currentTab === 'timers'"
           class="flex flex-col items-center gap-4 p-4"
         >
-          <HidingDurationTimer />
+          <!-- Show HidingPeriodTimer during hiding period -->
+          <HidingPeriodTimer v-if="isHidingPeriod" :role="currentViewRole" />
+          <!-- Show HidingDurationTimer during seeking/end-game -->
+          <HidingDurationTimer v-else />
         </div>
 
         <!-- Cards Tab - Shows HiderView with cards -->

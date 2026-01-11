@@ -386,4 +386,58 @@ describe('HidingPeriodTimer', () => {
       expect(liveRegion).toBeInTheDocument()
     })
   })
+
+  describe('stale localStorage handling', () => {
+    it('should ignore stale localStorage data from completed games and start fresh', async () => {
+      // Simulate stale localStorage data from a previous game session
+      // where the timer had stopped (isRunning: false, isPaused: false)
+      const staleState = {
+        elapsed: 1800000, // 30 minutes (timer had completed)
+        isRunning: false,
+        isPaused: false,
+        hasWarned: true,
+        hasCompleted: true,
+        startTime: Date.now() - 86400000, // 1 day ago
+      }
+      localStorage.setItem('hiding-period-timer', JSON.stringify(staleState))
+
+      render(HidingPeriodTimer)
+      setupGameInHidingPeriod()
+
+      await nextTick()
+
+      // Timer should start fresh at 30:00, ignoring stale data
+      const timerDisplay = screen.getByTestId('timer-display')
+      expect(timerDisplay.textContent).toMatch(/^(30:00|29:59)$/)
+
+      // Timer should be running (countdown should work)
+      vi.advanceTimersByTime(60000)
+      await nextTick()
+
+      expect(timerDisplay.textContent).toMatch(/^29:0[0-9]$/)
+    })
+
+    it('should ignore localStorage data where timer would have expired', async () => {
+      // Simulate localStorage data where timer was running but app was closed
+      // long enough that the timer would have expired
+      const staleState = {
+        elapsed: 0,
+        isRunning: true,
+        isPaused: false,
+        hasWarned: false,
+        hasCompleted: false,
+        startTime: Date.now() - 3600000, // 1 hour ago (timer would have expired)
+      }
+      localStorage.setItem('hiding-period-timer', JSON.stringify(staleState))
+
+      render(HidingPeriodTimer)
+      setupGameInHidingPeriod()
+
+      await nextTick()
+
+      // Timer should start fresh at 30:00 for new game
+      const timerDisplay = screen.getByTestId('timer-display')
+      expect(timerDisplay.textContent).toMatch(/^(30:00|29:59)$/)
+    })
+  })
 })
