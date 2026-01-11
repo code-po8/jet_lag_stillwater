@@ -2568,18 +2568,135 @@ describe('Text Readability', () => {
 
 ### UX-003: Notifications and Alerts
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** T-002, CARD-006b
 
 **Story:** As a player, I need timely notifications so that I don't miss important game events.
 
 **Acceptance Criteria:**
-- [ ] In-app toast notifications for actions
-- [ ] Sound alerts for timer events (optional, toggleable)
-- [ ] Vibration feedback on mobile (optional)
-- [ ] Curse cleared notification
+- [x] In-app toast notifications for actions
+- [x] Sound alerts for timer events (optional, toggleable)
+- [x] Vibration feedback on mobile (optional)
+- [x] Curse cleared notification
 
 **Size:** M
+
+**Tests Written (53 tests):**
+```typescript
+describe('useNotifications', () => {
+  describe('toast notifications', () => {
+    describe('showToast', () => {
+      it('should add a toast notification to the list')
+      it('should assign a unique ID to each toast')
+      it('should set the correct type on toast')
+      it('should auto-dismiss toast after default duration (3000ms)')
+      it('should auto-dismiss toast after custom duration')
+      it('should not auto-dismiss if duration is 0')
+    })
+    describe('dismissToast', () => {
+      it('should remove a toast by ID')
+      it('should do nothing if toast ID does not exist')
+    })
+    describe('clearAllToasts', () => {
+      it('should remove all toasts')
+    })
+  })
+  describe('sound alerts', () => {
+    describe('soundEnabled setting', () => {
+      it('should default to enabled')
+      it('should allow toggling sound on/off')
+      it('should allow setting sound directly')
+    })
+    describe('playSound', () => {
+      it('should play sound when enabled')
+      it('should not play sound when disabled')
+      it('should support different sound types')
+    })
+  })
+  describe('vibration feedback', () => {
+    describe('vibrationEnabled setting', () => {
+      it('should default to enabled')
+      it('should allow toggling vibration on/off')
+      it('should allow setting vibration directly')
+    })
+    describe('vibrate', () => {
+      it('should call navigator.vibrate when enabled')
+      it('should not call navigator.vibrate when disabled')
+      it('should support short vibration pattern')
+      it('should support long vibration pattern')
+      it('should support double vibration pattern')
+    })
+    describe('browser support', () => {
+      it('should handle browsers without vibration API gracefully')
+    })
+  })
+  describe('combined notifications', () => {
+    describe('notify', () => {
+      it('should show toast, play sound, and vibrate by default')
+      it('should respect options to disable sound and vibration')
+      it('should use specified sound and vibration patterns')
+    })
+    describe('preset notifications', () => {
+      it('should have preset for timer warning')
+      it('should have preset for timer expired')
+      it('should have preset for curse cleared')
+      it('should have preset for hiding period ended')
+      it('should have preset for game paused')
+      it('should have preset for game resumed')
+    })
+  })
+  describe('settings persistence', () => {
+    it('should persist sound setting to localStorage')
+    it('should persist vibration setting to localStorage')
+  })
+})
+describe('ToastContainer', () => {
+  describe('visibility', () => {
+    it('should not render when there are no toasts')
+    it('should render toasts when they exist')
+  })
+  describe('toast display', () => {
+    it('should display toast message')
+    it('should display multiple toasts')
+  })
+  describe('toast types', () => {
+    it('should apply info styling for info toasts')
+    it('should apply success styling for success toasts')
+    it('should apply warning styling for warning toasts')
+    it('should apply error styling for error toasts')
+  })
+  describe('dismiss functionality', () => {
+    it('should have a dismiss button on each toast')
+    it('should dismiss toast when dismiss button is clicked')
+    it('should auto-dismiss after duration')
+  })
+  describe('positioning', () => {
+    it('should be positioned at the top of the screen')
+    it('should be centered horizontally')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly dismiss button (min 44px)')
+    it('should have readable text size')
+  })
+  describe('accessibility', () => {
+    it('should have role="alert" for screen readers')
+    it('should have aria-live="polite" on container')
+    it('should have aria-label on dismiss button')
+  })
+})
+```
+
+**Implementation Notes:**
+- Created `src/composables/useNotifications.ts` with toast, sound, and vibration APIs
+- Created `src/components/ToastContainer.vue` with Teleport to body for overlay
+- Toast notifications appear at top-center with auto-dismiss after 3 seconds (configurable)
+- Sound alerts use Web Audio API to generate tones for different event types
+- Vibration uses `navigator.vibrate()` with short/long/double patterns
+- Sound and vibration settings persist to localStorage and can be toggled
+- Integrated into HidingPeriodTimer (warning at 5 min, complete notifications)
+- Integrated into QuestionResponseTimer (warning at 1 min, expired notifications)
+- Integrated into GamePauseOverlay (pause/resume notifications)
+- Integrated into SeekerView for curse cleared notifications
 
 ---
 
@@ -2655,8 +2772,8 @@ describe('Design System Colors', () => {
 | 2: Timers | 4 | 4 | 0 |
 | 3: Card Management | 12 | 12 | 0 |
 | 4: Game State | 7 | 7 | 0 |
-| 5: Mobile UX Polish | 4 | 3 | 1 |
-| **Total** | **47** | **43** | **4** |
+| 5: Mobile UX Polish | 4 | 4 | 0 |
+| **Total** | **47** | **44** | **3** |
 
 ---
 
@@ -2690,10 +2807,9 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-007, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, CARD-008, UX-001, UX-002, and UX-004 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-007, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, CARD-008, UX-001, UX-002, UX-003, and UX-004 complete, the following cards are now ready:
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-006**: Configure GitHub Actions CI
-- **UX-003**: Notifications and Alerts
 
 ---
 

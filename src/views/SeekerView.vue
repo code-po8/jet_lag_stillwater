@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useQuestionStore } from '@/stores/questionStore'
 import { useCardStore, type CardInstance } from '@/stores/cardStore'
+import { useNotifications } from '@/composables/useNotifications'
 import QuestionList from '@/components/QuestionList.vue'
 import AskQuestionModal from '@/components/AskQuestionModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
@@ -24,6 +25,7 @@ const props = withDefaults(
 const gameStore = useGameStore()
 const questionStore = useQuestionStore()
 const cardStore = useCardStore()
+const notifications = useNotifications()
 
 // Local state
 const selectedQuestion = ref<Question | null>(null)
@@ -118,6 +120,13 @@ function handleCardDrawConfirm(event: { keptCards: CardInstance[]; discardedCard
   drawnCards.value = []
   cardsToKeep.value = 0
 }
+
+/**
+ * Handle curse cleared event from CurseDisplay
+ */
+function handleCurseCleared(event: { curseName: string; reason: 'manual' | 'expired' }) {
+  notifications.notifyCurseCleared(event.curseName)
+}
 </script>
 
 <template>
@@ -178,7 +187,7 @@ function handleCardDrawConfirm(event: { keptCards: CardInstance[]; discardedCard
 
     <!-- Active Curses Section -->
     <section v-if="hasActiveCurses" data-testid="seeker-curses-section" class="max-h-64 overflow-hidden">
-      <CurseDisplay :game-size="gameSize" />
+      <CurseDisplay :game-size="gameSize" @curse-cleared="handleCurseCleared" />
     </section>
 
     <!-- Questions Section -->

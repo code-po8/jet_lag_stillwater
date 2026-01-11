@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useTimer } from '@/composables/useTimer'
+import { useNotifications } from '@/composables/useNotifications'
 import { formatTimeShort } from '@/utils/formatTime'
 import { createPersistenceService } from '@/services/persistence'
 
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 
 const gameStore = useGameStore()
 const persistenceService = createPersistenceService()
+const notifications = useNotifications()
 
 // Timer state
 const hasWarned = ref(false)
@@ -76,6 +78,7 @@ const ariaLabel = computed(() => {
 function handleTick() {
   if (!hasWarned.value && timer.remaining.value <= WARNING_THRESHOLD_MS) {
     hasWarned.value = true
+    notifications.notifyTimerWarning()
     emit('warning')
   }
   persist()
@@ -86,6 +89,7 @@ function handleTick() {
  */
 function handleComplete() {
   hasCompleted.value = true
+  notifications.notifyHidingPeriodEnded()
   emit('complete')
   persist()
 }

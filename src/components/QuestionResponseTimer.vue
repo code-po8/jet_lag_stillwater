@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useQuestionStore } from '@/stores/questionStore'
 import { useGameStore } from '@/stores/gameStore'
+import { useNotifications } from '@/composables/useNotifications'
 import { formatTimeShort } from '@/utils/formatTime'
 import { getCategoryById, getResponseTime, GameSize } from '@/types/question'
 
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 
 const questionStore = useQuestionStore()
 const gameStore = useGameStore()
+const notifications = useNotifications()
 
 // Timer state - managed manually for dynamic initial times
 const elapsed = ref(0)
@@ -110,12 +112,17 @@ function tick() {
     // Check for low time alert
     if (!hasAlerted.value && remaining.value <= LOW_TIME_THRESHOLD_MS) {
       hasAlerted.value = true
+      notifications.notify('Less than 1 minute to respond!', 'warning', {
+        soundType: 'timer-warning',
+        vibratePattern: 'double',
+      })
       emit('lowTime')
     }
 
     // Check for expiration
     if (remaining.value <= 0 && !hasExpired.value) {
       hasExpired.value = true
+      notifications.notifyTimerExpired()
       emit('expired')
       stopTimer()
     }

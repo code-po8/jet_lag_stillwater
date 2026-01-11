@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import { useNotifications } from '@/composables/useNotifications'
 
 interface Props {
   role?: 'hider' | 'seeker'
@@ -11,6 +12,7 @@ withDefaults(defineProps<Props>(), {
 })
 
 const gameStore = useGameStore()
+const notifications = useNotifications()
 
 const showPauseButton = computed(() => {
   return gameStore.canPauseGame && !gameStore.isGamePaused
@@ -22,10 +24,12 @@ const showOverlay = computed(() => {
 
 function handlePause() {
   gameStore.pauseGame()
+  notifications.notifyGamePaused()
 }
 
 function handleResume() {
   gameStore.resumeGame()
+  notifications.notifyGameResumed()
 }
 </script>
 
