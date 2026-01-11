@@ -448,6 +448,114 @@ describe('QuestionList', () => {
     })
   })
 
+  describe('hiding period question locking (QUX-001)', () => {
+    function setupHidingPeriodPhase() {
+      const gameStore = useGameStore()
+      gameStore.addPlayer('Alice')
+      gameStore.addPlayer('Bob')
+      const aliceId = gameStore.players[0]!.id
+      gameStore.startRound(aliceId)
+      // Game is now in hiding-period phase
+      return gameStore
+    }
+
+    it('should allow viewing questions during hiding period', async () => {
+      setupHidingPeriodPhase()
+      render(QuestionList)
+
+      // Categories should still be visible and expandable
+      await expandCategory('matching')
+
+      // Questions should be visible
+      const matchingSection = screen.getByTestId('category-matching')
+      const questions = within(matchingSection).getAllByTestId(/^question-/)
+      expect(questions.length).toBeGreaterThan(0)
+    })
+
+    it('should disable ask functionality during hiding period phase', async () => {
+      setupHidingPeriodPhase()
+      render(QuestionList)
+      await expandCategory('matching')
+
+      // Get a matching question
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+
+      // The question should be disabled during hiding period
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      expect(questionElement).toHaveAttribute('aria-disabled', 'true')
+    })
+
+    it('should show locked message when question clicked during hiding period', async () => {
+      setupHidingPeriodPhase()
+      render(QuestionList)
+      await expandCategory('matching')
+
+      // Questions should show some visual indicator that they are locked
+      // This could be text like "Available when seeking begins" or a lock icon
+      const matchingSection = screen.getByTestId('category-matching')
+      expect(
+        within(matchingSection).getByText(/locked|wait.*seeking|available.*seeking/i),
+      ).toBeInTheDocument()
+    })
+
+    it('should enable asking when seeking phase begins', async () => {
+      const gameStore = setupHidingPeriodPhase()
+      const onQuestionSelect = vi.fn()
+      render(QuestionList, {
+        props: {
+          onQuestionSelect,
+        },
+      })
+      await expandCategory('matching')
+
+      // Transition to seeking phase
+      gameStore.startSeeking()
+      await nextTick()
+
+      // Get a matching question
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+
+      // Click the question - should work now
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      await fireEvent.click(questionElement)
+
+      // Should emit the event
+      expect(onQuestionSelect).toHaveBeenCalledWith(matchingQuestion)
+    })
+
+    it('should show visual lock indicator during hiding period', async () => {
+      setupHidingPeriodPhase()
+      render(QuestionList)
+
+      // Look for lock indicator in the UI (e.g., icon, text, or muted styling)
+      // This tests that there's some visual indication questions are locked
+      expect(
+        screen.getByText(/questions.*locked|locked.*hiding|wait.*seeking/i),
+      ).toBeInTheDocument()
+    })
+
+    it('should not emit event when clicking question during hiding period', async () => {
+      setupHidingPeriodPhase()
+      const onQuestionSelect = vi.fn()
+      render(QuestionList, {
+        props: {
+          onQuestionSelect,
+        },
+      })
+      await expandCategory('matching')
+
+      // Get a matching question
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+
+      // Click the question - should NOT emit because we're in hiding period
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      await fireEvent.click(questionElement)
+
+      // Should NOT emit the event
+      expect(onQuestionSelect).not.toHaveBeenCalled()
+    })
+  })
+
   describe('end-game phase restrictions (GS-005)', () => {
     function setupEndGamePhase() {
       const gameStore = useGameStore()

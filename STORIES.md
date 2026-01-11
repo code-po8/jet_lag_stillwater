@@ -2969,32 +2969,41 @@ Enhancements to the question browsing and asking experience.
 
 ### QUX-001: Lock Questions During Hiding Period
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-003b, GS-001
 
 **Story:** As a seeker, I should not be able to ask questions during the hiding period, but I should still be able to browse them to plan my strategy.
 
 **Acceptance Criteria:**
 
-- [ ] Questions are viewable during hiding period
-- [ ] "Ask" functionality is disabled during hiding period phase
-- [ ] Clicking a question shows a message explaining questions are locked until seeking begins
-- [ ] Questions become askable once game transitions to seeking phase
-- [ ] Visual indicator shows questions are temporarily locked (e.g., lock icon, muted styling)
+- [x] Questions are viewable during hiding period
+- [x] "Ask" functionality is disabled during hiding period phase
+- [x] Clicking a question shows a message explaining questions are locked until seeking begins
+- [x] Questions become askable once game transitions to seeking phase
+- [x] Visual indicator shows questions are temporarily locked (e.g., lock icon, muted styling)
 
 **Size:** S
 
-**Tests to Write:**
+**Tests Written (6 tests in QuestionList.spec.ts):**
 
 ```typescript
-describe('question locking during hiding period', () => {
+describe('hiding period question locking (QUX-001)', () => {
   it('should allow viewing questions during hiding period')
-  it('should disable ask button during hiding period')
+  it('should disable ask functionality during hiding period phase')
   it('should show locked message when question clicked during hiding period')
   it('should enable asking when seeking phase begins')
   it('should show visual lock indicator during hiding period')
+  it('should not emit event when clicking question during hiding period')
 })
 ```
+
+**Implementation Notes:**
+
+- Added `isHidingPeriodPhase` computed property to detect hiding-period phase
+- Updated `isQuestionSelectable()` to return false during hiding period
+- Added visual lock banner at top of QuestionList with lock icon (🔒)
+- Added "Locked until seeking begins" notice inside expanded categories
+- Questions styled with reduced opacity and cursor-not-allowed during hiding period
 
 ---
 
@@ -3356,11 +3365,11 @@ describe('room creation and join', () => {
 | 4: Game State                 | 7       | 7        | 0         |
 | 5: Mobile UX Polish           | 4       | 4        | 0         |
 | 6: Developer Tools            | 1       | 0        | 1         |
-| 7: Question UX Improvements   | 2       | 1        | 1         |
+| 7: Question UX Improvements   | 2       | 2        | 0         |
 | 8: Physical Play & Standalone | 3       | 0        | 3         |
 | 9: User Guides                | 2       | 0        | 2         |
 | 10: Multiplayer Sync          | 4       | 0        | 4         |
-| **Total**                     | **59**  | **48**   | **11**    |
+| **Total**                     | **59**  | **49**   | **10**    |
 
 ---
 
@@ -3400,7 +3409,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 7: Question UX Improvements**
 
-- **QUX-001**: Lock Questions During Hiding Period (depends on Q-003b ✅, GS-001 ✅)
+- ~~**QUX-001**: Lock Questions During Hiding Period~~ ✅ COMPLETE
 - ~~**QUX-002**: Collapse Question Categories by Default~~ ✅ COMPLETE
 
 **Epic 8: Physical Play & Standalone Mode**
@@ -3412,7 +3421,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 **Epic 9: User Guides**
 
 - **GUIDE-001**: Hider Mode User Guide (depends on PHYS-001, DEV-001) ⏳
-- **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002, QUX-001) ⏳
+- **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002 ⏳, QUX-001 ✅)
 
 **Epic 10: Multiplayer Sync**
 

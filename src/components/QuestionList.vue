@@ -18,6 +18,9 @@ const gameStore = useGameStore()
 // Categories disabled during end-game phase
 const END_GAME_DISABLED_CATEGORIES = [QuestionCategoryId.Photo, QuestionCategoryId.Tentacle]
 
+// Check if currently in hiding-period phase (questions are locked)
+const isHidingPeriodPhase = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
+
 // Check if currently in end-game phase
 const isEndGamePhase = computed(() => gameStore.currentPhase === GamePhase.EndGame)
 
@@ -94,11 +97,14 @@ function getQuestionStatus(questionId: string): 'available' | 'asked' | 'pending
 /**
  * Check if a question can be selected
  * Questions cannot be selected if:
+ * - Game is in hiding-period phase (questions are locked until seeking begins)
  * - Another question is pending
  * - The question has already been asked
  * - The question's category is disabled (e.g., Photo/Tentacle during end-game)
  */
 function isQuestionSelectable(questionId: string): boolean {
+  // Can't select any question during hiding period (QUX-001)
+  if (isHidingPeriodPhase.value) return false
   const status = getQuestionStatus(questionId)
   // Can't select asked questions
   if (status === 'asked') return false
@@ -143,6 +149,11 @@ function getQuestionClasses(questionId: string): string {
   const status = getQuestionStatus(questionId)
   const baseClasses = 'py-3 text-sm text-slate-200'
 
+  // During hiding period, all questions are locked (QUX-001)
+  if (isHidingPeriodPhase.value) {
+    return `${baseClasses} cursor-not-allowed opacity-75`
+  }
+
   switch (status) {
     case 'asked':
       return `${baseClasses} opacity-50 line-through cursor-not-allowed text-slate-500`
@@ -167,6 +178,17 @@ function getCategoryHeaderStyle(categoryId: string): Record<string, string> {
 
 <template>
   <div data-testid="question-list-container" class="overflow-y-auto p-4">
+    <!-- Locked indicator during hiding period (QUX-001) -->
+    <div
+      v-if="isHidingPeriodPhase"
+      data-testid="questions-locked-notice"
+      class="mb-4 flex items-center gap-2 rounded-lg border border-amber-600/50 bg-amber-900/30 p-3 text-amber-200"
+    >
+      <span class="text-lg">🔒</span>
+      <span class="text-sm">
+        Questions locked during hiding period. Wait for seeking to begin.
+      </span>
+    </div>
     <div
       v-for="category in QUESTION_CATEGORIES"
       :key="category.id"
@@ -203,6 +225,13 @@ function getCategoryHeaderStyle(categoryId: string): Record<string, string> {
 
       <!-- Questions List (collapsible) -->
       <div v-if="isCategoryExpanded(category.id)" class="border-t border-slate-700 px-4 pb-4">
+        <!-- Locked notice inside category during hiding period (QUX-001) -->
+        <div
+          v-if="isHidingPeriodPhase"
+          class="mt-3 rounded bg-amber-900/20 px-3 py-2 text-center text-xs text-amber-300"
+        >
+          🔒 Locked until seeking begins
+        </div>
         <ul class="divide-y divide-slate-700/50">
           <li
             v-for="question in questionsByCategory.get(category.id)"
