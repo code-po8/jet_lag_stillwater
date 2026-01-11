@@ -1410,18 +1410,76 @@ describe('GameSetupView', () => {
 
 ### GS-003: Role-Based Views
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** GS-001, Q-003b, CARD-003
 
 **Story:** As a player, I need to see information relevant to my current role (hider or seeker).
 
 **Acceptance Criteria:**
-- [ ] Hider view shows: cards, time bonus, GPS toggle (future)
-- [ ] Seeker view shows: questions, answers, timers
-- [ ] Easy toggle to switch views (for single-device play)
-- [ ] Current role clearly indicated in UI
+- [x] Hider view shows: cards, time bonus, GPS toggle (future)
+- [x] Seeker view shows: questions, answers, timers
+- [x] Easy toggle to switch views (for single-device play)
+- [x] Current role clearly indicated in UI
 
 **Size:** M
+
+**Tests Written (24 tests):**
+```typescript
+describe('HiderView', () => {
+  describe('card display', () => {
+    it('should display the CardHand component')
+    it('should show cards in hand')
+  })
+  describe('time bonus display', () => {
+    it('should display total time bonus prominently')
+  })
+  describe('hider-specific information', () => {
+    it('should show current hiding phase status')
+    it('should display hider role indicator')
+  })
+})
+
+describe('SeekerView', () => {
+  describe('question display', () => {
+    it('should display the QuestionList component')
+    it('should show question list container')
+  })
+  describe('answer history', () => {
+    it('should show previously answered questions summary')
+  })
+  describe('seeker-specific information', () => {
+    it('should show current seeking phase status')
+    it('should display seeker role indicator')
+  })
+})
+
+describe('GamePlayView (role toggle)', () => {
+  describe('role toggle functionality', () => {
+    it('should display role toggle buttons')
+    it('should have hider toggle button')
+    it('should have seeker toggle button')
+    it('should switch to HiderView when hider toggle is clicked')
+    it('should switch to SeekerView when seeker toggle is clicked')
+    it('should highlight the currently active role')
+  })
+  describe('role indication in UI', () => {
+    it('should clearly show current role in header')
+    it('should update role display when toggle is clicked')
+  })
+  describe('phase display', () => {
+    it('should show hiding-period status when in hiding period')
+    it('should show seeking status when in seeking phase')
+    it('should show end-game status when in end game phase')
+  })
+  describe('player information', () => {
+    it('should display current hider name')
+    it('should display seeker names')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly toggle buttons (min 44px)')
+  })
+})
+```
 
 ---
 
@@ -1635,9 +1693,9 @@ User experience improvements.
 | 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 1 | 3 |
 | 3: Card Management | 12 | 3 | 9 |
-| 4: Game State | 7 | 2 | 5 |
+| 4: Game State | 7 | 3 | 4 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **19** | **28** |
+| **Total** | **47** | **20** | **27** |
 
 ---
 
@@ -1671,7 +1729,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, T-001, CARD-001, CARD-002, and CARD-003 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, T-001, CARD-001, CARD-002, and CARD-003 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
@@ -1688,10 +1746,10 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-007c**: Duplicate Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
 - **UX-004**: Visual Design System
-- **GS-003**: Role-Based Views (newly unblocked by CARD-003)
 - **GS-007**: Unified Game Pause/Resume
+- **UX-002**: Navigation Structure (newly unblocked by GS-003)
 
-**Note:** CARD-003 completion unblocks GS-003 (Role-Based Views).
+**Note:** GS-003 completion unblocks UX-002 (Navigation Structure).
 
 ---
 

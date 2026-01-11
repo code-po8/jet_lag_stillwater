@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
 import { GameSize } from '@/types/question'
 
+const router = useRouter()
 const gameStore = useGameStore()
 
 // Form state
@@ -89,7 +91,7 @@ function confirmStart() {
 
   gameStore.startRound(selectedHider.value.id)
   showConfirmation.value = false
-  // Navigation to game view will be handled by router once implemented
+  router.push({ name: 'game' })
 }
 </script>
 
