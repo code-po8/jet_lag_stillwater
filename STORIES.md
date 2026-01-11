@@ -1486,33 +1486,70 @@ describe('cardStore discardAndDraw', () => {
 
 ### CARD-007b: Draw 1, Expand Powerup Effect
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002
 
 **Story:** As a hider, I need to play the Draw 1, Expand powerup so that I can draw a card and permanently increase my hand size.
 
 **Acceptance Criteria:**
-- [ ] Draw 1, Expand card can be played from hand
-- [ ] Playing draws one card immediately
-- [ ] Hand limit permanently increased by 1 (persists for rest of game)
-- [ ] Hand limit indicator updates to show new limit
-- [ ] Confirmation before playing
-- [ ] Card removed from hand after playing
+- [x] Draw 1, Expand card can be played from hand
+- [x] Playing draws one card immediately
+- [x] Hand limit permanently increased by 1 (persists for rest of game)
+- [x] Hand limit indicator updates to show new limit
+- [x] Confirmation before playing
+- [x] Card removed from hand after playing
 
 **Size:** S
 
 **Rules Reference:**
 - See GAME_RULES.md "Powerup Cards" section
 
-**Tests to Write:**
+**Tests Written (21 tests):**
 ```typescript
-describe('Draw 1, Expand Powerup', () => {
+describe('PowerupDrawExpandModal', () => {
+  describe('visibility', () => {
+    it('should not render when powerupCard is null')
+    it('should render when powerupCard is provided')
+  })
+  describe('header and content', () => {
+    it('should display the powerup card name in header')
+    it('should display the card effect description')
+    it('should show current hand limit')
+    it('should show new hand limit after playing')
+  })
+  describe('confirm button', () => {
+    it('should display confirm button')
+    it('should emit confirm event when clicked')
+  })
+  describe('cancel button', () => {
+    it('should display cancel button')
+    it('should emit cancel event when clicked')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly confirm button (min 44px)')
+    it('should have touch-friendly cancel button (min 44px)')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA labels for modal')
+  })
+})
+describe('cardStore playDrawExpandPowerup', () => {
   it('should draw one card when played')
   it('should increase hand limit by 1')
   it('should persist increased hand limit')
   it('should remove powerup card after playing')
+  it('should add powerup card to discard pile')
+  it('should return error if card not in hand')
+  it('should return error if card is not a DrawExpand powerup')
+  it('should handle empty deck gracefully')
 })
 ```
+
+**Notes:**
+- PowerupDrawExpandModal component created with confirmation UI
+- Shows current hand limit → new hand limit visual
+- playDrawExpandPowerup action added to cardStore
+- Integrated into HiderView with card selection handling
 
 ---
 
@@ -2204,10 +2241,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 3 | 1 |
-| 3: Card Management | 12 | 8 | 4 |
+| 3: Card Management | 12 | 9 | 3 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **33** | **14** |
+| **Total** | **47** | **34** | **13** |
 
 ---
 
@@ -2241,12 +2278,11 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-004**: Question Response Timer
-- **CARD-007b**: Draw 1, Expand Powerup Effect
 - **CARD-007c**: Duplicate Powerup Effect
 - **CARD-007d**: Move Powerup Effect
 - **CARD-008**: Time Trap Card Implementation

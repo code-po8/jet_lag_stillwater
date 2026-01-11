@@ -14,6 +14,7 @@ import {
   type PowerupCard,
   type CurseCard,
   CardType,
+  PowerupType,
   TIME_BONUS_TIERS,
   POWERUP_CARDS,
   CURSE_CARDS,
@@ -536,12 +537,57 @@ export const useCardStore = defineStore('cards', () => {
     activeCurses.value = []
   }
 
+  /**
+   * Play the Draw 1, Expand powerup
+   * Draws one card and permanently increases hand limit by 1
+   */
+  function playDrawExpandPowerup(instanceId: string): CardActionResult {
+    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    if (cardIndex === -1) {
+      return { success: false, error: 'Card not found in hand' }
+    }
+
+    const card = hand.value[cardIndex]
+    if (card?.type !== CardType.Powerup) {
+      return { success: false, error: 'Card is not a Draw/Expand powerup' }
+    }
+
+    const powerupCard = card as PowerupCardInstance
+    if (powerupCard.powerupType !== PowerupType.DrawExpand) {
+      return { success: false, error: 'Card is not a Draw/Expand powerup' }
+    }
+
+    // Remove the powerup from hand and add to discard pile
+    const [playedCard] = hand.value.splice(cardIndex, 1)
+    discardPile.value.push(playedCard!)
+
+    // Expand hand limit by 1
+    expandHandLimit(1)
+
+    // Draw one card (if deck is not empty)
+    const drawnCards: CardInstance[] = []
+    if (deckSize.value > 0 && availableSlots.value > 0) {
+      const card = drawSingleCard(deckComposition.value)
+      if (card) {
+        drawnCards.push(card)
+        hand.value.push(card)
+      }
+    }
+
+    return {
+      success: true,
+      drawnCards,
+      playedCard: playedCard!,
+    }
+  }
+
   return {
     // State
     hand,
     handLimit,
     discardPile,
     activeCurses,
+    deckComposition,
     // Getters
     handCount,
     isHandFull,
@@ -560,6 +606,7 @@ export const useCardStore = defineStore('cards', () => {
     clearHand,
     playCurseCard,
     clearCurse,
+    playDrawExpandPowerup,
     reset,
     // Persistence
     rehydrate,

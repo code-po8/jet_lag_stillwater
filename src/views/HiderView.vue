@@ -5,6 +5,7 @@ import { useCardStore, type CardInstance } from '@/stores/cardStore'
 import CardHand from '@/components/CardHand.vue'
 import CardDrawModal from '@/components/CardDrawModal.vue'
 import PowerupDiscardDrawModal from '@/components/PowerupDiscardDrawModal.vue'
+import PowerupDrawExpandModal from '@/components/PowerupDrawExpandModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import { GameSize } from '@/types/question'
 import { CardType, PowerupType } from '@/types/card'
@@ -17,8 +18,9 @@ const props = defineProps<{
 const gameStore = useGameStore()
 const cardStore = useCardStore()
 
-// State for powerup modal
+// State for powerup modals
 const selectedPowerupCard = ref<CardInstance | null>(null)
+const selectedDrawExpandCard = ref<CardInstance | null>(null)
 const drawnCards = ref<CardInstance[]>([])
 const keepCount = ref(0)
 
@@ -53,14 +55,22 @@ function getPhaseDisplayText(): string {
  * Handle card selection from CardHand
  */
 function handleCardSelect(card: CardInstance) {
-  // Check if it's a Discard/Draw powerup
+  // Check if it's a powerup card
   if (card.type === CardType.Powerup && 'powerupType' in card) {
     const powerupType = (card as CardInstance & { powerupType: PowerupType }).powerupType
+
+    // Handle Discard/Draw powerups
     if (
       powerupType === PowerupType.Discard1Draw2 ||
       powerupType === PowerupType.Discard2Draw3
     ) {
       selectedPowerupCard.value = card
+      return
+    }
+
+    // Handle Draw 1, Expand powerup
+    if (powerupType === PowerupType.DrawExpand) {
+      selectedDrawExpandCard.value = card
       return
     }
   }
@@ -111,6 +121,32 @@ function handleCardDrawConfirm() {
   drawnCards.value = []
   keepCount.value = 0
 }
+
+/**
+ * Handle confirm from draw/expand modal
+ */
+function handleDrawExpandConfirm() {
+  if (!selectedDrawExpandCard.value) return
+
+  // Play the powerup (draws 1 card, expands hand limit)
+  const result = cardStore.playDrawExpandPowerup(selectedDrawExpandCard.value.instanceId)
+
+  // Show drawn card in CardDrawModal (keep it - it's already in hand)
+  if (result.success && result.drawnCards && result.drawnCards.length > 0) {
+    drawnCards.value = result.drawnCards
+    keepCount.value = result.drawnCards.length
+  }
+
+  // Close the draw/expand modal
+  selectedDrawExpandCard.value = null
+}
+
+/**
+ * Handle cancel from draw/expand modal
+ */
+function handleDrawExpandCancel() {
+  selectedDrawExpandCard.value = null
+}
 </script>
 
 <template>
@@ -152,6 +188,14 @@ function handleCardDrawConfirm() {
       :selectable-cards="selectableCardsForDiscard"
       @confirm="handleDiscardDrawConfirm"
       @cancel="handleDiscardDrawCancel"
+    />
+
+    <!-- Powerup Draw/Expand Modal -->
+    <PowerupDrawExpandModal
+      :powerup-card="selectedDrawExpandCard"
+      :current-hand-limit="cardStore.handLimit"
+      @confirm="handleDrawExpandConfirm"
+      @cancel="handleDrawExpandCancel"
     />
 
     <!-- Card Draw Modal (shows drawn cards after powerup effect) -->
