@@ -79,20 +79,37 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 
 ### FOUND-004: Configure Playwright for E2E Testing
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-001
 
 **Story:** As a developer, I need Playwright configured so that I can write browser-based end-to-end tests.
 
 **Acceptance Criteria:**
-- [ ] Playwright installed (`@playwright/test`)
-- [ ] Playwright config file created (`playwright.config.js`)
-- [ ] `npm run test:e2e` command runs E2E tests
-- [ ] Tests run against local dev server
-- [ ] Sample E2E test passes (e.g., visit homepage, verify title)
-- [ ] HTML test report generated after runs
+- [x] Playwright installed (`@playwright/test`)
+- [x] Playwright config file created (`playwright.config.ts`)
+- [x] `npm run test:e2e` command runs E2E tests
+- [x] Tests run against local dev server
+- [x] Sample E2E test passes (e.g., visit homepage, verify title)
+- [x] HTML test report generated after runs
 
 **Size:** M
+
+**Tests Written (5 tests):**
+```typescript
+describe('Home Page', () => {
+  test('should display the correct page title')
+  test('should display the app header')
+  test('should display the subtitle')
+  test('should have a New Game button')
+  test('should navigate to setup page when clicking New Game')
+})
+```
+
+**Notes:**
+- Tests run on both Chromium desktop and Pixel 5 mobile viewport (10 total test runs)
+- HTML report generated in `playwright-report/` directory
+- Config includes webServer option to auto-start dev server
+- Added `test:e2e:ui` script for interactive Playwright UI mode
 
 ---
 
@@ -2545,13 +2562,13 @@ describe('Design System Colors', () => {
 
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
-| 0: Project Foundation | 9 | 4 | 5 |
+| 0: Project Foundation | 9 | 5 | 4 |
 | 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 4 | 0 |
 | 3: Card Management | 12 | 12 | 0 |
 | 4: Game State | 7 | 7 | 0 |
 | 5: Mobile UX Polish | 4 | 2 | 2 |
-| **Total** | **47** | **40** | **7** |
+| **Total** | **47** | **41** | **6** |
 
 ---
 
@@ -2585,11 +2602,11 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, UX-002, and UX-004 complete, the following cards are now ready:
-- **FOUND-004**: Configure Playwright for E2E Testing
+With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, CARD-008, UX-002, and UX-004 complete, the following cards are now ready:
 - **FOUND-005**: Configure Pre-Commit Hooks
+- **FOUND-006**: Configure GitHub Actions CI
 - **FOUND-007**: Configure PWA Support
-- **CARD-008**: Time Trap Card Implementation
+- **UX-001**: Responsive Layout
 - **UX-003**: Notifications and Alerts
 
 ---
