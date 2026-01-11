@@ -393,6 +393,8 @@ Use this checklist when starting a new project with the Ralph Wiggum technique.
 
   CRITICAL RULE: When committing, NEVER add Co-Authored-By lines.
 
+  FIRST: Run the full test suite (lint, type-check, unit tests) before doing anything else. If any tests fail, fix them before proceeding. You own the codebase as it exists now - do not blame previous iterations.
+
   Read CLAUDE.md for workflow instructions, then read STORIES.md to analyze the backlog.
 
   Card selection criteria:
