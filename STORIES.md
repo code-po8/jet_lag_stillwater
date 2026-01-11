@@ -770,20 +770,73 @@ describe('HidingPeriodTimer', () => {
 
 ### T-003: Hiding Duration Timer
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** T-001
 
 **Story:** As a player, I need to track how long the hider has been hiding so that we can determine the winner.
 
 **Acceptance Criteria:**
-- [ ] Timer counts up from 00:00:00
-- [ ] Timer starts when hiding period ends
-- [ ] Timer stops when hider is found
-- [ ] Displays in HH:MM:SS format
-- [ ] Timer can be paused
-- [ ] Final time is recorded for scoring
+- [x] Timer counts up from 00:00:00
+- [x] Timer starts when hiding period ends (seeking phase begins)
+- [x] Timer stops when hider is found
+- [x] Displays in HH:MM:SS format
+- [x] Timer can be paused
+- [x] Final time is recorded for scoring
 
 **Size:** M
+
+**Tests Written (29 tests):**
+```typescript
+describe('HidingDurationTimer', () => {
+  describe('timer display', () => {
+    it('should count up from 00:00:00')
+    it('should display time in HH:MM:SS format')
+    it('should track elapsed time as time passes')
+    it('should track time beyond one hour')
+  })
+  describe('timer lifecycle', () => {
+    it('should start when seeking phase begins')
+    it('should continue running in end-game phase')
+    it('should stop when hider is found')
+  })
+  describe('pause functionality', () => {
+    it('should display pause button')
+    it('should pause timer when pause button clicked')
+    it('should show resume button when paused')
+    it('should resume timer when resume button clicked')
+    it('should show paused indicator when timer is paused')
+    it('should hide pause button when timer is stopped (hider found)')
+  })
+  describe('final time for scoring', () => {
+    it('should emit final-time event when hider is found')
+    it('should expose elapsed time getter for scoring')
+  })
+  describe('persistence', () => {
+    it('should persist timer state if app is closed')
+    it('should handle time passed while app was closed')
+  })
+  describe('phase awareness', () => {
+    it('should not display when in setup phase')
+    it('should not display when in hiding-period phase')
+    it('should display when in seeking phase')
+    it('should display when in end-game phase')
+    it('should display final time in round-complete phase')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly pause button (min 44px)')
+    it('should have large readable timer text')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA label for timer')
+    it('should announce elapsed time for screen readers')
+  })
+  describe('status messages', () => {
+    it('should show seeking status during seeking phase')
+    it('should show end-game status during end-game phase')
+    it('should show found status in round-complete phase')
+  })
+})
+```
 
 ---
 
@@ -1758,11 +1811,11 @@ User experience improvements.
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 9 | 2 |
-| 2: Timers | 4 | 2 | 2 |
+| 2: Timers | 4 | 3 | 1 |
 | 3: Card Management | 12 | 3 | 9 |
 | 4: Game State | 7 | 3 | 4 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **22** | **25** |
+| **Total** | **47** | **23** | **24** |
 
 ---
 
@@ -1796,11 +1849,10 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, T-001, T-002, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
-- **T-003**: Hiding Duration Timer
 - **T-004**: Question Response Timer
 - **Q-005**: Question History View
 - **Q-006**: Re-ask Question with Double Cost
@@ -1810,12 +1862,14 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-007a**: Discard/Draw Powerup Effect
 - **CARD-007b**: Draw 1, Expand Powerup Effect
 - **CARD-007c**: Duplicate Powerup Effect
+- **CARD-007d**: Move Powerup Effect (now unblocked by T-003)
 - **CARD-008**: Time Trap Card Implementation
-- **UX-003**: Notifications and Alerts (now unblocked by T-002)
+- **UX-003**: Notifications and Alerts (partially - still needs CARD-006b)
 - **UX-004**: Visual Design System
+- **GS-005**: End Game Flow (now unblocked by T-003)
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** T-002 completion unblocks UX-003 (partially - still needs CARD-006b).
+**Note:** T-003 completion unblocks GS-005 (End Game Flow) and CARD-007d (Move Powerup Effect).
 
 ---
 
