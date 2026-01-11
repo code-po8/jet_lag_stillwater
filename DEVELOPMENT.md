@@ -392,8 +392,8 @@ For secrets your app needs:
 2. Create `.env` with real values (gitignored):
 
    ```
-   SUPABASE_URL=https://abc123.supabase.co
-   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
+   SUPABASE_URL=https://your-project-id.supabase.co
+   SUPABASE_ANON_KEY=your-anon-key-here
    ```
 
 3. For CI/CD, use GitHub repository secrets (Settings → Secrets)
