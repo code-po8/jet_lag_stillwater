@@ -1277,28 +1277,75 @@ describe('time bonus display (CARD-005)', () => {
 
 ### CARD-006a: Curse Display
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-001, FOUND-003
 
 **Story:** As a seeker, I need to see which curses are currently active so that I know what restrictions apply.
 
 **Acceptance Criteria:**
-- [ ] Display list of active curses on seeker view
-- [ ] Each curse shows: name, description, clear condition
-- [ ] Until-found curses show as persistent (no clear option)
-- [ ] Hider can play curse card which adds it to seeker's active curse list
+- [x] Display list of active curses on seeker view
+- [x] Each curse shows: name, description, clear condition
+- [x] Until-found curses show as persistent (no clear option)
+- [x] Hider can play curse card which adds it to seeker's active curse list
 
 **Size:** S
 
-**Tests to Write:**
+**Tests Written (24 tests):**
 ```typescript
 describe('CurseDisplay', () => {
-  it('should display active curses')
-  it('should show curse name and description')
-  it('should show clear condition')
-  it('should add curse when hider plays card')
+  describe('empty state', () => {
+    it('should show empty state when no active curses')
+    it('should show the curses section header')
+  })
+  describe('curse list display', () => {
+    it('should display active curses')
+    it('should display multiple active curses')
+    it('should show curse name')
+    it('should show curse description')
+    it('should show curse effect')
+  })
+  describe('clear condition display', () => {
+    it('should show clear condition for action-based curses')
+    it('should show blocks transit indicator for transit-blocking curses')
+    it('should show duration for time-based curses')
+    it('should show penalty for penalty curses')
+  })
+  describe('until-found curses', () => {
+    it('should show persistent indicator for until-found curses')
+    it('should not show clear button for until-found curses')
+  })
+  describe('playing curses from hider', () => {
+    it('should add curse to active curses when hider plays curse card')
+    it('should remove curse card from hand when played')
+    it('should set activated timestamp when curse is played')
+  })
+  describe('curse count indicator', () => {
+    it('should show count of active curses')
+  })
+  describe('visual styling', () => {
+    it('should have distinct visual style for curses')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly elements')
+    it('should be scrollable when many curses are active')
+  })
+  describe('accessibility', () => {
+    it('should have proper heading structure')
+    it('should have proper ARIA labels for curse items')
+    it('should announce curse count to screen readers')
+  })
+  describe('persistence', () => {
+    it('should persist active curses to localStorage')
+  })
 })
 ```
+
+**Implementation Notes:**
+- CurseDisplay component added to SeekerView (conditionally shown when curses are active)
+- ActiveCurse type added to cardStore tracking: instanceId, curseId, name, description, effect, castingCost, blocksQuestions, blocksTransit, activatedAt, untilFound, durationMinutes, penaltyMinutes
+- playCurseCard action added to cardStore - plays curse from hand and adds to activeCurses
+- clearCurse action added to cardStore - removes curse from active curses
+- Active curses persist to localStorage with date serialization
 
 ---
 
@@ -2081,10 +2128,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 10 | 1 |
 | 2: Timers | 4 | 3 | 1 |
-| 3: Card Management | 12 | 5 | 7 |
+| 3: Card Management | 12 | 6 | 6 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **29** | **18** |
+| **Total** | **47** | **30** | **17** |
 
 ---
 

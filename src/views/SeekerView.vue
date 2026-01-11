@@ -7,7 +7,18 @@ import QuestionList from '@/components/QuestionList.vue'
 import AskQuestionModal from '@/components/AskQuestionModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import CardDrawModal from '@/components/CardDrawModal.vue'
-import type { Question } from '@/types/question'
+import CurseDisplay from '@/components/CurseDisplay.vue'
+import { GameSize, type Question } from '@/types/question'
+
+// Props
+const props = withDefaults(
+  defineProps<{
+    gameSize?: GameSize
+  }>(),
+  {
+    gameSize: GameSize.Small,
+  }
+)
 
 const gameStore = useGameStore()
 const questionStore = useQuestionStore()
@@ -25,6 +36,8 @@ const currentPhase = computed(() => gameStore.currentPhase)
 const isHidingPeriod = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
 const askedQuestionsCount = computed(() => questionStore.askedQuestions.length)
 const pendingQuestion = computed(() => questionStore.pendingQuestion)
+const gameSize = computed(() => props.gameSize)
+const hasActiveCurses = computed(() => cardStore.activeCurses.length > 0)
 
 /**
  * Get display text for the current phase
@@ -140,6 +153,11 @@ function handleCardDrawConfirm(event: { keptCards: CardInstance[]; discardedCard
     >
       Awaiting answer...
     </div>
+
+    <!-- Active Curses Section -->
+    <section v-if="hasActiveCurses" data-testid="seeker-curses-section" class="max-h-64 overflow-hidden">
+      <CurseDisplay :game-size="gameSize" />
+    </section>
 
     <!-- Questions Section -->
     <section data-testid="seeker-questions-section" class="flex-1 overflow-hidden">

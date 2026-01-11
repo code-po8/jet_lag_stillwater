@@ -30,6 +30,44 @@ const DEFAULT_HAND_LIMIT = 6
 export type CardInstance = Card & { instanceId: string }
 
 /**
+ * Active curse - a curse card that has been played and is affecting seekers
+ */
+export interface ActiveCurse {
+  /** Unique instance ID for this active curse */
+  instanceId: string
+  /** ID of the curse card definition */
+  curseId: string
+  /** Display name of the curse */
+  name: string
+  /** Short description */
+  description: string
+  /** Full effect text */
+  effect: string
+  /** What the hider had to do to cast this curse */
+  castingCost: string
+  /** Whether this curse blocks asking questions */
+  blocksQuestions: boolean
+  /** Whether this curse blocks using transit */
+  blocksTransit: boolean
+  /** When the curse was activated */
+  activatedAt: Date
+  /** Whether this curse lasts until the hider is found */
+  untilFound?: boolean
+  /** Duration in minutes by game size (for time-based curses) */
+  durationMinutes?: {
+    small: number
+    medium: number
+    large: number
+  }
+  /** Penalty minutes by game size (if seekers fail to comply) */
+  penaltyMinutes?: {
+    small: number
+    medium: number
+    large: number
+  }
+}
+
+/**
  * Time bonus card instance
  */
 export type TimeBonusCardInstance = TimeBonusCard & { instanceId: string }
@@ -64,6 +102,13 @@ interface DeckComposition {
 }
 
 /**
+ * Persisted active curse - dates stored as ISO strings
+ */
+interface PersistedActiveCurse extends Omit<ActiveCurse, 'activatedAt'> {
+  activatedAt: string
+}
+
+/**
  * Persisted state shape for localStorage
  */
 interface PersistedCardState {
@@ -71,6 +116,7 @@ interface PersistedCardState {
   handLimit: number
   discardPile: CardInstance[]
   deckComposition: DeckComposition
+  activeCurses?: PersistedActiveCurse[]
 }
 
 /**
@@ -200,6 +246,7 @@ export const useCardStore = defineStore('cards', () => {
   const handLimit = ref(DEFAULT_HAND_LIMIT)
   const discardPile = ref<CardInstance[]>([])
   const deckComposition = ref<DeckComposition>(createInitialDeckComposition())
+  const activeCurses = ref<ActiveCurse[]>([])
 
   // Getters
   const handCount = computed(() => hand.value.length)
@@ -237,6 +284,10 @@ export const useCardStore = defineStore('cards', () => {
       handLimit: handLimit.value,
       discardPile: discardPile.value,
       deckComposition: deckComposition.value,
+      activeCurses: activeCurses.value.map(curse => ({
+        ...curse,
+        activatedAt: curse.activatedAt.toISOString(),
+      })),
     }
     persistenceService.save(STORAGE_KEY, state)
   }
@@ -254,6 +305,13 @@ export const useCardStore = defineStore('cards', () => {
         if (persisted.deckComposition && Object.keys(persisted.deckComposition).length > 0) {
           deckComposition.value = persisted.deckComposition
         }
+        // Rehydrate active curses with date conversion
+        if (persisted.activeCurses) {
+          activeCurses.value = persisted.activeCurses.map(curse => ({
+            ...curse,
+            activatedAt: new Date(curse.activatedAt),
+          }))
+        }
       }
     } catch {
       // If rehydration fails, keep default state
@@ -262,7 +320,7 @@ export const useCardStore = defineStore('cards', () => {
 
   // Watch for state changes and persist automatically
   watch(
-    [hand, handLimit, discardPile, deckComposition],
+    [hand, handLimit, discardPile, deckComposition, activeCurses],
     () => {
       persist()
     },
@@ -346,6 +404,81 @@ export const useCardStore = defineStore('cards', () => {
   }
 
   /**
+   * Play a curse card from hand - adds it to active curses affecting seekers
+   */
+  function playCurseCard(instanceId: string): CardActionResult {
+    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    if (cardIndex === -1) {
+      return { success: false, error: 'Card not found in hand' }
+    }
+
+    const card = hand.value[cardIndex]
+    if (card?.type !== CardType.Curse) {
+      return { success: false, error: 'Card is not a curse card' }
+    }
+
+    // Remove from hand and add to discard pile
+    const [playedCard] = hand.value.splice(cardIndex, 1)
+    discardPile.value.push(playedCard!)
+
+    // Create active curse from the card
+    const curseCard = playedCard as CurseCardInstance
+    const activeCurse: ActiveCurse = {
+      instanceId: generateInstanceId(),
+      curseId: curseCard.id,
+      name: curseCard.name,
+      description: curseCard.description,
+      effect: curseCard.effect,
+      castingCost: curseCard.castingCost,
+      blocksQuestions: curseCard.blocksQuestions,
+      blocksTransit: curseCard.blocksTransit,
+      activatedAt: new Date(),
+    }
+
+    // Add optional fields if they exist on the curse card
+    if (curseCard.durationMinutes) {
+      activeCurse.durationMinutes = {
+        small: curseCard.durationMinutes[GameSize.Small],
+        medium: curseCard.durationMinutes[GameSize.Medium],
+        large: curseCard.durationMinutes[GameSize.Large],
+      }
+    }
+
+    if (curseCard.penaltyMinutes) {
+      activeCurse.penaltyMinutes = {
+        small: curseCard.penaltyMinutes[GameSize.Small],
+        medium: curseCard.penaltyMinutes[GameSize.Medium],
+        large: curseCard.penaltyMinutes[GameSize.Large],
+      }
+    }
+
+    // Mark as until-found for certain curses (those that say "rest of run")
+    if (curseCard.effect.toLowerCase().includes('rest of run')) {
+      activeCurse.untilFound = true
+    }
+
+    activeCurses.value.push(activeCurse)
+
+    return {
+      success: true,
+      playedCard: playedCard!,
+    }
+  }
+
+  /**
+   * Clear a curse (remove from active curses)
+   */
+  function clearCurse(instanceId: string): CardActionResult {
+    const curseIndex = activeCurses.value.findIndex(c => c.instanceId === instanceId)
+    if (curseIndex === -1) {
+      return { success: false, error: 'Curse not found in active curses' }
+    }
+
+    activeCurses.value.splice(curseIndex, 1)
+    return { success: true }
+  }
+
+  /**
    * Reset the store to initial state (for new round)
    */
   function reset(): void {
@@ -353,6 +486,7 @@ export const useCardStore = defineStore('cards', () => {
     handLimit.value = DEFAULT_HAND_LIMIT
     discardPile.value = []
     deckComposition.value = createInitialDeckComposition()
+    activeCurses.value = []
   }
 
   return {
@@ -360,6 +494,7 @@ export const useCardStore = defineStore('cards', () => {
     hand,
     handLimit,
     discardPile,
+    activeCurses,
     // Getters
     handCount,
     isHandFull,
@@ -375,6 +510,8 @@ export const useCardStore = defineStore('cards', () => {
     discardCard,
     expandHandLimit,
     clearHand,
+    playCurseCard,
+    clearCurse,
     reset,
     // Persistence
     rehydrate,

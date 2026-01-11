@@ -225,7 +225,7 @@ function handleEndGame() {
         class="flex-1 overflow-y-auto transition-opacity duration-200"
       >
         <!-- Questions Tab - Shows SeekerView with questions -->
-        <SeekerView v-if="currentTab === 'questions'" />
+        <SeekerView v-if="currentTab === 'questions'" :game-size="props.gameSize" />
 
         <!-- Timers Tab - Shows timer display -->
         <div
