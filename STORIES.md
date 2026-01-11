@@ -152,21 +152,29 @@ describe('Home Page', () => {
 
 ### FOUND-006: Configure GitHub Actions CI
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-002, FOUND-004
 
 **Story:** As a developer, I need a CI pipeline so that all tests run automatically on push and PR.
 
 **Acceptance Criteria:**
 
-- [ ] `.github/workflows/ci.yml` created
-- [ ] CI triggers on: push to `main`, all pull requests
-- [ ] CI steps: install deps → lint → type check → unit tests → E2E tests
-- [ ] CI reports test results and coverage
-- [ ] Failed CI blocks PR merge (branch protection rule)
-- [ ] CI completes in reasonable time (< 5 minutes target)
+- [x] `.github/workflows/ci.yml` created
+- [x] CI triggers on: push to `main`, all pull requests
+- [x] CI steps: install deps → lint → type check → unit tests → E2E tests
+- [x] CI reports test results and coverage
+- [ ] Failed CI blocks PR merge (branch protection rule) - requires manual GitHub settings
+- [x] CI completes in reasonable time (< 5 minutes target)
 
 **Size:** M
+
+**Implementation Notes:**
+
+- Workflow uses Node.js 22 with npm caching for fast installs
+- Steps run sequentially: checkout → setup node → install → lint → type-check → unit tests → E2E tests
+- Playwright installs only Chromium browser to minimize CI time
+- Test results uploaded as artifacts (playwright-report) for debugging failures
+- Branch protection rule must be configured manually in GitHub repository settings (Settings → Branches → Add rule)
 
 ---
 
@@ -2897,13 +2905,13 @@ describe('Design System Colors', () => {
 
 | Epic                  | Stories | Complete | Remaining |
 | --------------------- | ------- | -------- | --------- |
-| 0: Project Foundation | 9       | 7        | 2         |
+| 0: Project Foundation | 9       | 8        | 1         |
 | 1: Question Tracking  | 11      | 11       | 0         |
 | 2: Timers             | 4       | 4        | 0         |
 | 3: Card Management    | 12      | 12       | 0         |
 | 4: Game State         | 7       | 7        | 0         |
 | 5: Mobile UX Polish   | 4       | 4        | 0         |
-| **Total**             | **47**  | **45**   | **2**     |
+| **Total**             | **47**  | **46**   | **1**     |
 
 ---
 
@@ -2937,10 +2945,9 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-005, FOUND-007, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, CARD-008, UX-001, UX-002, UX-003, and UX-004 complete, the following cards are now ready:
+With FOUND-001 through FOUND-008, Q-001 through Q-006, GS-001 through GS-007, T-001 through T-004, CARD-001 through CARD-008, and UX-001 through UX-004 complete, the following cards are now ready:
 
-- **FOUND-006**: Configure GitHub Actions CI
-- **FOUND-009**: Secret Detection in Pre-Commit and CI (depends on FOUND-005 ✅ and FOUND-006 ❌)
+- **FOUND-009**: Secret Detection in Pre-Commit and CI (depends on FOUND-005 ✅ and FOUND-006 ✅)
 
 ---
 
