@@ -4,7 +4,7 @@ test.describe('Home Page', () => {
   test('should display the correct page title', async ({ page }) => {
     await page.goto('/')
 
-    await expect(page).toHaveTitle(/Vite App/)
+    await expect(page).toHaveTitle(/Jet Lag Stillwater/)
   })
 
   test('should display the app header', async ({ page }) => {
