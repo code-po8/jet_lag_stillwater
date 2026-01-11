@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useQuestionStore } from '@/stores/questionStore'
-import { QUESTION_CATEGORIES, type Question } from '@/types/question'
+import { useGameStore, GamePhase } from '@/stores/gameStore'
+import { QUESTION_CATEGORIES, QuestionCategoryId, type Question } from '@/types/question'
 import { ALL_QUESTIONS } from '@/data/questions'
 
 // Emit event when question is selected
@@ -10,6 +11,13 @@ const emit = defineEmits<{
 }>()
 
 const questionStore = useQuestionStore()
+const gameStore = useGameStore()
+
+// Categories disabled during end-game phase
+const END_GAME_DISABLED_CATEGORIES = [QuestionCategoryId.Photo, QuestionCategoryId.Tentacle]
+
+// Check if currently in end-game phase
+const isEndGamePhase = computed(() => gameStore.currentPhase === GamePhase.EndGame)
 
 // Track which categories are expanded
 const expandedCategories = ref<Set<string>>(new Set(QUESTION_CATEGORIES.map((c) => c.id)))
@@ -43,6 +51,16 @@ function getCategoryStats(categoryId: string) {
   return categoryStats.value.find((s) => s.categoryId === categoryId)
 }
 
+/**
+ * Check if a category is disabled (e.g., Photo/Tentacle during end-game)
+ */
+function isCategoryDisabled(categoryId: string): boolean {
+  if (isEndGamePhase.value && END_GAME_DISABLED_CATEGORIES.includes(categoryId as QuestionCategoryId)) {
+    return true
+  }
+  return false
+}
+
 function toggleCategory(categoryId: string) {
   if (expandedCategories.value.has(categoryId)) {
     expandedCategories.value.delete(categoryId)
@@ -73,6 +91,7 @@ function getQuestionStatus(questionId: string): 'available' | 'asked' | 'pending
  * Questions cannot be selected if:
  * - Another question is pending
  * - The question has already been asked
+ * - The question's category is disabled (e.g., Photo/Tentacle during end-game)
  */
 function isQuestionSelectable(questionId: string): boolean {
   const status = getQuestionStatus(questionId)
@@ -80,6 +99,9 @@ function isQuestionSelectable(questionId: string): boolean {
   if (status === 'asked') return false
   // Can't select any question while another is pending
   if (pendingQuestionId.value !== null) return false
+  // Can't select questions from disabled categories (Photo/Tentacle in end-game)
+  const question = ALL_QUESTIONS.find((q) => q.id === questionId)
+  if (question && isCategoryDisabled(question.categoryId)) return false
   return true
 }
 
@@ -124,11 +146,15 @@ function getQuestionClasses(questionId: string): string {
       <button
         :data-testid="`category-header-${category.id}`"
         class="flex w-full items-center justify-between p-4 text-left"
+        :class="{ 'opacity-50': isCategoryDisabled(category.id) }"
         @click="toggleCategory(category.id)"
       >
         <div class="flex flex-col">
           <span class="text-lg font-semibold">{{ category.name }}</span>
-          <span class="text-sm text-gray-500">
+          <span v-if="isCategoryDisabled(category.id)" class="text-sm text-red-500">
+            Not available in end-game
+          </span>
+          <span v-else class="text-sm text-gray-500">
             {{ getCategoryStats(category.id)?.available ?? 0 }} questions available
           </span>
         </div>

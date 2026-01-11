@@ -3,8 +3,9 @@ import { render, screen, cleanup, within, fireEvent } from '@testing-library/vue
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import QuestionList from '../QuestionList.vue'
-import { QUESTION_CATEGORIES } from '@/types/question'
+import { QUESTION_CATEGORIES, QuestionCategoryId } from '@/types/question'
 import { useQuestionStore } from '@/stores/questionStore'
+import { useGameStore } from '@/stores/gameStore'
 import { ALL_QUESTIONS } from '@/data/questions'
 
 describe('QuestionList', () => {
@@ -241,6 +242,136 @@ describe('QuestionList', () => {
 
       // Should NOT emit the event
       expect(onQuestionSelect).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('end-game phase restrictions (GS-005)', () => {
+    function setupEndGamePhase() {
+      const gameStore = useGameStore()
+      gameStore.addPlayer('Alice')
+      gameStore.addPlayer('Bob')
+      const aliceId = gameStore.players[0]!.id
+      gameStore.startRound(aliceId)
+      gameStore.startSeeking()
+      gameStore.enterHidingZone()
+      return gameStore
+    }
+
+    it('should disable Photo questions during end-game phase', async () => {
+      setupEndGamePhase()
+      render(QuestionList)
+      await nextTick()
+
+      // Get a Photo question
+      const photoQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Photo)!
+
+      // The Photo question should be disabled
+      const questionElement = screen.getByTestId(`question-${photoQuestion.id}`)
+      expect(questionElement).toHaveAttribute('aria-disabled', 'true')
+    })
+
+    it('should disable Tentacle questions during end-game phase', async () => {
+      setupEndGamePhase()
+      render(QuestionList)
+      await nextTick()
+
+      // Get a Tentacle question
+      const tentacleQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Tentacle)!
+
+      // The Tentacle question should be disabled
+      const questionElement = screen.getByTestId(`question-${tentacleQuestion.id}`)
+      expect(questionElement).toHaveAttribute('aria-disabled', 'true')
+    })
+
+    it('should show disabled indicator for Photo category in end-game phase', async () => {
+      setupEndGamePhase()
+      render(QuestionList)
+      await nextTick()
+
+      // The Photo category should show it's disabled in end-game
+      const photoCategory = screen.getByTestId('category-photo')
+      expect(within(photoCategory).getByText(/disabled.*end.?game|not.*available/i)).toBeInTheDocument()
+    })
+
+    it('should show disabled indicator for Tentacle category in end-game phase', async () => {
+      setupEndGamePhase()
+      render(QuestionList)
+      await nextTick()
+
+      // The Tentacle category should show it's disabled in end-game
+      const tentacleCategory = screen.getByTestId('category-tentacle')
+      expect(within(tentacleCategory).getByText(/disabled.*end.?game|not.*available/i)).toBeInTheDocument()
+    })
+
+    it('should not emit event when clicking Photo question during end-game', async () => {
+      setupEndGamePhase()
+      const onQuestionSelect = vi.fn()
+      render(QuestionList, {
+        props: {
+          onQuestionSelect,
+        },
+      })
+      await nextTick()
+
+      // Get a Photo question
+      const photoQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Photo)!
+
+      // Click the Photo question
+      const questionElement = screen.getByTestId(`question-${photoQuestion.id}`)
+      await fireEvent.click(questionElement)
+
+      // Should NOT emit the event
+      expect(onQuestionSelect).not.toHaveBeenCalled()
+    })
+
+    it('should allow other question types during end-game phase', async () => {
+      setupEndGamePhase()
+      const onQuestionSelect = vi.fn()
+      render(QuestionList, {
+        props: {
+          onQuestionSelect,
+        },
+      })
+      await nextTick()
+
+      // Get a Matching question (should still be allowed)
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
+
+      // Click the Matching question
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      await fireEvent.click(questionElement)
+
+      // Should emit the event
+      expect(onQuestionSelect).toHaveBeenCalledWith(matchingQuestion)
+    })
+
+    it('should enable Photo/Tentacle questions in seeking phase', async () => {
+      // Setup game but stay in seeking phase
+      const gameStore = useGameStore()
+      gameStore.addPlayer('Alice')
+      gameStore.addPlayer('Bob')
+      const aliceId = gameStore.players[0]!.id
+      gameStore.startRound(aliceId)
+      gameStore.startSeeking()
+      // Don't enter hiding zone - stay in seeking phase
+
+      const onQuestionSelect = vi.fn()
+      render(QuestionList, {
+        props: {
+          onQuestionSelect,
+        },
+      })
+      await nextTick()
+
+      // Get a Photo question
+      const photoQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Photo)!
+
+      // Click the Photo question - should work in seeking phase
+      const questionElement = screen.getByTestId(`question-${photoQuestion.id}`)
+      await fireEvent.click(questionElement)
+
+      // Should emit the event
+      expect(onQuestionSelect).toHaveBeenCalledWith(photoQuestion)
     })
   })
 })

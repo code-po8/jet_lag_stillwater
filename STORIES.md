@@ -1610,18 +1610,18 @@ describe('GamePlayView (role toggle)', () => {
 
 ### GS-005: End Game Flow
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** GS-001, T-003
 
 **Story:** As a player, I need the app to handle the end game sequence so that rounds conclude properly when the hider is found.
 
 **Acceptance Criteria:**
-- [ ] "Enter Hiding Zone" action triggers end game phase
-- [ ] End game phase shows: seekers are in zone, searching for hider
-- [ ] "Hider Found" action stops the hiding duration timer
-- [ ] Records final hiding time for scoring
-- [ ] Transitions to round-complete phase (triggers GS-004 Round Summary)
-- [ ] Enforces rule: Photo/Tentacles questions disabled during end game phase
+- [x] "Enter Hiding Zone" action triggers end game phase
+- [x] End game phase shows: seekers are in zone, searching for hider
+- [x] "Hider Found" action stops the hiding duration timer
+- [x] Records final hiding time for scoring
+- [x] Transitions to round-complete phase (triggers GS-004 Round Summary)
+- [x] Enforces rule: Photo/Tentacles questions disabled during end game phase
 
 **Size:** M
 
@@ -1630,16 +1630,52 @@ describe('GamePlayView (role toggle)', () => {
 - Triggered when seekers enter hiding zone and leave transit
 - Seekers must spot hider AND be within 5 feet to win
 
-**Tests to Write:**
+**Tests Written (37 tests):**
 ```typescript
-describe('End Game Flow', () => {
-  it('should transition to end-game phase when zone entered')
-  it('should stop hiding timer when hider found')
-  it('should record final hiding time')
-  it('should disable Photo questions in end-game phase')
-  it('should transition to round-complete after hider found')
+describe('EndGameControls', () => {
+  describe('visibility based on phase', () => {
+    it('should display Enter Hiding Zone button in seeking phase')
+    it('should not display Enter Hiding Zone button in hiding-period phase')
+    it('should display Hider Found button in end-game phase')
+    it('should not display Hider Found button in seeking phase')
+    it('should not display any buttons in round-complete phase')
+  })
+  describe('Enter Hiding Zone action', () => {
+    it('should transition to end-game phase when Enter Hiding Zone is clicked and confirmed')
+    it('should emit enter-zone event when button is clicked and confirmed')
+    it('should show confirmation dialog before entering hiding zone')
+  })
+  describe('Hider Found action', () => {
+    it('should transition to round-complete phase when Hider Found is clicked and confirmed')
+    it('should emit hider-found event when button is clicked and confirmed')
+    it('should show confirmation dialog before marking hider found')
+  })
+  describe('end-game status display', () => {
+    it('should show seekers in zone message during end-game phase')
+    it('should show zone entry message when transitioning from seeking')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly button sizes (min 44px)')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA labels for buttons')
+  })
+})
+describe('QuestionList end-game phase restrictions', () => {
+  it('should disable Photo questions during end-game phase')
+  it('should disable Tentacle questions during end-game phase')
+  it('should show disabled indicator for Photo category in end-game phase')
+  it('should show disabled indicator for Tentacle category in end-game phase')
+  it('should not emit event when clicking Photo question during end-game')
+  it('should allow other question types during end-game phase')
+  it('should enable Photo/Tentacle questions in seeking phase')
 })
 ```
+
+**Notes:**
+- EndGameControls component added with confirmation dialogs for Enter Hiding Zone and Hider Found actions
+- HidingDurationTimer already integrated to stop when phase transitions to round-complete
+- QuestionList updated to disable Photo and Tentacle categories during end-game phase
 
 ---
 
@@ -1813,9 +1849,9 @@ User experience improvements.
 | 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 3 | 1 |
 | 3: Card Management | 12 | 3 | 9 |
-| 4: Game State | 7 | 3 | 4 |
+| 4: Game State | 7 | 4 | 3 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **23** | **24** |
+| **Total** | **47** | **24** | **23** |
 
 ---
 
@@ -1849,7 +1885,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-005, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
@@ -1862,14 +1898,14 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-007a**: Discard/Draw Powerup Effect
 - **CARD-007b**: Draw 1, Expand Powerup Effect
 - **CARD-007c**: Duplicate Powerup Effect
-- **CARD-007d**: Move Powerup Effect (now unblocked by T-003)
+- **CARD-007d**: Move Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
 - **UX-003**: Notifications and Alerts (partially - still needs CARD-006b)
 - **UX-004**: Visual Design System
-- **GS-005**: End Game Flow (now unblocked by T-003)
+- **GS-004**: Round Summary (now unblocked by GS-005)
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** T-003 completion unblocks GS-005 (End Game Flow) and CARD-007d (Move Powerup Effect).
+**Note:** GS-005 completion unblocks GS-004 (Round Summary).
 
 ---
 
