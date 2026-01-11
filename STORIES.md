@@ -560,21 +560,75 @@ describe('randomizeQuestion', () => {
 
 ### Q-005: Question History View
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-002c
 
 **Story:** As a player (hider or seeker), I need to see all previously asked questions and answers so that I can reference what's been revealed.
 
 **Acceptance Criteria:**
-- [ ] View shows all asked questions in reverse chronological order
-- [ ] Each entry shows: question, answer, timestamp, category
-- [ ] Vetoed questions marked distinctly (returned to available)
-- [ ] List is scrollable
-- [ ] Tapping an entry shows full details
-- [ ] Option to filter by category
-- [ ] Accessible from both hider and seeker views
+- [x] View shows all asked questions in reverse chronological order
+- [x] Each entry shows: question, answer, timestamp, category
+- [x] Vetoed questions marked distinctly (returned to available)
+- [x] List is scrollable
+- [x] Tapping an entry shows full details (emits select event)
+- [x] Option to filter by category
+- [x] Accessible from both hider and seeker views
 
 **Size:** M
+
+**Tests Written (24 tests):**
+```typescript
+describe('QuestionHistory', () => {
+  describe('display requirements', () => {
+    it('should display the history container')
+    it('should display a header')
+    it('should show empty state when no questions asked')
+  })
+  describe('reverse chronological order', () => {
+    it('should display questions in reverse chronological order (newest first)')
+  })
+  describe('entry display - question, answer, timestamp, category', () => {
+    it('should display the question text')
+    it('should display the answer')
+    it('should display the timestamp')
+    it('should display the category name')
+  })
+  describe('vetoed questions', () => {
+    it('should mark vetoed questions distinctly')
+    it('should show vetoed badge for vetoed questions')
+    it('should not show vetoed badge for regular answered questions')
+  })
+  describe('scrollable list', () => {
+    it('should have a scrollable container')
+  })
+  describe('entry details on tap', () => {
+    it('should emit select event when entry is tapped')
+    it('should have touch-friendly tap targets (min 44px)')
+  })
+  describe('category filter', () => {
+    it('should display category filter options')
+    it('should have "All" option selected by default')
+    it('should filter questions when category is selected')
+    it('should show all questions when "All" is selected')
+    it('should only show categories with asked questions in filter')
+  })
+  describe('accessibility', () => {
+    it('should have proper heading structure')
+    it('should have proper ARIA labels for history items')
+    it('should support keyboard navigation')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have proper spacing for touch targets')
+    it('should be scrollable when content overflows')
+  })
+})
+```
+
+**Notes:**
+- QuestionHistory component integrated into GamePlayView History tab
+- Filters show only categories that have asked questions
+- Dark theme styling consistent with rest of app
+- Full keyboard navigation support
 
 ---
 
@@ -2025,12 +2079,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 11 | 9 | 2 |
+| 1: Question Tracking | 11 | 10 | 1 |
 | 2: Timers | 4 | 3 | 1 |
 | 3: Card Management | 12 | 5 | 7 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **28** | **19** |
+| **Total** | **47** | **29** | **18** |
 
 ---
 
@@ -2064,12 +2118,11 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-004**: Question Response Timer
-- **Q-005**: Question History View
 - **Q-006**: Re-ask Question with Double Cost
 - **CARD-006a**: Curse Display
 - **CARD-007a**: Discard/Draw Powerup Effect

@@ -7,6 +7,7 @@ import SeekerView from './SeekerView.vue'
 import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
 import RoundSummary from '@/components/RoundSummary.vue'
 import HidingDurationTimer from '@/components/HidingDurationTimer.vue'
+import QuestionHistory from '@/components/QuestionHistory.vue'
 import { GameSize } from '@/types/question'
 
 // Props
@@ -235,15 +236,8 @@ function handleEndGame() {
         <!-- Cards Tab - Shows HiderView with cards -->
         <HiderView v-else-if="currentTab === 'cards'" :game-size="props.gameSize" />
 
-        <!-- History Tab - Placeholder for now -->
-        <div
-          v-else-if="currentTab === 'history'"
-          class="flex flex-col items-center justify-center p-8 text-center"
-        >
-          <div class="text-4xl mb-4">📋</div>
-          <h2 class="text-xl font-semibold text-white mb-2">Question History</h2>
-          <p class="text-slate-400">History view coming soon</p>
-        </div>
+        <!-- History Tab - Question History View -->
+        <QuestionHistory v-else-if="currentTab === 'history'" />
       </div>
 
       <!-- Bottom Navigation -->
