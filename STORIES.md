@@ -3,6 +3,7 @@
 Stories are organized by epic. Each story includes acceptance criteria that map to test cases.
 
 **Story Format:**
+
 - **ID:** Unique identifier for referencing
 - **Status:** `pending` | `in-progress` | `complete`
 - **Story:** User story or technical task
@@ -11,6 +12,7 @@ Stories are organized by epic. Each story includes acceptance criteria that map 
 - **Depends On:** List of card IDs that must be complete first
 
 **Status Tracking:**
+
 - When a card is started, change status to `in-progress`
 - When a card is complete, change status to `complete`
 - Only one card should be `in-progress` at a time
@@ -31,6 +33,7 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 **Story:** As a developer, I need a Vue 3 project scaffold so that I have a foundation to build upon.
 
 **Acceptance Criteria:**
+
 - [x] Project created with `npm create vue@latest` (Vue 3, Vite, TypeScript, Pinia, Vue Router)
 - [x] Tailwind CSS installed and configured
 - [x] Project runs locally with `npm run dev`
@@ -49,6 +52,7 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 **Story:** As a developer, I need Vitest configured so that I can write and run unit tests.
 
 **Acceptance Criteria:**
+
 - [x] Vitest installed and configured
 - [x] Vue Test Utils installed
 - [x] `npm run test:unit` command runs tests
@@ -68,6 +72,7 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 **Story:** As a developer, I need Testing Library configured so that I can write user-centric integration tests.
 
 **Acceptance Criteria:**
+
 - [x] `@testing-library/vue` installed
 - [x] `@testing-library/jest-dom` installed for extended matchers
 - [x] Sample integration test passes (e.g., render a component, find by text, simulate click)
@@ -85,6 +90,7 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 **Story:** As a developer, I need Playwright configured so that I can write browser-based end-to-end tests.
 
 **Acceptance Criteria:**
+
 - [x] Playwright installed (`@playwright/test`)
 - [x] Playwright config file created (`playwright.config.ts`)
 - [x] `npm run test:e2e` command runs E2E tests
@@ -95,6 +101,7 @@ Infrastructure and tooling setup. Must be completed before feature work begins.
 **Size:** M
 
 **Tests Written (5 tests):**
+
 ```typescript
 describe('Home Page', () => {
   test('should display the correct page title')
@@ -106,6 +113,7 @@ describe('Home Page', () => {
 ```
 
 **Notes:**
+
 - Tests run on both Chromium desktop and Pixel 5 mobile viewport (10 total test runs)
 - HTML report generated in `playwright-report/` directory
 - Config includes webServer option to auto-start dev server
@@ -115,20 +123,30 @@ describe('Home Page', () => {
 
 ### FOUND-005: Configure Pre-Commit Hooks
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-002
 
 **Story:** As a developer, I need pre-commit hooks so that code quality is enforced before commits.
 
 **Acceptance Criteria:**
-- [ ] Husky installed and initialized
-- [ ] lint-staged installed and configured
-- [ ] Pre-commit hook runs: ESLint, Prettier, TypeScript check
-- [ ] Pre-commit hook runs unit tests on staged files
-- [ ] Commits are blocked if any check fails
-- [ ] Hook can be bypassed with `--no-verify` (for emergencies only)
+
+- [x] Husky installed and initialized
+- [x] lint-staged installed and configured
+- [x] Pre-commit hook runs: ESLint, Prettier, TypeScript check
+- [x] Pre-commit hook runs unit tests on staged files
+- [x] Commits are blocked if any check fails
+- [x] Hook can be bypassed with `--no-verify` (for emergencies only)
 
 **Size:** M
+
+**Implementation Notes:**
+
+- Husky v9 initialized with `.husky/pre-commit` hook
+- lint-staged runs ESLint (with --fix) and Prettier on staged files
+- TypeScript check runs via `npm run type-check` (vue-tsc --build)
+- Unit tests run via `vitest related --run` on staged .ts/.vue files only
+- Hook exits with error code 1 if any check fails, blocking commit
+- Bypass available via `git commit --no-verify` for emergencies
 
 ---
 
@@ -140,6 +158,7 @@ describe('Home Page', () => {
 **Story:** As a developer, I need a CI pipeline so that all tests run automatically on push and PR.
 
 **Acceptance Criteria:**
+
 - [ ] `.github/workflows/ci.yml` created
 - [ ] CI triggers on: push to `main`, all pull requests
 - [ ] CI steps: install deps → lint → type check → unit tests → E2E tests
@@ -159,6 +178,7 @@ describe('Home Page', () => {
 **Story:** As a developer, I need PWA configuration so that the app can be installed and work offline.
 
 **Acceptance Criteria:**
+
 - [x] `vite-plugin-pwa` installed and configured
 - [x] Web app manifest created (name, icons, theme color, display mode)
 - [x] Service worker registers successfully
@@ -169,6 +189,7 @@ describe('Home Page', () => {
 **Size:** M
 
 **Tests Written (18 E2E tests in pwa.spec.ts):**
+
 ```typescript
 describe('PWA Support', () => {
   describe('Web App Manifest', () => {
@@ -205,6 +226,7 @@ describe('PWA Support', () => {
 ```
 
 **Implementation Notes:**
+
 - vite-plugin-pwa v1.2.0 with registerType: 'autoUpdate'
 - Manifest includes app name, theme color (#1a1a2e), standalone display, portrait orientation
 - Icons generated: pwa-192x192.png, pwa-512x512.png, apple-touch-icon.png (180x180)
@@ -223,6 +245,7 @@ describe('PWA Support', () => {
 **Story:** As a developer, I need a persistence service abstraction so that storage can be swapped from localStorage to Supabase later.
 
 **Acceptance Criteria:**
+
 - [x] `src/services/persistence.ts` created with interface
 - [x] Interface includes: `save(key, data)`, `load(key)`, `remove(key)`, `clear()`
 - [x] localStorage implementation created
@@ -232,6 +255,7 @@ describe('PWA Support', () => {
 **Size:** S
 
 **Tests to Write:**
+
 ```typescript
 describe('PersistenceService', () => {
   it('should save and load data')
@@ -252,6 +276,7 @@ describe('PersistenceService', () => {
 **Story:** As a developer, I need automated secret detection so that credentials are never accidentally committed to this public repository.
 
 **Acceptance Criteria:**
+
 - [ ] Secret scanning tool installed (e.g., gitleaks, truffleHog, or detect-secrets)
 - [ ] Pre-commit hook scans staged files for secrets
 - [ ] CI pipeline includes secret scanning step
@@ -262,6 +287,7 @@ describe('PersistenceService', () => {
 **Size:** S
 
 **Tools to Consider:**
+
 - `gitleaks` - Fast, standalone binary, easy CI integration
 - `truffleHog` - Python-based, good regex patterns
 - `detect-secrets` - Yelp's tool, baseline file approach
@@ -282,6 +308,7 @@ Core functionality for tracking questions during gameplay.
 **Story:** As a developer, I need a question data model so that questions can be stored and queried consistently.
 
 **Acceptance Criteria:**
+
 - [x] TypeScript interfaces defined for: `Question`, `QuestionCategory`, `AskedQuestion`
 - [x] Question categories defined: Matching, Measuring, Radar, Thermometer, Photo, Tentacle (6 official categories)
 - [x] Each category has draw/keep values and response times from official rulebook
@@ -291,6 +318,7 @@ Core functionality for tracking questions during gameplay.
 **Size:** S
 
 **Notes:**
+
 - Updated from 5 placeholder categories to 6 official categories per rulebook
 - Added `GameSize` enum and `availableIn` for game-size-specific questions
 - Added `format` field to categories showing question template
@@ -306,6 +334,7 @@ Core functionality for tracking questions during gameplay.
 **Story:** As a developer, I need the question database populated with all questions from the rulebook so that players can use them in-game.
 
 **Acceptance Criteria:**
+
 - [x] All questions from each category catalogued in a data file (`src/data/questions.ts`)
 - [x] Questions sourced from official Jet Lag Hide & Seek rules
 - [x] Data file is easily editable (TypeScript with typed exports)
@@ -329,6 +358,7 @@ Core functionality for tracking questions during gameplay.
 | **Total** | **61** | **74** | **83** | **83** |
 
 **Stillwater Custom Questions (4):**
+
 - Matching: Quadrant (4th admin division), Restaurant, School
 - Thermometer: 0.2 miles distance
 
@@ -342,6 +372,7 @@ Core functionality for tracking questions during gameplay.
 **Story:** As a developer, I need a Pinia store to track question state so that both roles can see what's available and asked.
 
 **Acceptance Criteria:**
+
 - [x] Pinia store created: `questionStore`
 - [x] Store tracks: all available questions, asked questions, pending question
 - [x] `getAvailableQuestions(category?)` getter filters out asked questions
@@ -350,6 +381,7 @@ Core functionality for tracking questions during gameplay.
 **Size:** S
 
 **Tests Written (16 tests):**
+
 - `should initialize with all questions available`
 - `should initialize with no asked questions`
 - `should initialize with no pending question`
@@ -377,6 +409,7 @@ Core functionality for tracking questions during gameplay.
 **Story:** As a player, I need actions to ask, answer, and veto questions so that the game flow is tracked.
 
 **Acceptance Criteria:**
+
 - [x] `askQuestion(questionId)` marks question as pending, returns draw/keep values
 - [x] `answerQuestion(questionId, answer)` records answer, moves to asked
 - [x] `vetoQuestion(questionId)` returns question to available (hider still gets cards)
@@ -385,6 +418,7 @@ Core functionality for tracking questions during gameplay.
 **Size:** S
 
 **Tests Written (15 tests):**
+
 ```typescript
 describe('questionStore actions', () => {
   describe('askQuestion', () => {
@@ -421,6 +455,7 @@ describe('questionStore actions', () => {
 **Story:** As a player, I need question state to persist so that I don't lose progress if the app closes.
 
 **Acceptance Criteria:**
+
 - [x] Store persists to localStorage via persistence service
 - [x] Store rehydrates on app load
 - [x] Pending question state preserved across restarts
@@ -428,6 +463,7 @@ describe('questionStore actions', () => {
 **Size:** S
 
 **Tests Written (6 tests):**
+
 ```typescript
 describe('questionStore persistence', () => {
   it('should persist state to localStorage')
@@ -449,6 +485,7 @@ describe('questionStore persistence', () => {
 **Story:** As a player, I need to see all questions grouped by category so that I can browse what's available.
 
 **Acceptance Criteria:**
+
 - [x] Component displays questions grouped by category
 - [x] Each category shows: name, draw/keep values
 - [x] Questions show: text
@@ -458,6 +495,7 @@ describe('questionStore persistence', () => {
 **Size:** S
 
 **Tests Written (8 tests):**
+
 ```typescript
 describe('QuestionList', () => {
   describe('category display', () => {
@@ -491,6 +529,7 @@ describe('QuestionList', () => {
 **Story:** As a player, I need to see question status (asked/available/pending) so that I know what can still be asked.
 
 **Acceptance Criteria:**
+
 - [x] Questions show: asked/available/pending status
 - [x] Asked questions are visually distinct (grayed out, strikethrough, or hidden)
 - [x] Pending question (awaiting answer) highlighted
@@ -500,9 +539,11 @@ describe('QuestionList', () => {
 **Size:** S
 
 **Design Reference:**
+
 - See RESEARCH_NOTES.md "Question Icon Reference" - in the show, used/unavailable questions appear faded/grayed out
 
 **Tests Written (7 tests):**
+
 ```typescript
 describe('QuestionList status indicators', () => {
   it('should gray out asked questions')
@@ -525,6 +566,7 @@ describe('QuestionList status indicators', () => {
 **Story:** As a seeker, I need to select a question and confirm asking it so that the hider knows to respond.
 
 **Acceptance Criteria:**
+
 - [x] Tapping a question opens a confirmation modal
 - [x] Modal shows: question text, category, draw/keep values
 - [x] "Ask" button marks question as pending, starts response timer
@@ -535,6 +577,7 @@ describe('QuestionList status indicators', () => {
 **Size:** S
 
 **Tests Written (15 tests):**
+
 ```typescript
 describe('AskQuestionModal', () => {
   describe('modal display', () => {
@@ -577,6 +620,7 @@ describe('AskQuestionModal', () => {
 **Story:** As a player, I need to record the answer and handle Veto/Randomize responses so that the game flow continues.
 
 **Acceptance Criteria:**
+
 - [x] "Submit Answer" records answer, triggers hider card draw
 - [x] Hider can play Veto (returns question to available, still draws cards)
 - [x] Hider can play Randomize (replaces with random question from same category)
@@ -585,6 +629,7 @@ describe('AskQuestionModal', () => {
 **Size:** S
 
 **Tests Written (12 tests):**
+
 ```typescript
 describe('answer submission and card draw', () => {
   it('should emit cardDraw event when answer is submitted')
@@ -607,6 +652,7 @@ describe('randomize handling', () => {
 ```
 
 **Additional Tests (6 tests in questionStore):**
+
 ```typescript
 describe('randomizeQuestion', () => {
   it('should replace pending question with a different question from same category')
@@ -628,6 +674,7 @@ describe('randomizeQuestion', () => {
 **Story:** As a player (hider or seeker), I need to see all previously asked questions and answers so that I can reference what's been revealed.
 
 **Acceptance Criteria:**
+
 - [x] View shows all asked questions in reverse chronological order
 - [x] Each entry shows: question, answer, timestamp, category
 - [x] Vetoed questions marked distinctly (returned to available)
@@ -639,6 +686,7 @@ describe('randomizeQuestion', () => {
 **Size:** M
 
 **Tests Written (24 tests):**
+
 ```typescript
 describe('QuestionHistory', () => {
   describe('display requirements', () => {
@@ -687,6 +735,7 @@ describe('QuestionHistory', () => {
 ```
 
 **Notes:**
+
 - QuestionHistory component integrated into GamePlayView History tab
 - Filters show only categories that have asked questions
 - Dark theme styling consistent with rest of app
@@ -702,6 +751,7 @@ describe('QuestionHistory', () => {
 **Story:** As a seeker, I need the option to re-ask a previously asked question at double the card cost so that I can get updated information.
 
 **Acceptance Criteria:**
+
 - [x] Previously asked questions show "Re-ask (2x cost)" option
 - [x] Re-asking shows confirmation with doubled draw/keep values
 - [x] Hider draws double the normal cards when re-asked question is answered
@@ -711,9 +761,11 @@ describe('QuestionHistory', () => {
 **Size:** S
 
 **Rules Reference:**
+
 - See GAME_RULES.md "Re-asking" rule: "Questions cannot be re-asked unless seekers pay double cost (or hider used Veto)"
 
 **Tests to Write:**
+
 ```typescript
 describe('Re-ask Question', () => {
   it('should show re-ask option for previously asked questions')
@@ -740,6 +792,7 @@ Game timing functionality.
 **Story:** As a developer, I need a reusable timer composable so that timing logic is consistent across the app.
 
 **Acceptance Criteria:**
+
 - [x] `useTimer` composable created
 - [x] Supports: start, stop, pause, resume, reset
 - [x] Tracks elapsed time in milliseconds
@@ -750,6 +803,7 @@ Game timing functionality.
 **Size:** M
 
 **Tests Written (34 tests):**
+
 ```typescript
 describe('useTimer', () => {
   describe('initialization', () => {
@@ -817,6 +871,7 @@ describe('useTimer', () => {
 **Story:** As a player (hider or seeker), I need a 30-minute hiding period countdown so that both sides know when seeking begins.
 
 **Acceptance Criteria:**
+
 - [x] Timer counts down from 30:00
 - [x] Timer displays in MM:SS format
 - [x] Timer visible on both hider and seeker views
@@ -829,6 +884,7 @@ describe('useTimer', () => {
 **Size:** M
 
 **Tests Written (25 tests):**
+
 ```typescript
 describe('HidingPeriodTimer', () => {
   describe('timer display', () => {
@@ -878,6 +934,7 @@ describe('HidingPeriodTimer', () => {
 ```
 
 **Notes:**
+
 - Audio alerts not implemented (visual only) - can be added in UX-003
 - Timer integrated into both HiderView and SeekerView
 - Uses persistence service for state restoration across app restarts
@@ -892,6 +949,7 @@ describe('HidingPeriodTimer', () => {
 **Story:** As a player, I need to track how long the hider has been hiding so that we can determine the winner.
 
 **Acceptance Criteria:**
+
 - [x] Timer counts up from 00:00:00
 - [x] Timer starts when hiding period ends (seeking phase begins)
 - [x] Timer stops when hider is found
@@ -902,6 +960,7 @@ describe('HidingPeriodTimer', () => {
 **Size:** M
 
 **Tests Written (29 tests):**
+
 ```typescript
 describe('HidingDurationTimer', () => {
   describe('timer display', () => {
@@ -964,6 +1023,7 @@ describe('HidingDurationTimer', () => {
 **Story:** As a player (seeker or hider), I need a countdown timer after a question is asked so that both sides know the response deadline.
 
 **Acceptance Criteria:**
+
 - [x] Timer starts when question is submitted
 - [x] Countdown from 5:00 (or 10:00/20:00 for photo questions based on game size)
 - [x] Timer visible on both hider and seeker views
@@ -974,6 +1034,7 @@ describe('HidingDurationTimer', () => {
 **Size:** S
 
 **Tests Written (26 tests):**
+
 ```typescript
 describe('QuestionResponseTimer', () => {
   describe('visibility', () => {
@@ -1026,6 +1087,7 @@ describe('QuestionResponseTimer', () => {
 ```
 
 **Notes:**
+
 - QuestionResponseTimer component integrated into both HiderView and SeekerView
 - Response times based on category: 5min for standard, 10min for Photo (small/medium), 20min for Photo (large)
 - Timer starts automatically when question becomes pending and clears when answered/vetoed
@@ -1048,6 +1110,7 @@ Card tracking for the hider role.
 **Story:** As a developer, I need card type definitions so that cards can be managed consistently.
 
 **Acceptance Criteria:**
+
 - [x] TypeScript interfaces for: `Card`, `TimeBonusCard`, `PowerupCard`, `CurseCard`, `TimeTrapCard`
 - [x] All cards from rulebook catalogued
 - [x] Card effects documented in data
@@ -1059,10 +1122,12 @@ Card tracking for the hider role.
 **Size:** M
 
 **Notes:**
+
 - Base game has 3 card types: Time Bonus, Powerup, Curse
 - Time Trap is from expansion pack
 
 **Tests Written (36 tests):**
+
 ```typescript
 describe('CardType enum', () => {
   it('should define all four card types')
@@ -1139,6 +1204,7 @@ describe('getCurseCards', () => {
 **Story:** As a hider, I need to track my hand of cards so that I know what I can play.
 
 **Acceptance Criteria:**
+
 - [x] Pinia store created: `cardStore`
 - [x] Hand limit enforced (default 6, expandable)
 - [x] `drawCards(count)` action adds random cards
@@ -1149,6 +1215,7 @@ describe('getCurseCards', () => {
 **Size:** M
 
 **Tests Written (42 tests):**
+
 ```typescript
 describe('cardStore core', () => {
   describe('initialization', () => {
@@ -1230,6 +1297,7 @@ describe('cardStore persistence', () => {
 **Story:** As a hider, I need to see my current hand of cards so that I can plan plays.
 
 **Acceptance Criteria:**
+
 - [x] Cards displayed in a mobile-friendly layout
 - [x] Each card shows: type, name, effect summary
 - [x] Visual distinction between time bonus, powerup, curse
@@ -1239,6 +1307,7 @@ describe('cardStore persistence', () => {
 **Size:** M
 
 **Tests Written (20 tests):**
+
 ```typescript
 describe('CardHand', () => {
   describe('empty hand display', () => {
@@ -1290,6 +1359,7 @@ describe('CardHand', () => {
 **Story:** As a hider, I need to draw cards when questions are answered so that I get new options.
 
 **Acceptance Criteria:**
+
 - [x] Draw count based on question category
 - [x] Cards drawn from simulated deck (weighted random)
 - [x] Animation/feedback when cards are drawn
@@ -1298,6 +1368,7 @@ describe('CardHand', () => {
 **Size:** M
 
 **Tests Written (29 tests):**
+
 ```typescript
 describe('CardDrawModal', () => {
   describe('visibility', () => {
@@ -1355,6 +1426,7 @@ describe('CardDrawModal', () => {
 ```
 
 **Notes:**
+
 - CardDrawModal component created with draw X, keep Y selection mechanic
 - Integrated with SeekerView to trigger after question answered/vetoed
 - Cards are drawn to hand, then player selects which to keep (unselected are discarded)
@@ -1371,6 +1443,7 @@ describe('CardDrawModal', () => {
 **Story:** As a hider, I need to see my total time bonus so that I know my potential score.
 
 **Acceptance Criteria:**
+
 - [x] Sum of all time bonus cards in hand
 - [x] Displayed prominently on hider view
 - [x] Updates when cards drawn or discarded
@@ -1378,6 +1451,7 @@ describe('CardDrawModal', () => {
 **Size:** S
 
 **Tests Written (5 tests):**
+
 ```typescript
 describe('time bonus display (CARD-005)', () => {
   it('should display total time bonus prominently')
@@ -1390,6 +1464,7 @@ describe('time bonus display (CARD-005)', () => {
 ```
 
 **Notes:**
+
 - Display implemented in HiderView.vue with green-styled prominent display
 - Uses `totalTimeBonus(gameSize)` from cardStore computed property
 - Auto-updates reactively via Vue computed property when cards change
@@ -1404,6 +1479,7 @@ describe('time bonus display (CARD-005)', () => {
 **Story:** As a seeker, I need to see which curses are currently active so that I know what restrictions apply.
 
 **Acceptance Criteria:**
+
 - [x] Display list of active curses on seeker view
 - [x] Each curse shows: name, description, clear condition
 - [x] Until-found curses show as persistent (no clear option)
@@ -1412,6 +1488,7 @@ describe('time bonus display (CARD-005)', () => {
 **Size:** S
 
 **Tests Written (24 tests):**
+
 ```typescript
 describe('CurseDisplay', () => {
   describe('empty state', () => {
@@ -1462,6 +1539,7 @@ describe('CurseDisplay', () => {
 ```
 
 **Implementation Notes:**
+
 - CurseDisplay component added to SeekerView (conditionally shown when curses are active)
 - ActiveCurse type added to cardStore tracking: instanceId, curseId, name, description, effect, castingCost, blocksQuestions, blocksTransit, activatedAt, untilFound, durationMinutes, penaltyMinutes
 - playCurseCard action added to cardStore - plays curse from hand and adds to activeCurses
@@ -1478,6 +1556,7 @@ describe('CurseDisplay', () => {
 **Story:** As a seeker, I need curses to clear when conditions are met so that restrictions are lifted.
 
 **Acceptance Criteria:**
+
 - [x] Time-based curses show countdown timer (auto-clear when expired)
 - [x] Action-based curses have "Mark Complete" button for manual clearing
 - [x] Curse clears from list when condition is met
@@ -1486,6 +1565,7 @@ describe('CurseDisplay', () => {
 **Size:** S
 
 **Tests Written (11 tests):**
+
 ```typescript
 describe('curse clearing (CARD-006b)', () => {
   describe('time-based curse countdown', () => {
@@ -1509,6 +1589,7 @@ describe('curse clearing (CARD-006b)', () => {
 ```
 
 **Notes:**
+
 - Countdown timer displays remaining time in MM:SS format
 - Timer updates every second and auto-clears expired curses
 - CurseDisplay component emits `curseCleared` event with curse name and reason (manual/expired)
@@ -1525,6 +1606,7 @@ describe('curse clearing (CARD-006b)', () => {
 **Story:** As a hider, I need to play the Discard/Draw powerup so that I can exchange unwanted cards for new ones.
 
 **Acceptance Criteria:**
+
 - [x] Discard/Draw card can be played from hand
 - [x] UI allows selecting which cards to discard (multi-select)
 - [x] After discarding, draw equal number of new cards
@@ -1535,9 +1617,11 @@ describe('curse clearing (CARD-006b)', () => {
 **Size:** S
 
 **Rules Reference:**
+
 - See GAME_RULES.md "Powerup Cards" section
 
 **Tests Written (26 tests in PowerupDiscardDrawModal.spec.ts + 8 tests in cardStore):**
+
 ```typescript
 describe('PowerupDiscardDrawModal', () => {
   describe('visibility', () => {
@@ -1598,6 +1682,7 @@ describe('cardStore discardAndDraw', () => {
 ```
 
 **Notes:**
+
 - Supports both Discard 1 Draw 2 and Discard 2 Draw 3 powerup variants
 - PowerupDiscardDrawModal component handles card selection UI
 - discardAndDraw action in cardStore handles the discard/draw logic
@@ -1613,6 +1698,7 @@ describe('cardStore discardAndDraw', () => {
 **Story:** As a hider, I need to play the Draw 1, Expand powerup so that I can draw a card and permanently increase my hand size.
 
 **Acceptance Criteria:**
+
 - [x] Draw 1, Expand card can be played from hand
 - [x] Playing draws one card immediately
 - [x] Hand limit permanently increased by 1 (persists for rest of game)
@@ -1623,9 +1709,11 @@ describe('cardStore discardAndDraw', () => {
 **Size:** S
 
 **Rules Reference:**
+
 - See GAME_RULES.md "Powerup Cards" section
 
 **Tests Written (21 tests):**
+
 ```typescript
 describe('PowerupDrawExpandModal', () => {
   describe('visibility', () => {
@@ -1667,6 +1755,7 @@ describe('cardStore playDrawExpandPowerup', () => {
 ```
 
 **Notes:**
+
 - PowerupDrawExpandModal component created with confirmation UI
 - Shows current hand limit → new hand limit visual
 - playDrawExpandPowerup action added to cardStore
@@ -1682,6 +1771,7 @@ describe('cardStore playDrawExpandPowerup', () => {
 **Story:** As a hider, I need to play the Duplicate powerup so that I can copy another card in my hand.
 
 **Acceptance Criteria:**
+
 - [x] Duplicate card can be played from hand
 - [x] UI allows selecting which card in hand to copy
 - [x] Creates a copy of the selected card in hand
@@ -1692,10 +1782,12 @@ describe('cardStore playDrawExpandPowerup', () => {
 **Size:** S
 
 **Rules Reference:**
+
 - See GAME_RULES.md "Powerup Cards" section
 - Duplicate can copy any time bonus, doubling its value
 
 **Tests Written (36 tests in PowerupDuplicateModal.spec.ts):**
+
 ```typescript
 describe('PowerupDuplicateModal', () => {
   describe('visibility', () => {
@@ -1758,6 +1850,7 @@ describe('cardStore playDuplicatePowerup', () => {
 ```
 
 **Notes:**
+
 - PowerupDuplicateModal component created with single-select UI for target card
 - Time bonus cards show original value and doubled value preview
 - Non-time-bonus cards show "Creates copy" indicator
@@ -1775,6 +1868,7 @@ describe('cardStore playDuplicatePowerup', () => {
 **Story:** As a hider, I need to play the Move powerup so that I can establish a new hiding zone while seekers wait.
 
 **Acceptance Criteria:**
+
 - [x] Move card can be played from hand
 - [x] Playing pauses the hiding duration timer
 - [x] Seekers view shows notification: "Hider is moving - stay put"
@@ -1786,10 +1880,12 @@ describe('cardStore playDuplicatePowerup', () => {
 **Size:** M
 
 **Rules Reference:**
+
 - See GAME_RULES.md "Powerup Cards" section
 - Move allows establishing new hiding zone; hiding timer pauses, seekers must stay put
 
 **Tests to Write:**
+
 ```typescript
 describe('Move Powerup', () => {
   it('should pause hiding timer when played')
@@ -1810,6 +1906,7 @@ describe('Move Powerup', () => {
 **Story:** As a hider, I need to play Time Trap cards to designate stations as traps so that I gain bonus time if seekers visit them.
 
 **Acceptance Criteria:**
+
 - [x] Time Trap card can be played from hand
 - [x] Playing prompts hider to select/enter a transit station name
 - [x] Trapped station is publicly announced (seekers see it)
@@ -1821,10 +1918,12 @@ describe('Move Powerup', () => {
 **Size:** M
 
 **Rules Reference:**
+
 - See GAME_RULES.md "Time Trap Cards (Expansion Pack)" section
 - Can be used as misdirection (trap a station far from hiding spot)
 
 **Tests Written (63 tests):**
+
 ```typescript
 describe('cardStore Time Trap functionality (CARD-008)', () => {
   describe('activeTimeTraps initialization', () => {
@@ -1944,6 +2043,7 @@ Overall game flow management.
 **Story:** As a player, I need game state tracked so that the app knows the current phase and active players.
 
 **Acceptance Criteria:**
+
 - [x] Pinia store created: `gameStore`
 - [x] Tracks: current phase, current hider, round number, player list
 - [x] Phases: setup, hiding-period, seeking, end-game, round-complete
@@ -1954,6 +2054,7 @@ Overall game flow management.
 **Size:** M
 
 **Tests Written (37 tests):**
+
 ```typescript
 describe('gameStore core', () => {
   describe('initialization', () => {
@@ -2030,6 +2131,7 @@ describe('gameStore persistence', () => {
 **Story:** As a player, I need to set up a new game so that tracking can begin.
 
 **Acceptance Criteria:**
+
 - [x] Enter player names (2-4 players)
 - [x] Select game size (Small for Stillwater)
 - [x] Randomize or select first hider
@@ -2038,6 +2140,7 @@ describe('gameStore persistence', () => {
 **Size:** M
 
 **Tests Written (27 tests):**
+
 ```typescript
 describe('GameSetupView', () => {
   describe('player management', () => {
@@ -2092,6 +2195,7 @@ describe('GameSetupView', () => {
 **Story:** As a player, I need to see information relevant to my current role (hider or seeker).
 
 **Acceptance Criteria:**
+
 - [x] Hider view shows: cards, time bonus, GPS toggle (future)
 - [x] Seeker view shows: questions, answers, timers
 - [x] Easy toggle to switch views (for single-device play)
@@ -2100,6 +2204,7 @@ describe('GameSetupView', () => {
 **Size:** M
 
 **Tests Written (24 tests):**
+
 ```typescript
 describe('HiderView', () => {
   describe('card display', () => {
@@ -2167,6 +2272,7 @@ describe('GamePlayView (role toggle)', () => {
 **Story:** As a player, I need to see a summary when a round ends so that scores are clear.
 
 **Acceptance Criteria:**
+
 - [x] Shows hider's final hiding time
 - [x] Shows time bonuses applied
 - [x] Shows total score for round
@@ -2176,6 +2282,7 @@ describe('GamePlayView (role toggle)', () => {
 **Size:** M
 
 **Tests Written (25 tests):**
+
 ```typescript
 describe('RoundSummary', () => {
   describe('visibility based on phase', () => {
@@ -2238,6 +2345,7 @@ describe('RoundSummary', () => {
 **Story:** As a player, I need the app to handle the end game sequence so that rounds conclude properly when the hider is found.
 
 **Acceptance Criteria:**
+
 - [x] "Enter Hiding Zone" action triggers end game phase
 - [x] End game phase shows: seekers are in zone, searching for hider
 - [x] "Hider Found" action stops the hiding duration timer
@@ -2248,11 +2356,13 @@ describe('RoundSummary', () => {
 **Size:** M
 
 **Rules Reference:**
+
 - See GAME_RULES.md "End Game" section
 - Triggered when seekers enter hiding zone and leave transit
 - Seekers must spot hider AND be within 5 feet to win
 
 **Tests Written (37 tests):**
+
 ```typescript
 describe('EndGameControls', () => {
   describe('visibility based on phase', () => {
@@ -2295,6 +2405,7 @@ describe('QuestionList end-game phase restrictions', () => {
 ```
 
 **Notes:**
+
 - EndGameControls component added with confirmation dialogs for Enter Hiding Zone and Hider Found actions
 - HidingDurationTimer already integrated to stop when phase transitions to round-complete
 - QuestionList updated to disable Photo and Tentacle categories during end-game phase
@@ -2309,6 +2420,7 @@ describe('QuestionList end-game phase restrictions', () => {
 **Story:** As a player, I need the app to track scores across all rounds and declare a winner so that we know who won the game.
 
 **Acceptance Criteria:**
+
 - [x] Track total hiding time per player across all rounds
 - [x] Track which players have been hider (rotation tracking)
 - [x] "End Game" option available after all players have been hider
@@ -2319,6 +2431,7 @@ describe('QuestionList end-game phase restrictions', () => {
 **Size:** S
 
 **Tests Written (22 tests):**
+
 ```typescript
 describe('FinalResults', () => {
   describe('display requirements', () => {
@@ -2368,6 +2481,7 @@ describe('gameStore resetGame action', () => {
 ```
 
 **Notes:**
+
 - FinalResults component displays winner with trophy icons and medals (🏆🥇🥈🥉)
 - Game statistics show total rounds and combined hiding time
 - New Game button resets all stores (game, card, question)
@@ -2384,6 +2498,7 @@ describe('gameStore resetGame action', () => {
 **Story:** As a player, I need to pause the entire game so that all timers stop for safety or comfort breaks.
 
 **Acceptance Criteria:**
+
 - [x] "Pause Game" action available during active gameplay
 - [x] Pausing stops ALL timers (hiding period, hiding duration, response timer)
 - [x] Visual indicator shows game is paused
@@ -2394,11 +2509,13 @@ describe('gameStore resetGame action', () => {
 **Size:** S
 
 **Rules Reference:**
+
 - See RESEARCH_NOTES.md "Pausing" section
 - Game can be paused if needed for safety/comfort
 - When paused, ALL timers stop
 
 **Tests Written (40 tests):**
+
 ```typescript
 describe('gameStore pause/resume', () => {
   describe('isGamePaused state', () => {
@@ -2461,6 +2578,7 @@ describe('GamePauseOverlay', () => {
 ```
 
 **Implementation Notes:**
+
 - GamePauseOverlay component with Teleport for fullscreen overlay
 - Pause button shown in header during active gameplay phases
 - All three timer components watch gameStore.isGamePaused and pause/resume accordingly
@@ -2483,6 +2601,7 @@ User experience improvements.
 **Story:** As a player, I need the app to work well on my phone so that I can use it during gameplay.
 
 **Acceptance Criteria:**
+
 - [x] All views work on screens 320px and up
 - [x] Touch targets minimum 44x44px
 - [x] No horizontal scrolling on main views
@@ -2492,6 +2611,7 @@ User experience improvements.
 **Size:** M
 
 **Tests Written (23 E2E tests in responsive.spec.ts):**
+
 ```typescript
 describe('Responsive Layout - 320px width', () => {
   describe('Home Page', () => {
@@ -2528,6 +2648,7 @@ describe('Text Readability', () => {
 ```
 
 **Implementation Notes:**
+
 - E2E tests run on both Chromium desktop and Pixel 5 mobile viewport (46 total test runs)
 - All buttons updated to have `min-h-11` (44px minimum height) for touch targets
 - Game size buttons, hider selection buttons, confirmation modal buttons fixed
@@ -2544,6 +2665,7 @@ describe('Text Readability', () => {
 **Story:** As a player, I need intuitive navigation so that I can quickly access different features.
 
 **Acceptance Criteria:**
+
 - [x] Bottom tab navigation for main sections
 - [x] Tabs: Questions, Timers, Cards (hider), History
 - [x] Current tab clearly indicated
@@ -2552,6 +2674,7 @@ describe('Text Readability', () => {
 **Size:** M
 
 **Tests Written (24 tests):**
+
 - BottomNav component tests (18 tests):
   - Tab display: displays all tabs, labels, and touch-friendly buttons
   - Current tab indication: highlights active tab correctly
@@ -2574,6 +2697,7 @@ describe('Text Readability', () => {
 **Story:** As a player, I need timely notifications so that I don't miss important game events.
 
 **Acceptance Criteria:**
+
 - [x] In-app toast notifications for actions
 - [x] Sound alerts for timer events (optional, toggleable)
 - [x] Vibration feedback on mobile (optional)
@@ -2582,6 +2706,7 @@ describe('Text Readability', () => {
 **Size:** M
 
 **Tests Written (53 tests):**
+
 ```typescript
 describe('useNotifications', () => {
   describe('toast notifications', () => {
@@ -2687,6 +2812,7 @@ describe('ToastContainer', () => {
 ```
 
 **Implementation Notes:**
+
 - Created `src/composables/useNotifications.ts` with toast, sound, and vibration APIs
 - Created `src/components/ToastContainer.vue` with Teleport to body for overlay
 - Toast notifications appear at top-center with auto-dismiss after 3 seconds (configurable)
@@ -2708,6 +2834,7 @@ describe('ToastContainer', () => {
 **Story:** As a player, I need a consistent visual theme with distinct category colors so that the app is easy to navigate and visually appealing.
 
 **Acceptance Criteria:**
+
 - [x] Tailwind theme extended with custom color palette
 - [x] Primary accent color defined (inspired by Jet Lag branding)
 - [x] Each question category has a distinct, accessible color
@@ -2719,6 +2846,7 @@ describe('ToastContainer', () => {
 **Size:** S
 
 **Design Notes:**
+
 - See RESEARCH_NOTES.md "Visual Design Research" section
 - See RESEARCH_NOTES.md "Question Category Colors (From Nebula Show)" for exact hex values
 - See RESEARCH_NOTES.md "Question Icon Reference" for icon descriptions per category
@@ -2726,6 +2854,7 @@ describe('ToastContainer', () => {
 - Prioritize accessibility and outdoor visibility
 
 **Tests Written (10 tests):**
+
 ```typescript
 describe('Design System Colors', () => {
   describe('BRAND_COLORS', () => {
@@ -2754,6 +2883,7 @@ describe('Design System Colors', () => {
 ```
 
 **Implementation Notes:**
+
 - Created `src/design/colors.ts` with typed color constants and helper functions
 - Tailwind v4 @theme configuration in `src/assets/main.css` with CSS custom properties
 - QuestionList uses category-specific header colors with white text
@@ -2765,15 +2895,15 @@ describe('Design System Colors', () => {
 
 ## Backlog Summary
 
-| Epic | Stories | Complete | Remaining |
-|------|---------|----------|-----------|
-| 0: Project Foundation | 9 | 6 | 3 |
-| 1: Question Tracking | 11 | 11 | 0 |
-| 2: Timers | 4 | 4 | 0 |
-| 3: Card Management | 12 | 12 | 0 |
-| 4: Game State | 7 | 7 | 0 |
-| 5: Mobile UX Polish | 4 | 4 | 0 |
-| **Total** | **47** | **44** | **3** |
+| Epic                  | Stories | Complete | Remaining |
+| --------------------- | ------- | -------- | --------- |
+| 0: Project Foundation | 9       | 7        | 2         |
+| 1: Question Tracking  | 11      | 11       | 0         |
+| 2: Timers             | 4       | 4        | 0         |
+| 3: Card Management    | 12      | 12       | 0         |
+| 4: Game State         | 7       | 7        | 0         |
+| 5: Mobile UX Polish   | 4       | 4        | 0         |
+| **Total**             | **47**  | **45**   | **2**     |
 
 ---
 
@@ -2807,15 +2937,17 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-007, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, CARD-008, UX-001, UX-002, UX-003, and UX-004 complete, the following cards are now ready:
-- **FOUND-005**: Configure Pre-Commit Hooks
+With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-005, FOUND-007, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, CARD-008, UX-001, UX-002, UX-003, and UX-004 complete, the following cards are now ready:
+
 - **FOUND-006**: Configure GitHub Actions CI
+- **FOUND-009**: Secret Detection in Pre-Commit and CI (depends on FOUND-005 ✅ and FOUND-006 ❌)
 
 ---
 
 ## Ralph Wiggum Workflow Notes
 
 **Between iterations:**
+
 1. Read this file to see remaining `pending` cards
 2. Check which cards have all dependencies marked `complete`
 3. Select the optimal card based on: unblocking potential, logical grouping, foundation-first
@@ -2827,4 +2959,4 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-007, FOUND-008, Q-001, Q-
 
 ---
 
-*Last updated: January 2026*
+_Last updated: January 2026_

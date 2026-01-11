@@ -1,0 +1,11 @@
+# Run lint-staged (ESLint + Prettier on staged files)
+npx lint-staged
+
+# Run TypeScript type checking
+npm run type-check
+
+# Run unit tests related to staged files (if any .ts/.vue files are staged)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|vue)$' | tr '\n' ' ')
+if [ -n "$STAGED_FILES" ]; then
+  npx vitest related --run $STAGED_FILES
+fi
