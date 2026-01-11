@@ -327,6 +327,15 @@ export const useQuestionStore = defineStore('questions', () => {
     }
   }
 
+  /**
+   * Reset the question store to initial state.
+   * Clears all asked questions and pending question.
+   */
+  function reset(): void {
+    askedQuestions.value = []
+    pendingQuestion.value = null
+  }
+
   return {
     // State
     askedQuestions,
@@ -342,6 +351,7 @@ export const useQuestionStore = defineStore('questions', () => {
     answerQuestion,
     vetoQuestion,
     randomizeQuestion,
+    reset,
     // Persistence
     rehydrate,
   }

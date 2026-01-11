@@ -252,6 +252,17 @@ export const useGameStore = defineStore('game', () => {
     return { success: true }
   }
 
+  /**
+   * Reset the entire game to initial state.
+   * Clears all players, resets phase and round number.
+   */
+  function resetGame(): void {
+    currentPhase.value = GamePhase.Setup
+    currentHiderId.value = null
+    roundNumber.value = 0
+    players.value = []
+  }
+
   return {
     // State
     currentPhase,
@@ -273,6 +284,7 @@ export const useGameStore = defineStore('game', () => {
     enterHidingZone,
     hiderFound,
     endRound,
+    resetGame,
     // Persistence
     rehydrate,
   }

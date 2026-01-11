@@ -1734,31 +1734,76 @@ describe('QuestionList end-game phase restrictions', () => {
 
 ### GS-006: Multi-Round Scoring & Winner Declaration
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** GS-004
 
 **Story:** As a player, I need the app to track scores across all rounds and declare a winner so that we know who won the game.
 
 **Acceptance Criteria:**
-- [ ] Track total hiding time per player across all rounds
-- [ ] Track which players have been hider (rotation tracking)
-- [ ] "End Game" option available after all players have been hider
-- [ ] Final results screen shows all players ranked by total time
-- [ ] Winner clearly announced (longest total hiding time)
-- [ ] Option to start new game or return to setup
+- [x] Track total hiding time per player across all rounds
+- [x] Track which players have been hider (rotation tracking)
+- [x] "End Game" option available after all players have been hider
+- [x] Final results screen shows all players ranked by total time
+- [x] Winner clearly announced (longest total hiding time)
+- [x] Option to start new game or return to setup
 
 **Size:** S
 
-**Tests to Write:**
+**Tests Written (22 tests):**
 ```typescript
-describe('Multi-Round Scoring', () => {
-  it('should track cumulative hiding time per player')
-  it('should track which players have been hider')
-  it('should allow ending game after all players rotated')
-  it('should rank players by total hiding time')
-  it('should declare winner with longest time')
+describe('FinalResults', () => {
+  describe('display requirements', () => {
+    it('should display the final results container')
+    it('should show a celebratory header')
+  })
+  describe('final leaderboard', () => {
+    it('should display all players ranked by total hiding time')
+    it('should rank players correctly - highest time first')
+    it('should show rank numbers (1st, 2nd, 3rd)')
+    it('should display total hiding time for each player')
+  })
+  describe('winner announcement', () => {
+    it('should clearly announce the winner')
+    it('should show the winner name prominently')
+    it('should show the winning time')
+    it('should have a trophy or winner indicator')
+    it('should highlight the winner in the leaderboard')
+  })
+  describe('game statistics', () => {
+    it('should show total number of rounds played')
+    it('should show total game time')
+  })
+  describe('action buttons', () => {
+    it('should show New Game button')
+    it('should emit new-game event when New Game button is clicked')
+    it('should show Return Home button')
+    it('should emit return-home event when Return Home button is clicked')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly button sizes (min 44px)')
+    it('should be scrollable when content overflows')
+  })
+  describe('accessibility', () => {
+    it('should have proper heading structure')
+    it('should have proper ARIA labels for buttons')
+    it('should announce winner to screen readers')
+  })
+})
+describe('gameStore resetGame action', () => {
+  it('should reset phase to setup')
+  it('should clear all players')
+  it('should reset round number to 0')
+  it('should clear current hider')
+  it('should clear localStorage persistence')
 })
 ```
+
+**Notes:**
+- FinalResults component displays winner with trophy icons and medals (🏆🥇🥈🥉)
+- Game statistics show total rounds and combined hiding time
+- New Game button resets all stores (game, card, question)
+- Added gameStore.resetGame() and questionStore.reset() actions
+- Route added at /results for final results view
 
 ---
 
@@ -1902,9 +1947,9 @@ User experience improvements.
 | 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 3 | 1 |
 | 3: Card Management | 12 | 3 | 9 |
-| 4: Game State | 7 | 5 | 2 |
+| 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **25** | **22** |
+| **Total** | **47** | **26** | **21** |
 
 ---
 
@@ -1938,7 +1983,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-004, GS-005, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
@@ -1955,10 +2000,7 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-008**: Time Trap Card Implementation
 - **UX-003**: Notifications and Alerts (partially - still needs CARD-006b)
 - **UX-004**: Visual Design System
-- **GS-006**: Multi-Round Scoring & Winner Declaration (now unblocked by GS-004)
 - **GS-007**: Unified Game Pause/Resume
-
-**Note:** GS-004 completion unblocks GS-006 (Multi-Round Scoring & Winner Declaration).
 
 ---
 

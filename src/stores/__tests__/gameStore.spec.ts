@@ -453,6 +453,78 @@ describe('gameStore getters', () => {
   })
 })
 
+describe('gameStore resetGame action', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('should reset phase to setup', () => {
+    const store = useGameStore()
+    store.addPlayer('Alice')
+    store.addPlayer('Bob')
+    store.startRound(store.players[0]!.id)
+    store.startSeeking()
+
+    store.resetGame()
+
+    expect(store.currentPhase).toBe(GamePhase.Setup)
+  })
+
+  it('should clear all players', () => {
+    const store = useGameStore()
+    store.addPlayer('Alice')
+    store.addPlayer('Bob')
+
+    store.resetGame()
+
+    expect(store.players).toEqual([])
+  })
+
+  it('should reset round number to 0', () => {
+    const store = useGameStore()
+    store.addPlayer('Alice')
+    store.addPlayer('Bob')
+    store.startRound(store.players[0]!.id)
+    store.startSeeking()
+    store.enterHidingZone()
+    store.hiderFound()
+    store.endRound(3600000)
+
+    store.resetGame()
+
+    expect(store.roundNumber).toBe(0)
+  })
+
+  it('should clear current hider', () => {
+    const store = useGameStore()
+    store.addPlayer('Alice')
+    store.addPlayer('Bob')
+    store.startRound(store.players[0]!.id)
+
+    store.resetGame()
+
+    expect(store.currentHiderId).toBeNull()
+    expect(store.currentHider).toBeNull()
+  })
+
+  it('should clear localStorage persistence', async () => {
+    const store = useGameStore()
+    store.addPlayer('Alice')
+    store.addPlayer('Bob')
+    store.startRound(store.players[0]!.id)
+    await nextTick()
+
+    store.resetGame()
+    await nextTick()
+
+    // After reset, the persisted state should be empty/default
+    const store2 = useGameStore()
+    store2.rehydrate()
+    expect(store2.players).toEqual([])
+    expect(store2.roundNumber).toBe(0)
+  })
+})
+
 describe('gameStore persistence', () => {
   let mockStorage: Record<string, string>
 

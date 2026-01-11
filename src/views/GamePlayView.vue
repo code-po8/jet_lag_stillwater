@@ -122,8 +122,8 @@ function handleStartNextRound() {
  * Handle ending the game
  */
 function handleEndGame() {
-  // Navigate back to home for now (TODO: final results view in GS-006)
-  router.push('/')
+  // Navigate to final results view
+  router.push('/results')
 }
 </script>
 
