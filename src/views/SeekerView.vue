@@ -6,6 +6,7 @@ import { useCardStore, type CardInstance } from '@/stores/cardStore'
 import QuestionList from '@/components/QuestionList.vue'
 import AskQuestionModal from '@/components/AskQuestionModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
+import QuestionResponseTimer from '@/components/QuestionResponseTimer.vue'
 import CardDrawModal from '@/components/CardDrawModal.vue'
 import CurseDisplay from '@/components/CurseDisplay.vue'
 import { GameSize, type Question } from '@/types/question'
@@ -136,6 +137,9 @@ function handleCardDrawConfirm(event: { keptCards: CardInstance[]; discardedCard
 
     <!-- Hiding Period Timer -->
     <HidingPeriodTimer v-if="isHidingPeriod" role="seeker" />
+
+    <!-- Question Response Timer -->
+    <QuestionResponseTimer role="seeker" :game-size="gameSize" />
 
     <!-- Answers Summary -->
     <div

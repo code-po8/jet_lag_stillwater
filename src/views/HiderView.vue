@@ -8,6 +8,7 @@ import PowerupDiscardDrawModal from '@/components/PowerupDiscardDrawModal.vue'
 import PowerupDrawExpandModal from '@/components/PowerupDrawExpandModal.vue'
 import PowerupDuplicateModal from '@/components/PowerupDuplicateModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
+import QuestionResponseTimer from '@/components/QuestionResponseTimer.vue'
 import { GameSize } from '@/types/question'
 import { CardType, PowerupType } from '@/types/card'
 
@@ -200,6 +201,9 @@ function handleDuplicateCancel() {
 
     <!-- Hiding Period Timer -->
     <HidingPeriodTimer v-if="isHidingPeriod" role="hider" />
+
+    <!-- Question Response Timer -->
+    <QuestionResponseTimer role="hider" :game-size="props.gameSize ?? GameSize.Small" />
 
     <!-- Time Bonus Total -->
     <div

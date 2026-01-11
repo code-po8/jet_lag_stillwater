@@ -896,20 +896,79 @@ describe('HidingDurationTimer', () => {
 
 ### T-004: Question Response Timer
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** T-001, Q-004
 
 **Story:** As a player (seeker or hider), I need a countdown timer after a question is asked so that both sides know the response deadline.
 
 **Acceptance Criteria:**
-- [ ] Timer starts when question is submitted
-- [ ] Countdown from 5:00 (or 10:00 for photo questions)
-- [ ] Timer visible on both hider and seeker views
-- [ ] Visual alert when time is running low (< 1 minute)
-- [ ] Notification when timer expires (for both roles)
-- [ ] Timer clears when answer is recorded
+- [x] Timer starts when question is submitted
+- [x] Countdown from 5:00 (or 10:00/20:00 for photo questions based on game size)
+- [x] Timer visible on both hider and seeker views
+- [x] Visual alert when time is running low (< 1 minute)
+- [x] Notification when timer expires (emits expired event)
+- [x] Timer clears when answer is recorded
 
 **Size:** S
+
+**Tests Written (26 tests):**
+```typescript
+describe('QuestionResponseTimer', () => {
+  describe('visibility', () => {
+    it('should not render when no question is pending')
+    it('should render when a question is pending')
+  })
+  describe('timer countdown', () => {
+    it('should countdown from 5:00 for standard questions')
+    it('should countdown from 10:00 for photo questions in small/medium games')
+    it('should countdown from 20:00 for photo questions in large games')
+    it('should display time in MM:SS format')
+    it('should update countdown as time passes')
+  })
+  describe('visibility on both views', () => {
+    it('should be visible on hider view')
+    it('should be visible on seeker view')
+  })
+  describe('low time alert', () => {
+    it('should show visual alert when less than 1 minute remaining')
+    it('should not show low time alert before threshold')
+    it('should emit lowTime event when threshold is crossed')
+  })
+  describe('timer expiration', () => {
+    it('should show visual alert when timer expires')
+    it('should emit expired event when timer expires')
+    it('should display 00:00 when timer expires')
+    it('should show "Time expired!" message when timer expires')
+  })
+  describe('clearing timer on answer', () => {
+    it('should hide timer when answer is recorded')
+    it('should hide timer when question is vetoed')
+  })
+  describe('question category display', () => {
+    it('should display the pending question category')
+    it('should update category when different question is pending')
+  })
+  describe('role-specific messaging', () => {
+    it('should show answer prompt for hider')
+    it('should show waiting message for seeker')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have large readable timer text')
+    it('should have touch-friendly container')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA label for timer')
+    it('should have timer role')
+  })
+})
+```
+
+**Notes:**
+- QuestionResponseTimer component integrated into both HiderView and SeekerView
+- Response times based on category: 5min for standard, 10min for Photo (small/medium), 20min for Photo (large)
+- Timer starts automatically when question becomes pending and clears when answered/vetoed
+- Role-specific messaging: "Respond to the question" for hider, "Waiting for hider response" for seeker
+- Visual low-time warning (orange border) and expired state (red border with message)
 
 ---
 
@@ -2300,11 +2359,11 @@ User experience improvements.
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 11 | 0 |
-| 2: Timers | 4 | 3 | 1 |
+| 2: Timers | 4 | 4 | 0 |
 | 3: Card Management | 12 | 10 | 2 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **35** | **12** |
+| **Total** | **47** | **36** | **11** |
 
 ---
 
@@ -2338,14 +2397,13 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
-- **T-004**: Question Response Timer
 - **CARD-007d**: Move Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
-- **UX-003**: Notifications and Alerts (now fully ready with CARD-006b complete)
+- **UX-003**: Notifications and Alerts
 - **UX-004**: Visual Design System
 - **GS-007**: Unified Game Pause/Resume
 
