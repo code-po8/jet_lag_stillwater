@@ -91,6 +91,7 @@ export interface CardActionResult {
   error?: string
   drawnCards?: CardInstance[]
   playedCard?: CardInstance
+  duplicatedCard?: CardInstance
 }
 
 /**
@@ -581,6 +582,80 @@ export const useCardStore = defineStore('cards', () => {
     }
   }
 
+  /**
+   * Play the Duplicate powerup
+   * Creates a copy of another card in hand. If duplicating a time bonus, the copy has doubled values.
+   */
+  function playDuplicatePowerup(duplicateCardInstanceId: string, targetCardInstanceId: string): CardActionResult {
+    // Validate duplicate card exists in hand
+    const duplicateCardIndex = hand.value.findIndex(c => c.instanceId === duplicateCardInstanceId)
+    if (duplicateCardIndex === -1) {
+      return { success: false, error: 'Duplicate powerup card not found in hand' }
+    }
+
+    const duplicateCard = hand.value[duplicateCardIndex]
+
+    // Validate it's a Duplicate powerup
+    if (duplicateCard?.type !== CardType.Powerup) {
+      return { success: false, error: 'Card is not a Duplicate powerup' }
+    }
+
+    const powerupCard = duplicateCard as PowerupCardInstance
+    if (powerupCard.powerupType !== PowerupType.Duplicate) {
+      return { success: false, error: 'Card is not a Duplicate powerup' }
+    }
+
+    // Cannot duplicate itself
+    if (duplicateCardInstanceId === targetCardInstanceId) {
+      return { success: false, error: 'Cannot duplicate itself' }
+    }
+
+    // Validate target card exists in hand
+    const targetCard = hand.value.find(c => c.instanceId === targetCardInstanceId)
+    if (!targetCard) {
+      return { success: false, error: 'Target card not found in hand' }
+    }
+
+    // Remove the duplicate powerup from hand and add to discard pile
+    const [playedCard] = hand.value.splice(duplicateCardIndex, 1)
+    discardPile.value.push(playedCard!)
+
+    // Create a copy of the target card with a new instance ID
+    let duplicatedCard: CardInstance
+
+    if (targetCard.type === CardType.TimeBonus) {
+      // For time bonus cards, double the values
+      const timeBonusTarget = targetCard as TimeBonusCardInstance
+      duplicatedCard = {
+        ...timeBonusTarget,
+        instanceId: generateInstanceId(),
+        name: `${timeBonusTarget.name} (Doubled)`,
+        bonusMinutes: {
+          [GameSize.Small]: timeBonusTarget.bonusMinutes[GameSize.Small] * 2,
+          [GameSize.Medium]: timeBonusTarget.bonusMinutes[GameSize.Medium] * 2,
+          [GameSize.Large]: timeBonusTarget.bonusMinutes[GameSize.Large] * 2,
+        },
+        isDuplicate: true,
+      } as TimeBonusCardInstance & { isDuplicate: boolean }
+    } else {
+      // For other cards, create an exact copy
+      duplicatedCard = {
+        ...targetCard,
+        instanceId: generateInstanceId(),
+        isDuplicate: true,
+      } as CardInstance & { isDuplicate: boolean }
+    }
+
+    // Add the duplicated card to hand
+    hand.value.push(duplicatedCard)
+
+    return {
+      success: true,
+      playedCard: playedCard!,
+      duplicatedCard,
+    }
+  }
+
   return {
     // State
     hand,
@@ -607,6 +682,7 @@ export const useCardStore = defineStore('cards', () => {
     playCurseCard,
     clearCurse,
     playDrawExpandPowerup,
+    playDuplicatePowerup,
     reset,
     // Persistence
     rehydrate,

@@ -1555,18 +1555,18 @@ describe('cardStore playDrawExpandPowerup', () => {
 
 ### CARD-007c: Duplicate Powerup Effect
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002
 
 **Story:** As a hider, I need to play the Duplicate powerup so that I can copy another card in my hand.
 
 **Acceptance Criteria:**
-- [ ] Duplicate card can be played from hand
-- [ ] UI allows selecting which card in hand to copy
-- [ ] Creates a copy of the selected card in hand
-- [ ] If duplicating a time bonus, the copy has doubled value
-- [ ] Confirmation before playing
-- [ ] Original Duplicate card removed after playing
+- [x] Duplicate card can be played from hand
+- [x] UI allows selecting which card in hand to copy
+- [x] Creates a copy of the selected card in hand
+- [x] If duplicating a time bonus, the copy has doubled value
+- [x] Confirmation before playing
+- [x] Original Duplicate card removed after playing
 
 **Size:** S
 
@@ -1574,15 +1574,75 @@ describe('cardStore playDrawExpandPowerup', () => {
 - See GAME_RULES.md "Powerup Cards" section
 - Duplicate can copy any time bonus, doubling its value
 
-**Tests to Write:**
+**Tests Written (36 tests in PowerupDuplicateModal.spec.ts):**
 ```typescript
-describe('Duplicate Powerup', () => {
-  it('should allow selecting a card to copy')
-  it('should create copy of selected card')
-  it('should double time bonus value when duplicating time bonus')
-  it('should remove powerup card after playing')
+describe('PowerupDuplicateModal', () => {
+  describe('visibility', () => {
+    it('should not render when powerupCard is null')
+    it('should render when powerupCard is provided')
+  })
+  describe('header and instructions', () => {
+    it('should display the powerup card name in header')
+    it('should display instructions for selecting a card to copy')
+  })
+  describe('card selection', () => {
+    it('should display all selectable cards')
+    it('should allow selecting a card to duplicate')
+    it('should allow deselecting a card')
+    it('should only allow selecting one card at a time')
+    it('should show selection indicator when card is selected')
+  })
+  describe('time bonus duplication display', () => {
+    it('should show doubled time bonus value for time bonus cards')
+    it('should show "creates copy" indicator for non-time-bonus cards')
+    it('should show correct doubled value for different tiers')
+    it('should update doubled value based on game size')
+  })
+  describe('confirm button', () => {
+    it('should display confirm button')
+    it('should disable confirm button when no card is selected')
+    it('should enable confirm button when a card is selected')
+    it('should emit confirm event with selected card when clicked')
+  })
+  describe('cancel button', () => {
+    it('should display cancel button')
+    it('should emit cancel event when clicked')
+  })
+  describe('not enough cards warning', () => {
+    it('should show warning when no other cards available to duplicate')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly card sizes (min 44px)')
+    it('should have touch-friendly confirm button (min 44px)')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA labels for modal')
+    it('should have proper ARIA labels for selectable cards')
+  })
+})
+describe('cardStore playDuplicatePowerup', () => {
+  it('should create a copy of the selected card')
+  it('should double time bonus value when duplicating time bonus card')
+  it('should create exact copy for non-time-bonus cards')
+  it('should remove duplicate powerup card from hand after playing')
+  it('should add duplicate powerup card to discard pile')
+  it('should assign unique instance ID to duplicated card')
+  it('should keep original card in hand after duplication')
+  it('should return error if duplicate powerup card not in hand')
+  it('should return error if target card not in hand')
+  it('should return error if card is not a Duplicate powerup')
+  it('should return error if trying to duplicate itself')
+  it('should mark duplicated time bonus card as doubled')
 })
 ```
+
+**Notes:**
+- PowerupDuplicateModal component created with single-select UI for target card
+- Time bonus cards show original value and doubled value preview
+- Non-time-bonus cards show "Creates copy" indicator
+- playDuplicatePowerup action added to cardStore
+- Duplicated time bonus cards have doubled bonusMinutes values and "(Doubled)" suffix in name
+- Integrated into HiderView via card selection handling
 
 ---
 
@@ -2241,10 +2301,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 3 | 1 |
-| 3: Card Management | 12 | 9 | 3 |
+| 3: Card Management | 12 | 10 | 2 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **34** | **13** |
+| **Total** | **47** | **35** | **12** |
 
 ---
 
@@ -2278,12 +2338,11 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-004**: Question Response Timer
-- **CARD-007c**: Duplicate Powerup Effect
 - **CARD-007d**: Move Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
 - **UX-003**: Notifications and Alerts (now fully ready with CARD-006b complete)

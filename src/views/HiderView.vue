@@ -6,6 +6,7 @@ import CardHand from '@/components/CardHand.vue'
 import CardDrawModal from '@/components/CardDrawModal.vue'
 import PowerupDiscardDrawModal from '@/components/PowerupDiscardDrawModal.vue'
 import PowerupDrawExpandModal from '@/components/PowerupDrawExpandModal.vue'
+import PowerupDuplicateModal from '@/components/PowerupDuplicateModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import { GameSize } from '@/types/question'
 import { CardType, PowerupType } from '@/types/card'
@@ -21,6 +22,7 @@ const cardStore = useCardStore()
 // State for powerup modals
 const selectedPowerupCard = ref<CardInstance | null>(null)
 const selectedDrawExpandCard = ref<CardInstance | null>(null)
+const selectedDuplicateCard = ref<CardInstance | null>(null)
 const drawnCards = ref<CardInstance[]>([])
 const keepCount = ref(0)
 
@@ -29,10 +31,16 @@ const currentPhase = computed(() => gameStore.currentPhase)
 const isHidingPeriod = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
 const totalTimeBonus = computed(() => cardStore.totalTimeBonus(props.gameSize ?? GameSize.Small))
 
-// Get selectable cards (all cards except the powerup being played)
+// Get selectable cards for discard/draw (all cards except the powerup being played)
 const selectableCardsForDiscard = computed(() => {
   if (!selectedPowerupCard.value) return []
   return cardStore.hand.filter(card => card.instanceId !== selectedPowerupCard.value?.instanceId)
+})
+
+// Get selectable cards for duplicate (all cards except the duplicate powerup being played)
+const selectableCardsForDuplicate = computed(() => {
+  if (!selectedDuplicateCard.value) return []
+  return cardStore.hand.filter(card => card.instanceId !== selectedDuplicateCard.value?.instanceId)
 })
 
 /**
@@ -71,6 +79,12 @@ function handleCardSelect(card: CardInstance) {
     // Handle Draw 1, Expand powerup
     if (powerupType === PowerupType.DrawExpand) {
       selectedDrawExpandCard.value = card
+      return
+    }
+
+    // Handle Duplicate powerup
+    if (powerupType === PowerupType.Duplicate) {
+      selectedDuplicateCard.value = card
       return
     }
   }
@@ -147,6 +161,26 @@ function handleDrawExpandConfirm() {
 function handleDrawExpandCancel() {
   selectedDrawExpandCard.value = null
 }
+
+/**
+ * Handle confirm from duplicate modal
+ */
+function handleDuplicateConfirm(targetCard: CardInstance) {
+  if (!selectedDuplicateCard.value) return
+
+  // Play the powerup (duplicates the target card)
+  cardStore.playDuplicatePowerup(selectedDuplicateCard.value.instanceId, targetCard.instanceId)
+
+  // Close the duplicate modal
+  selectedDuplicateCard.value = null
+}
+
+/**
+ * Handle cancel from duplicate modal
+ */
+function handleDuplicateCancel() {
+  selectedDuplicateCard.value = null
+}
 </script>
 
 <template>
@@ -196,6 +230,15 @@ function handleDrawExpandCancel() {
       :current-hand-limit="cardStore.handLimit"
       @confirm="handleDrawExpandConfirm"
       @cancel="handleDrawExpandCancel"
+    />
+
+    <!-- Powerup Duplicate Modal -->
+    <PowerupDuplicateModal
+      :powerup-card="selectedDuplicateCard"
+      :selectable-cards="selectableCardsForDuplicate"
+      :game-size="props.gameSize ?? GameSize.Small"
+      @confirm="handleDuplicateConfirm"
+      @cancel="handleDuplicateCancel"
     />
 
     <!-- Card Draw Modal (shows drawn cards after powerup effect) -->
