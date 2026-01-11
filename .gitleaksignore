@@ -1,0 +1,15 @@
+# Gitleaks Ignore File
+# Add fingerprints of false positives here to suppress alerts
+#
+# Format: <fingerprint> [# optional comment]
+#
+# To get a fingerprint:
+# 1. Run: npm run secrets:scan
+# 2. If a false positive is found, note the "Fingerprint" value in the output
+# 3. Add the fingerprint to this file with a comment explaining why it's safe
+#
+# Example:
+# a1b2c3d4e5f6... # Test API key in unit test (not real)
+
+# Documentation example showing Supabase JWT format (not a real key)
+DEVELOPMENT.md:generic-api-key:387

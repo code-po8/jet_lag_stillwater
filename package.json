@@ -18,7 +18,9 @@
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/",
-    "prepare": "husky"
+    "prepare": "husky",
+    "secrets:scan": "gitleaks-secret-scanner --diff-mode history",
+    "secrets:scan:staged": "gitleaks-secret-scanner --diff-mode staged"
   },
   "dependencies": {
     "pinia": "^3.0.4",
@@ -43,10 +45,11 @@
     "@vue/tsconfig": "^0.8.1",
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "~10.6.2",
+    "gitleaks-secret-scanner": "^1.2.2",
     "husky": "^9.1.7",
     "jiti": "^2.6.1",
-    "lint-staged": "^16.2.7",
     "jsdom": "^27.4.0",
+    "lint-staged": "^16.2.7",
     "npm-run-all2": "^8.0.4",
     "prettier": "3.7.4",
     "sharp": "^0.34.5",

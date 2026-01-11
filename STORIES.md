@@ -278,27 +278,35 @@ describe('PersistenceService', () => {
 
 ### FOUND-009: Secret Detection in Pre-Commit and CI
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-005, FOUND-006
 
 **Story:** As a developer, I need automated secret detection so that credentials are never accidentally committed to this public repository.
 
 **Acceptance Criteria:**
 
-- [ ] Secret scanning tool installed (e.g., gitleaks, truffleHog, or detect-secrets)
-- [ ] Pre-commit hook scans staged files for secrets
-- [ ] CI pipeline includes secret scanning step
-- [ ] Commits/PRs blocked if secrets detected
-- [ ] `.secretsignore` or equivalent for false positive exclusions
-- [ ] Documentation in DEVELOPMENT.md on how to handle detected secrets
+- [x] Secret scanning tool installed (e.g., gitleaks, truffleHog, or detect-secrets)
+- [x] Pre-commit hook scans staged files for secrets
+- [x] CI pipeline includes secret scanning step
+- [x] Commits/PRs blocked if secrets detected
+- [x] `.secretsignore` or equivalent for false positive exclusions
+- [x] Documentation in DEVELOPMENT.md on how to handle detected secrets
 
 **Size:** S
 
-**Tools to Consider:**
+**Implementation Notes:**
 
-- `gitleaks` - Fast, standalone binary, easy CI integration
-- `truffleHog` - Python-based, good regex patterns
-- `detect-secrets` - Yelp's tool, baseline file approach
+- Installed `gitleaks-secret-scanner` npm wrapper for gitleaks v8.27.2
+- Added `npm run secrets:scan` and `npm run secrets:scan:staged` scripts
+- Pre-commit hook runs `secrets:scan:staged` before lint-staged
+- CI workflow runs `secrets:scan` after dependency install
+- Created `.gitleaksignore` for fingerprint-based false positive exclusions
+- Added `.gitleaksignore` entry for documentation JWT example (false positive)
+- Added "Security: Secret Detection" section to DEVELOPMENT.md with:
+  - How secret detection works
+  - How to handle detected secrets (real vs false positive)
+  - What NOT to commit
+  - Environment variable best practices
 
 ---
 
@@ -2905,23 +2913,23 @@ describe('Design System Colors', () => {
 
 | Epic                  | Stories | Complete | Remaining |
 | --------------------- | ------- | -------- | --------- |
-| 0: Project Foundation | 9       | 8        | 1         |
+| 0: Project Foundation | 9       | 9        | 0         |
 | 1: Question Tracking  | 11      | 11       | 0         |
 | 2: Timers             | 4       | 4        | 0         |
 | 3: Card Management    | 12      | 12       | 0         |
 | 4: Game State         | 7       | 7        | 0         |
 | 5: Mobile UX Polish   | 4       | 4        | 0         |
-| **Total**             | **47**  | **46**   | **1**     |
+| **Total**             | **47**  | **47**   | **0**     |
 
 ---
 
 ## Dependency Graph
 
-Cards with no pending dependencies are **ready** to work on.
+All cards are now complete.
 
 ```
 FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
-                     │              ├─→ FOUND-005
+                     │              ├─→ FOUND-005 ─→ FOUND-009 ✅
                      │              ├─→ FOUND-008 ─→ Q-002c, GS-001 ─┬─→ GS-002, GS-003
                      │              │                                ├─→ GS-005 ─→ GS-004 ─→ GS-006
                      │              │                                ├─→ GS-007
@@ -2931,7 +2939,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
                      │                         │                 └─→ CARD-007d
                      │                         ├─→ CARD-006b
                      │                         └─→ GS-007
-                     ├─→ FOUND-004 ─┬─→ FOUND-006
+                     ├─→ FOUND-004 ─┬─→ FOUND-006 ─→ FOUND-009 ✅
                      │              └─→ UX-001
                      ├─→ FOUND-007
                      ├─→ UX-004
@@ -2945,9 +2953,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001 through FOUND-008, Q-001 through Q-006, GS-001 through GS-007, T-001 through T-004, CARD-001 through CARD-008, and UX-001 through UX-004 complete, the following cards are now ready:
-
-- **FOUND-009**: Secret Detection in Pre-Commit and CI (depends on FOUND-005 ✅ and FOUND-006 ✅)
+All 47 cards in the initial backlog are now complete.
 
 ---
 
