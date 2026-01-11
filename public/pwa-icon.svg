@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#1a1a2e"/>
+
+  <!-- Jet Lag stylized icon - Pentagon/shield shape with plane hint -->
+  <g transform="translate(256, 256)">
+    <!-- Outer ring with gradient colors -->
+    <circle cx="0" cy="0" r="200" fill="none" stroke="#f5b830" stroke-width="24"/>
+    <circle cx="0" cy="0" r="170" fill="none" stroke="#f07d2e" stroke-width="12"/>
+    <circle cx="0" cy="0" r="150" fill="none" stroke="#c73e3e" stroke-width="8"/>
+
+    <!-- Central "J" for Jet Lag -->
+    <text x="0" y="30" font-family="Arial, sans-serif" font-size="180" font-weight="bold" fill="#00aaff" text-anchor="middle" dominant-baseline="middle">J</text>
+
+    <!-- Location/map pin hint at bottom -->
+    <path d="M0 100 L-30 140 L0 180 L30 140 Z" fill="#00aaff" opacity="0.8"/>
+  </g>
+</svg>

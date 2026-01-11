@@ -153,20 +153,65 @@ describe('Home Page', () => {
 
 ### FOUND-007: Configure PWA Support
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** FOUND-001
 
 **Story:** As a developer, I need PWA configuration so that the app can be installed and work offline.
 
 **Acceptance Criteria:**
-- [ ] `vite-plugin-pwa` installed and configured
-- [ ] Web app manifest created (name, icons, theme color, display mode)
-- [ ] Service worker registers successfully
-- [ ] App is installable (shows browser install prompt)
-- [ ] App loads offline after initial visit (cached assets)
-- [ ] Lighthouse PWA audit passes core requirements
+- [x] `vite-plugin-pwa` installed and configured
+- [x] Web app manifest created (name, icons, theme color, display mode)
+- [x] Service worker registers successfully
+- [x] App is installable (shows browser install prompt)
+- [x] App loads offline after initial visit (cached assets)
+- [x] Lighthouse PWA audit passes core requirements
 
 **Size:** M
+
+**Tests Written (18 E2E tests in pwa.spec.ts):**
+```typescript
+describe('PWA Support', () => {
+  describe('Web App Manifest', () => {
+    test('should have a valid manifest link in HTML')
+    test('should serve manifest with correct MIME type')
+    test('should have correct app name in manifest')
+    test('should have correct theme colors in manifest')
+    test('should have display mode set to standalone')
+    test('should have all required icons in manifest')
+    test('should have maskable icon for adaptive icons')
+  })
+  describe('Icons', () => {
+    test('should serve 192x192 icon')
+    test('should serve 512x512 icon')
+    test('should serve apple-touch-icon')
+  })
+  describe('Service Worker', () => {
+    test('should register service worker')
+    test('should serve service worker file')
+  })
+  describe('Meta Tags', () => {
+    test('should have theme-color meta tag')
+    test('should have apple-mobile-web-app-capable meta tag')
+    test('should have apple-touch-icon link')
+    test('should have description meta tag')
+  })
+  describe('PWA Installability', () => {
+    test('should meet basic installability criteria')
+  })
+  describe('Offline Support', () => {
+    test('should cache static assets after initial load')
+  })
+})
+```
+
+**Implementation Notes:**
+- vite-plugin-pwa v1.2.0 with registerType: 'autoUpdate'
+- Manifest includes app name, theme color (#1a1a2e), standalone display, portrait orientation
+- Icons generated: pwa-192x192.png, pwa-512x512.png, apple-touch-icon.png (180x180)
+- Maskable icon included for Android adaptive icons
+- Workbox configured with precache and runtime caching for fonts
+- Dev mode SW enabled for testing during development
+- PWA icon generation script: scripts/generate-pwa-icons.mjs (uses sharp)
 
 ---
 
@@ -2605,13 +2650,13 @@ describe('Design System Colors', () => {
 
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
-| 0: Project Foundation | 9 | 5 | 4 |
+| 0: Project Foundation | 9 | 6 | 3 |
 | 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 4 | 0 |
 | 3: Card Management | 12 | 12 | 0 |
 | 4: Game State | 7 | 7 | 0 |
 | 5: Mobile UX Polish | 4 | 3 | 1 |
-| **Total** | **47** | **42** | **5** |
+| **Total** | **47** | **43** | **4** |
 
 ---
 
@@ -2645,10 +2690,9 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, CARD-008, UX-001, UX-002, and UX-004 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-004, FOUND-007, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, GS-007, T-001, T-002, T-003, T-004, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, CARD-007a, CARD-007b, CARD-007c, CARD-007d, CARD-008, UX-001, UX-002, and UX-004 complete, the following cards are now ready:
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-006**: Configure GitHub Actions CI
-- **FOUND-007**: Configure PWA Support
 - **UX-003**: Notifications and Alerts
 
 ---
