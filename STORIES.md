@@ -942,19 +942,61 @@ describe('cardStore persistence', () => {
 
 ### CARD-003: Card Hand Display
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002, FOUND-003
 
 **Story:** As a hider, I need to see my current hand of cards so that I can plan plays.
 
 **Acceptance Criteria:**
-- [ ] Cards displayed in a mobile-friendly layout
-- [ ] Each card shows: type, name, effect summary
-- [ ] Visual distinction between time bonus, powerup, curse
-- [ ] Hand limit indicator (e.g., "4/6 cards")
-- [ ] Tapping a card shows full details and play option
+- [x] Cards displayed in a mobile-friendly layout
+- [x] Each card shows: type, name, effect summary
+- [x] Visual distinction between time bonus, powerup, curse
+- [x] Hand limit indicator (e.g., "4/6 cards")
+- [x] Tapping a card shows full details and play option
 
 **Size:** M
+
+**Tests Written (20 tests):**
+```typescript
+describe('CardHand', () => {
+  describe('empty hand display', () => {
+    it('should show empty state when hand is empty')
+    it('should show hand limit indicator when empty')
+  })
+  describe('card display', () => {
+    it('should display cards in hand')
+    it('should show card type for each card')
+    it('should show card name for each card')
+    it('should show effect summary for powerup cards')
+    it('should show effect summary for curse cards')
+  })
+  describe('visual distinction by card type', () => {
+    it('should visually distinguish time bonus cards')
+    it('should visually distinguish powerup cards')
+    it('should visually distinguish curse cards')
+  })
+  describe('hand limit indicator', () => {
+    it('should show current card count and limit')
+    it('should update when hand limit is expanded')
+    it('should indicate when hand is full')
+  })
+  describe('card selection and details', () => {
+    it('should emit cardSelect event when card is tapped')
+    it('should have touch-friendly card elements')
+  })
+  describe('mobile-friendly layout', () => {
+    it('should render cards in a grid/scrollable layout')
+    it('should be scrollable when many cards in hand')
+  })
+  describe('time bonus display', () => {
+    it('should show bonus minutes for time bonus cards')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA labels')
+    it('should support keyboard navigation')
+  })
+})
+```
 
 ---
 
@@ -1592,10 +1634,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 1 | 3 |
-| 3: Card Management | 12 | 2 | 10 |
+| 3: Card Management | 12 | 3 | 9 |
 | 4: Game State | 7 | 2 | 5 |
 | 5: Mobile UX Polish | 4 | 0 | 4 |
-| **Total** | **47** | **18** | **29** |
+| **Total** | **47** | **19** | **28** |
 
 ---
 
@@ -1629,7 +1671,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, T-001, CARD-001, and CARD-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, T-001, CARD-001, CARD-002, and CARD-003 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
@@ -1638,7 +1680,6 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **T-004**: Question Response Timer
 - **Q-005**: Question History View
 - **Q-006**: Re-ask Question with Double Cost
-- **CARD-003**: Card Hand Display
 - **CARD-004**: Card Draw Simulation
 - **CARD-005**: Time Bonus Calculator
 - **CARD-006a**: Curse Display
@@ -1647,10 +1688,10 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-007c**: Duplicate Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
 - **UX-004**: Visual Design System
-- **GS-003**: Role-Based Views (newly unblocked by GS-002)
+- **GS-003**: Role-Based Views (newly unblocked by CARD-003)
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** GS-002 completion unblocks GS-003 (Role-Based Views).
+**Note:** CARD-003 completion unblocks GS-003 (Role-Based Views).
 
 ---
 
