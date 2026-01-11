@@ -2909,17 +2909,458 @@ describe('Design System Colors', () => {
 
 ---
 
+## Epic 6: Developer Tools
+
+Tools to help with local development and testing. Only visible/active when running in dev mode (`npm run dev`).
+
+---
+
+### DEV-001: Skip Hiding Period Button
+
+**Status:** `pending`
+**Depends On:** GS-001, GS-003
+
+**Story:** As a developer testing the game, I need to skip the 30-minute hiding period so that I can quickly test the seeking and end-game phases.
+
+**Acceptance Criteria:**
+
+- [ ] Button only appears when `import.meta.env.DEV` is true (dev mode)
+- [ ] Button only appears during the `hiding-period` phase
+- [ ] Button appears in both HiderView and SeekerView
+- [ ] Clicking the button calls `gameStore.startSeeking()` to transition to seeking phase
+- [ ] Button is visually distinct (e.g., yellow/warning style with "DEV" badge) to clearly indicate it's a dev tool
+- [ ] Button has accessible label indicating its purpose
+
+**Size:** S
+
+**Tests to Write:**
+
+```typescript
+describe('DevSkipHidingPeriod', () => {
+  describe('visibility', () => {
+    it('should not render in production mode')
+    it('should render in dev mode during hiding period')
+    it('should not render during other game phases')
+  })
+  describe('functionality', () => {
+    it('should call startSeeking when clicked')
+    it('should transition game to seeking phase')
+  })
+  describe('accessibility', () => {
+    it('should have accessible label')
+    it('should be keyboard accessible')
+  })
+})
+```
+
+**Implementation Notes:**
+
+- Consider creating a reusable `DevOnly` wrapper component for future dev tools
+- Button could be placed inside the HidingPeriodTimer component or as a separate component
+- Style with distinct "dev tool" appearance (e.g., dashed border, yellow background, "DEV" badge)
+
+---
+
+## Epic 7: Question UX Improvements
+
+Enhancements to the question browsing and asking experience.
+
+---
+
+### QUX-001: Lock Questions During Hiding Period
+
+**Status:** `pending`
+**Depends On:** Q-003b, GS-001
+
+**Story:** As a seeker, I should not be able to ask questions during the hiding period, but I should still be able to browse them to plan my strategy.
+
+**Acceptance Criteria:**
+
+- [ ] Questions are viewable during hiding period
+- [ ] "Ask" functionality is disabled during hiding period phase
+- [ ] Clicking a question shows a message explaining questions are locked until seeking begins
+- [ ] Questions become askable once game transitions to seeking phase
+- [ ] Visual indicator shows questions are temporarily locked (e.g., lock icon, muted styling)
+
+**Size:** S
+
+**Tests to Write:**
+
+```typescript
+describe('question locking during hiding period', () => {
+  it('should allow viewing questions during hiding period')
+  it('should disable ask button during hiding period')
+  it('should show locked message when question clicked during hiding period')
+  it('should enable asking when seeking phase begins')
+  it('should show visual lock indicator during hiding period')
+})
+```
+
+---
+
+### QUX-002: Collapse Question Categories by Default
+
+**Status:** `complete`
+**Depends On:** Q-003a
+
+**Story:** As a player, I want question categories collapsed by default so that I can see all categories at a glance and expand only the ones I'm interested in.
+
+**Acceptance Criteria:**
+
+- [x] All question categories are collapsed by default on component mount
+- [x] Category headers show expand/collapse chevron indicator
+- [x] Tapping a category header expands/collapses that category
+- [x] Expanded state is preserved during the session (not persisted across page reloads)
+- [x] Category count badge visible when collapsed (e.g., "22 questions")
+
+**Size:** S
+
+**Tests Written (5 new tests in QuestionList.spec.ts):**
+
+```typescript
+describe('category collapsing', () => {
+  it('should render all categories collapsed by default (QUX-002)')
+  it('should show question count badge when collapsed (QUX-002)')
+  it('should expand category when header is clicked (QUX-002)')
+  it('should collapse category when expanded header is clicked (QUX-002)')
+  it('should show expand/collapse chevron indicator (QUX-002)')
+})
+```
+
+**Implementation Notes:**
+
+- Changed `expandedCategories` initial state from all categories to empty Set
+- Category headers already showed question count and chevron indicators
+- Existing tests updated to expand categories before testing question interactions
+- Added `expandCategory()` helper function for cleaner test code
+
+---
+
+## Epic 8: Physical Play & Standalone Mode
+
+Support for playing with physical card decks and running hider/seeker modes independently on separate devices without backend synchronization.
+
+---
+
+### PHYS-001: Manual Card Entry for Hiders
+
+**Status:** `pending`
+**Depends On:** CARD-002
+
+**Story:** As a hider using a physical card deck, I need to manually specify which cards are in my hand so that the app can track my time bonuses and available powerups.
+
+**Acceptance Criteria:**
+
+- [ ] "Add Card" button available in HiderView
+- [ ] Modal/panel allows selecting card type (Time Bonus, Powerup, Curse, Time Trap)
+- [ ] For Time Bonus: select tier (1-5)
+- [ ] For Powerup: select from available powerup types
+- [ ] For Curse: select from available curse cards
+- [ ] For Time Trap: select Time Trap card
+- [ ] Added card appears in hand immediately
+- [ ] Hand limit is still enforced (cannot add beyond limit)
+- [ ] Cards added manually are tracked the same as drawn cards
+
+**Size:** M
+
+**Tests to Write:**
+
+```typescript
+describe('manual card entry', () => {
+  describe('add card UI', () => {
+    it('should show Add Card button in hider view')
+    it('should open card selection modal when Add Card clicked')
+    it('should show card type options')
+  })
+  describe('card type selection', () => {
+    it('should show tier options when Time Bonus selected')
+    it('should show powerup type options when Powerup selected')
+    it('should show curse list when Curse selected')
+    it('should allow Time Trap selection')
+  })
+  describe('card addition', () => {
+    it('should add selected card to hand')
+    it('should enforce hand limit')
+    it('should close modal after adding card')
+  })
+})
+```
+
+**Implementation Notes:**
+
+- Add `addCardToHand(card)` action to cardStore that bypasses deck drawing
+- UI could be a floating action button or section in HiderView
+- Consider grouping with existing card hand display
+
+---
+
+### PHYS-002: Manual Curse Activation for Seekers
+
+**Status:** `pending`
+**Depends On:** CARD-006a
+
+**Story:** As a seeker in standalone mode, I need to manually activate curses that the hider announced in the real world so that the app can track my restrictions.
+
+**Acceptance Criteria:**
+
+- [ ] "Hider Played Curse" button available in SeekerView
+- [ ] Modal shows list of all available curse cards
+- [ ] Each curse shows: name, effect, duration (if applicable)
+- [ ] Selecting a curse adds it to active curses for the seeker
+- [ ] Curse display shows the manually-added curse with its restrictions
+- [ ] Time-based curses start their countdown timer upon activation
+- [ ] Curses can be cleared when conditions are met (same as existing behavior)
+
+**Size:** S
+
+**Tests to Write:**
+
+```typescript
+describe('manual curse activation for seekers', () => {
+  describe('curse trigger UI', () => {
+    it('should show "Hider Played Curse" button in seeker view')
+    it('should open curse selection modal when button clicked')
+    it('should display all available curse cards')
+  })
+  describe('curse activation', () => {
+    it('should add selected curse to active curses')
+    it('should start countdown for time-based curses')
+    it('should show curse restrictions in curse display')
+  })
+})
+```
+
+**Implementation Notes:**
+
+- Add `activateCurseManually(curseId)` action to cardStore
+- Reuse existing CurseDisplay component for showing active curses
+- Curses are defined in `CURSE_CARDS` array in card types
+
+---
+
+### PHYS-003: Standalone Mode Documentation
+
+**Status:** `pending`
+**Depends On:** PHYS-001, PHYS-002
+
+**Story:** As a player, I need to understand how to use the app in standalone mode (without multiplayer sync) so that hiders and seekers can use separate devices independently.
+
+**Acceptance Criteria:**
+
+- [ ] Document explains standalone mode concept
+- [ ] Instructions for hider device setup
+- [ ] Instructions for seeker device setup
+- [ ] Explains what needs to be communicated verbally between players
+- [ ] Covers: game start, questions, curses, time traps, game end
+- [ ] Accessible from in-app help/guide
+
+**Size:** S
+
+**Notes:**
+
+- This is documentation content, not code
+- Will be incorporated into user guides (GUIDE-001, GUIDE-002)
+
+---
+
+## Epic 9: User Guides
+
+In-app documentation to help players understand how to use the app.
+
+---
+
+### GUIDE-001: Hider Mode User Guide
+
+**Status:** `pending`
+**Depends On:** PHYS-001, DEV-001
+
+**Story:** As a hider, I need an in-app guide explaining how to use all the hider features so that I can play effectively.
+
+**Acceptance Criteria:**
+
+- [ ] Guide accessible from HiderView (help icon or menu item)
+- [ ] Covers: hiding period timer and what to do
+- [ ] Covers: card hand - viewing, understanding card types
+- [ ] Covers: playing powerup cards (each type explained)
+- [ ] Covers: playing curse cards and their effects
+- [ ] Covers: time bonuses and how they work
+- [ ] Covers: time traps and how to set them
+- [ ] Covers: answering questions and veto/randomize options
+- [ ] Covers: using the Move powerup
+- [ ] Mobile-friendly layout (scrollable, readable)
+
+**Size:** M
+
+**Implementation Notes:**
+
+- Could be a modal, slide-out panel, or dedicated route
+- Consider step-by-step walkthrough vs reference guide format
+- Include visual examples where helpful
+
+---
+
+### GUIDE-002: Seeker Mode User Guide
+
+**Status:** `pending`
+**Depends On:** PHYS-002, QUX-001
+
+**Story:** As a seeker, I need an in-app guide explaining how to use all the seeker features so that I can play effectively.
+
+**Acceptance Criteria:**
+
+- [ ] Guide accessible from SeekerView (help icon or menu item)
+- [ ] Covers: hiding period and what seekers do during it
+- [ ] Covers: browsing and asking questions
+- [ ] Covers: question categories and draw/keep rules
+- [ ] Covers: recording answers
+- [ ] Covers: active curses and their restrictions
+- [ ] Covers: time traps and what happens when triggered
+- [ ] Covers: end-game phase and finding the hider
+- [ ] Mobile-friendly layout (scrollable, readable)
+
+**Size:** M
+
+**Implementation Notes:**
+
+- Mirror structure of hider guide for consistency
+- Could share common help components with GUIDE-001
+
+---
+
+## Epic 10: Multiplayer Sync
+
+Real-time synchronization of game state across multiple player devices, similar to Jackbox-style room joining.
+
+---
+
+### MULTI-001: Multiplayer Architecture Planning
+
+**Status:** `pending`
+**Depends On:** None
+
+**Story:** As a developer, I need to design the multiplayer architecture before implementation so that we make good technical decisions.
+
+**Acceptance Criteria:**
+
+- [ ] Document backend technology choice (Supabase Realtime, Firebase, custom WebSocket, etc.)
+- [ ] Define room/game creation flow
+- [ ] Define player join flow (room codes like Jackbox)
+- [ ] Define state synchronization strategy
+- [ ] Define conflict resolution approach
+- [ ] Define host vs participant permissions
+- [ ] Consider offline/reconnection handling
+- [ ] Estimate infrastructure costs
+
+**Size:** M
+
+**Notes:**
+
+- This is a planning/design story, not implementation
+- Output is a technical design document
+- Should be reviewed before starting implementation stories
+
+---
+
+### MULTI-002: Room Creation & Join Flow
+
+**Status:** `pending`
+**Depends On:** MULTI-001
+
+**Story:** As a player, I need to create a game room and share a code so that other players can join from their devices.
+
+**Acceptance Criteria:**
+
+- [ ] Host can create a new game room
+- [ ] Room generates a short, memorable code (e.g., 4-6 characters like "ABCD")
+- [ ] Room code is displayed prominently for sharing
+- [ ] Other players can enter room code to join
+- [ ] Joined players appear in a lobby/waiting area
+- [ ] Host can see all joined players
+- [ ] Host can start the game when ready
+- [ ] Players can leave/rejoin room
+
+**Size:** L
+
+**Tests to Write:**
+
+```typescript
+describe('room creation and join', () => {
+  it('should create room with unique code')
+  it('should allow players to join with code')
+  it('should show joined players in lobby')
+  it('should allow host to start game')
+  it('should handle invalid room codes')
+  it('should handle room full scenarios')
+})
+```
+
+---
+
+### MULTI-003: Real-Time State Synchronization
+
+**Status:** `pending`
+**Depends On:** MULTI-002
+
+**Story:** As a player in a multiplayer game, I need game state changes to sync across all devices in real-time so that everyone sees the same game state.
+
+**Acceptance Criteria:**
+
+- [ ] Game phase changes sync to all players
+- [ ] Question asked/answered events sync immediately
+- [ ] Curse activations appear on all seeker devices
+- [ ] Timer states are synchronized (accounting for network latency)
+- [ ] Card draws are recorded and synced (hider's perspective shared appropriately)
+- [ ] Time trap triggers sync to all players
+- [ ] Conflict resolution handles simultaneous actions
+- [ ] Optimistic UI updates with server reconciliation
+
+**Size:** XL (consider breaking down further)
+
+**Notes:**
+
+- This is a large story that may need to be split
+- Consider implementing incrementally: questions first, then curses, then timers
+- Latency compensation is critical for timer sync
+
+---
+
+### MULTI-004: Offline Handling & Reconnection
+
+**Status:** `pending`
+**Depends On:** MULTI-003
+
+**Story:** As a player, I need the app to handle disconnections gracefully so that I can rejoin the game without losing progress.
+
+**Acceptance Criteria:**
+
+- [ ] App detects when connection is lost
+- [ ] Offline indicator shown to user
+- [ ] Local state preserved during disconnection
+- [ ] Automatic reconnection attempts
+- [ ] State reconciliation on reconnect
+- [ ] Other players notified of disconnected player
+- [ ] Configurable timeout before player is considered "dropped"
+
+**Size:** M
+
+---
+
 ## Backlog Summary
 
-| Epic                  | Stories | Complete | Remaining |
-| --------------------- | ------- | -------- | --------- |
-| 0: Project Foundation | 9       | 9        | 0         |
-| 1: Question Tracking  | 11      | 11       | 0         |
-| 2: Timers             | 4       | 4        | 0         |
-| 3: Card Management    | 12      | 12       | 0         |
-| 4: Game State         | 7       | 7        | 0         |
-| 5: Mobile UX Polish   | 4       | 4        | 0         |
-| **Total**             | **47**  | **47**   | **0**     |
+| Epic                          | Stories | Complete | Remaining |
+| ----------------------------- | ------- | -------- | --------- |
+| 0: Project Foundation         | 9       | 9        | 0         |
+| 1: Question Tracking          | 11      | 11       | 0         |
+| 2: Timers                     | 4       | 4        | 0         |
+| 3: Card Management            | 12      | 12       | 0         |
+| 4: Game State                 | 7       | 7        | 0         |
+| 5: Mobile UX Polish           | 4       | 4        | 0         |
+| 6: Developer Tools            | 1       | 0        | 1         |
+| 7: Question UX Improvements   | 2       | 1        | 1         |
+| 8: Physical Play & Standalone | 3       | 0        | 3         |
+| 9: User Guides                | 2       | 0        | 2         |
+| 10: Multiplayer Sync          | 4       | 0        | 4         |
+| **Total**                     | **59**  | **48**   | **11**    |
 
 ---
 
@@ -2953,7 +3394,34 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-All 47 cards in the initial backlog are now complete.
+**Epic 6: Developer Tools**
+
+- **DEV-001**: Skip Hiding Period Button (depends on GS-001 ✅, GS-003 ✅)
+
+**Epic 7: Question UX Improvements**
+
+- **QUX-001**: Lock Questions During Hiding Period (depends on Q-003b ✅, GS-001 ✅)
+- ~~**QUX-002**: Collapse Question Categories by Default~~ ✅ COMPLETE
+
+**Epic 8: Physical Play & Standalone Mode**
+
+- **PHYS-001**: Manual Card Entry for Hiders (depends on CARD-002 ✅)
+- **PHYS-002**: Manual Curse Activation for Seekers (depends on CARD-006a ✅)
+- **PHYS-003**: Standalone Mode Documentation (depends on PHYS-001, PHYS-002) ⏳
+
+**Epic 9: User Guides**
+
+- **GUIDE-001**: Hider Mode User Guide (depends on PHYS-001, DEV-001) ⏳
+- **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002, QUX-001) ⏳
+
+**Epic 10: Multiplayer Sync**
+
+- **MULTI-001**: Multiplayer Architecture Planning (no dependencies)
+- **MULTI-002**: Room Creation & Join Flow (depends on MULTI-001) ⏳
+- **MULTI-003**: Real-Time State Synchronization (depends on MULTI-002) ⏳
+- **MULTI-004**: Offline Handling & Reconnection (depends on MULTI-003) ⏳
+
+✅ = dependency complete | ⏳ = waiting on other new stories
 
 ---
 
@@ -2972,4 +3440,4 @@ All 47 cards in the initial backlog are now complete.
 
 ---
 
-_Last updated: January 2026_
+_Last updated: January 11, 2026 - Added Epics 7-10_

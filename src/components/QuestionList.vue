@@ -21,8 +21,8 @@ const END_GAME_DISABLED_CATEGORIES = [QuestionCategoryId.Photo, QuestionCategory
 // Check if currently in end-game phase
 const isEndGamePhase = computed(() => gameStore.currentPhase === GamePhase.EndGame)
 
-// Track which categories are expanded
-const expandedCategories = ref<Set<string>>(new Set(QUESTION_CATEGORIES.map((c) => c.id)))
+// Track which categories are expanded (collapsed by default for QUX-002)
+const expandedCategories = ref<Set<string>>(new Set())
 
 // Get all questions grouped by category (including asked and pending)
 const questionsByCategory = computed(() => {
@@ -57,7 +57,10 @@ function getCategoryStats(categoryId: string) {
  * Check if a category is disabled (e.g., Photo/Tentacle during end-game)
  */
 function isCategoryDisabled(categoryId: string): boolean {
-  if (isEndGamePhase.value && END_GAME_DISABLED_CATEGORIES.includes(categoryId as QuestionCategoryId)) {
+  if (
+    isEndGamePhase.value &&
+    END_GAME_DISABLED_CATEGORIES.includes(categoryId as QuestionCategoryId)
+  ) {
     return true
   }
   return false
@@ -199,10 +202,7 @@ function getCategoryHeaderStyle(categoryId: string): Record<string, string> {
       </button>
 
       <!-- Questions List (collapsible) -->
-      <div
-        v-if="isCategoryExpanded(category.id)"
-        class="border-t border-slate-700 px-4 pb-4"
-      >
+      <div v-if="isCategoryExpanded(category.id)" class="border-t border-slate-700 px-4 pb-4">
         <ul class="divide-y divide-slate-700/50">
           <li
             v-for="question in questionsByCategory.get(category.id)"

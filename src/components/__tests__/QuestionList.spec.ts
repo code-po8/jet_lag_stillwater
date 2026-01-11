@@ -18,6 +18,16 @@ describe('QuestionList', () => {
     cleanup()
   })
 
+  /**
+   * Helper to expand a category by clicking its header.
+   * Categories are collapsed by default (QUX-002).
+   */
+  async function expandCategory(categoryId: string): Promise<void> {
+    const header = screen.getByTestId(`category-header-${categoryId}`)
+    await fireEvent.click(header)
+    await nextTick()
+  }
+
   describe('category display', () => {
     it('should display all categories', () => {
       render(QuestionList)
@@ -45,8 +55,13 @@ describe('QuestionList', () => {
   })
 
   describe('question display', () => {
-    it('should show questions within each category', () => {
+    it('should show questions within each category', async () => {
       render(QuestionList)
+
+      // Categories are collapsed by default (QUX-002), so expand the Matching category first
+      const matchingHeader = screen.getByTestId('category-header-matching')
+      await fireEvent.click(matchingHeader)
+      await nextTick()
 
       // Check that questions are rendered within their category
       // We should find at least some question text in the Matching category
@@ -58,13 +73,20 @@ describe('QuestionList', () => {
       expect(matchingQuestions.length).toBeGreaterThan(0)
     })
 
-    it('should display question text', () => {
+    it('should display question text', async () => {
       render(QuestionList)
+
+      // Categories are collapsed by default (QUX-002), so expand the Matching category first
+      const matchingHeader = screen.getByTestId('category-header-matching')
+      await fireEvent.click(matchingHeader)
+      await nextTick()
 
       // Verify that actual question text is shown
       // "Is your nearest commercial airport the same as my nearest commercial airport?" is a known matching question
       expect(
-        screen.getByText(/is your nearest commercial airport the same as my nearest commercial airport/i),
+        screen.getByText(
+          /is your nearest commercial airport the same as my nearest commercial airport/i,
+        ),
       ).toBeInTheDocument()
     })
   })
@@ -78,6 +100,78 @@ describe('QuestionList', () => {
         const header = screen.getByTestId(`category-header-${category.id}`)
         expect(header).toBeInTheDocument()
       })
+    })
+
+    it('should render all categories collapsed by default (QUX-002)', () => {
+      render(QuestionList)
+
+      // All categories should be collapsed by default
+      QUESTION_CATEGORIES.forEach((category) => {
+        const categorySection = screen.getByTestId(`category-${category.id}`)
+        // Questions should NOT be visible when collapsed
+        const questions = within(categorySection).queryAllByTestId(/^question-/)
+        expect(questions.length).toBe(0)
+      })
+    })
+
+    it('should show question count badge when collapsed (QUX-002)', () => {
+      render(QuestionList)
+
+      // When collapsed, each category header should show the question count
+      QUESTION_CATEGORIES.forEach((category) => {
+        const header = screen.getByTestId(`category-header-${category.id}`)
+        // Should show count like "22 questions" in the header
+        expect(within(header).getByText(/\d+\s*questions/i)).toBeInTheDocument()
+      })
+    })
+
+    it('should expand category when header is clicked (QUX-002)', async () => {
+      render(QuestionList)
+
+      // Click the Matching category header to expand it
+      const matchingHeader = screen.getByTestId('category-header-matching')
+      await fireEvent.click(matchingHeader)
+      await nextTick()
+
+      // Now questions should be visible
+      const matchingSection = screen.getByTestId('category-matching')
+      const questions = within(matchingSection).getAllByTestId(/^question-/)
+      expect(questions.length).toBeGreaterThan(0)
+    })
+
+    it('should collapse category when expanded header is clicked (QUX-002)', async () => {
+      render(QuestionList)
+
+      // Expand the Matching category
+      const matchingHeader = screen.getByTestId('category-header-matching')
+      await fireEvent.click(matchingHeader)
+      await nextTick()
+
+      // Verify it's expanded (questions visible)
+      const matchingSection = screen.getByTestId('category-matching')
+      expect(within(matchingSection).getAllByTestId(/^question-/).length).toBeGreaterThan(0)
+
+      // Click again to collapse
+      await fireEvent.click(matchingHeader)
+      await nextTick()
+
+      // Questions should no longer be visible
+      expect(within(matchingSection).queryAllByTestId(/^question-/).length).toBe(0)
+    })
+
+    it('should show expand/collapse chevron indicator (QUX-002)', async () => {
+      render(QuestionList)
+
+      // When collapsed, should show right-pointing chevron (▶)
+      const matchingHeader = screen.getByTestId('category-header-matching')
+      expect(matchingHeader.textContent).toContain('▶')
+
+      // Click to expand
+      await fireEvent.click(matchingHeader)
+      await nextTick()
+
+      // When expanded, should show down-pointing chevron (▼)
+      expect(matchingHeader.textContent).toContain('▼')
     })
   })
 
@@ -106,16 +200,17 @@ describe('QuestionList', () => {
     it('should show question count for each category', () => {
       render(QuestionList)
 
-      // Each category should show how many questions are available
-      const matchingSection = screen.getByTestId('category-matching')
-      // Should show something like "22 questions" or "22 available"
-      expect(within(matchingSection).getByText(/\d+\s*(questions|available)/i)).toBeInTheDocument()
+      // The count is always shown in the header, even when collapsed (QUX-002)
+      const matchingHeader = screen.getByTestId('category-header-matching')
+      // Should show something like "22 questions available" in the header
+      expect(within(matchingHeader).getByText(/\d+\s*questions\s*available/i)).toBeInTheDocument()
     })
   })
 
   describe('question status indicators', () => {
     it('should gray out asked questions', async () => {
       render(QuestionList)
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Get a matching question and ask/answer it
@@ -133,6 +228,7 @@ describe('QuestionList', () => {
 
     it('should highlight pending question', async () => {
       render(QuestionList)
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Get a matching question and mark it as pending
@@ -149,6 +245,7 @@ describe('QuestionList', () => {
 
     it('should disable selection while question is pending', async () => {
       render(QuestionList)
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Get two matching questions
@@ -174,6 +271,7 @@ describe('QuestionList', () => {
           onQuestionSelect,
         },
       })
+      await expandCategory('matching')
 
       // Get a matching question
       const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
@@ -188,6 +286,7 @@ describe('QuestionList', () => {
 
     it('should show asked status indicator text', async () => {
       render(QuestionList)
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Ask and answer a question
@@ -205,6 +304,7 @@ describe('QuestionList', () => {
 
     it('should show pending status indicator text', async () => {
       render(QuestionList)
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Mark a question as pending
@@ -226,6 +326,7 @@ describe('QuestionList', () => {
           onQuestionSelect,
         },
       })
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Ask and answer a question
@@ -248,6 +349,7 @@ describe('QuestionList', () => {
   describe('re-ask question (Q-006)', () => {
     it('should show re-ask option for previously asked questions', async () => {
       render(QuestionList)
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Ask and answer a question
@@ -269,6 +371,7 @@ describe('QuestionList', () => {
           onReaskSelect,
         },
       })
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Ask and answer a question
@@ -284,14 +387,17 @@ describe('QuestionList', () => {
       await fireEvent.click(reaskButton)
 
       // Should emit the event with the question and isReask flag
-      expect(onReaskSelect).toHaveBeenCalledWith(expect.objectContaining({
-        question: matchingQuestion,
-        isReask: true,
-      }))
+      expect(onReaskSelect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          question: matchingQuestion,
+          isReask: true,
+        }),
+      )
     })
 
     it('should not show re-ask option for pending questions', async () => {
       render(QuestionList)
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Mark a question as pending (not answered yet)
@@ -307,6 +413,7 @@ describe('QuestionList', () => {
 
     it('should not show re-ask option for available questions', async () => {
       render(QuestionList)
+      await expandCategory('matching')
 
       // Get an available question (never asked)
       const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
@@ -318,6 +425,7 @@ describe('QuestionList', () => {
 
     it('should disable re-ask button while another question is pending', async () => {
       render(QuestionList)
+      await expandCategory('matching')
       const store = useQuestionStore()
 
       // Ask and answer first question
@@ -355,7 +463,7 @@ describe('QuestionList', () => {
     it('should disable Photo questions during end-game phase', async () => {
       setupEndGamePhase()
       render(QuestionList)
-      await nextTick()
+      await expandCategory('photo')
 
       // Get a Photo question
       const photoQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Photo)!
@@ -368,10 +476,12 @@ describe('QuestionList', () => {
     it('should disable Tentacle questions during end-game phase', async () => {
       setupEndGamePhase()
       render(QuestionList)
-      await nextTick()
+      await expandCategory('tentacle')
 
       // Get a Tentacle question
-      const tentacleQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Tentacle)!
+      const tentacleQuestion = ALL_QUESTIONS.find(
+        (q) => q.categoryId === QuestionCategoryId.Tentacle,
+      )!
 
       // The Tentacle question should be disabled
       const questionElement = screen.getByTestId(`question-${tentacleQuestion.id}`)
@@ -383,9 +493,11 @@ describe('QuestionList', () => {
       render(QuestionList)
       await nextTick()
 
-      // The Photo category should show it's disabled in end-game
+      // The Photo category should show it's disabled in end-game (in the header, visible when collapsed)
       const photoCategory = screen.getByTestId('category-photo')
-      expect(within(photoCategory).getByText(/disabled.*end.?game|not.*available/i)).toBeInTheDocument()
+      expect(
+        within(photoCategory).getByText(/disabled.*end.?game|not.*available/i),
+      ).toBeInTheDocument()
     })
 
     it('should show disabled indicator for Tentacle category in end-game phase', async () => {
@@ -393,9 +505,11 @@ describe('QuestionList', () => {
       render(QuestionList)
       await nextTick()
 
-      // The Tentacle category should show it's disabled in end-game
+      // The Tentacle category should show it's disabled in end-game (in the header, visible when collapsed)
       const tentacleCategory = screen.getByTestId('category-tentacle')
-      expect(within(tentacleCategory).getByText(/disabled.*end.?game|not.*available/i)).toBeInTheDocument()
+      expect(
+        within(tentacleCategory).getByText(/disabled.*end.?game|not.*available/i),
+      ).toBeInTheDocument()
     })
 
     it('should not emit event when clicking Photo question during end-game', async () => {
@@ -406,7 +520,7 @@ describe('QuestionList', () => {
           onQuestionSelect,
         },
       })
-      await nextTick()
+      await expandCategory('photo')
 
       // Get a Photo question
       const photoQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Photo)!
@@ -427,10 +541,12 @@ describe('QuestionList', () => {
           onQuestionSelect,
         },
       })
-      await nextTick()
+      await expandCategory('matching')
 
       // Get a Matching question (should still be allowed)
-      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
+      const matchingQuestion = ALL_QUESTIONS.find(
+        (q) => q.categoryId === QuestionCategoryId.Matching,
+      )!
 
       // Click the Matching question
       const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
@@ -456,7 +572,7 @@ describe('QuestionList', () => {
           onQuestionSelect,
         },
       })
-      await nextTick()
+      await expandCategory('photo')
 
       // Get a Photo question
       const photoQuestion = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Photo)!
