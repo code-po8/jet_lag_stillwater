@@ -25,6 +25,8 @@ claude \
 
 CRITICAL RULE: When committing, NEVER add Co-Authored-By lines. No AI attribution in commits.
 
+FIRST: Run the full test suite (lint, type-check, unit tests) before doing anything else. If any tests fail, fix them before proceeding to card selection. You own the codebase as it exists now - do not blame previous iterations.
+
 Read CLAUDE.md for workflow instructions, then read STORIES.md to analyze the backlog.
 
 Card selection: The order in STORIES.md is arbitrary - do NOT simply pick the first pending card. Analyze ALL pending cards, identify which have all dependencies satisfied, then select the optimal card based on:
