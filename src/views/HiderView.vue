@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useGameStore } from '@/stores/gameStore'
+import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useCardStore } from '@/stores/cardStore'
 import CardHand from '@/components/CardHand.vue'
+import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import { GameSize } from '@/types/question'
 
 // Props
@@ -15,6 +16,7 @@ const cardStore = useCardStore()
 
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
+const isHidingPeriod = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
 const totalTimeBonus = computed(() => cardStore.totalTimeBonus(GameSize.Small))
 
 /**
@@ -48,6 +50,9 @@ function getPhaseDisplayText(): string {
     >
       {{ getPhaseDisplayText() }}
     </div>
+
+    <!-- Hiding Period Timer -->
+    <HidingPeriodTimer v-if="isHidingPeriod" role="hider" />
 
     <!-- Time Bonus Total -->
     <div

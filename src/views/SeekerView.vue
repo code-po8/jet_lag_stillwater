@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useGameStore } from '@/stores/gameStore'
+import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useQuestionStore } from '@/stores/questionStore'
 import QuestionList from '@/components/QuestionList.vue'
 import AskQuestionModal from '@/components/AskQuestionModal.vue'
+import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import type { Question } from '@/types/question'
 
 const gameStore = useGameStore()
@@ -14,6 +15,7 @@ const selectedQuestion = ref<Question | null>(null)
 
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
+const isHidingPeriod = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
 const askedQuestionsCount = computed(() => questionStore.askedQuestions.length)
 const pendingQuestion = computed(() => questionStore.pendingQuestion)
 
@@ -76,6 +78,9 @@ function handleQuestionAnswered() {
     >
       {{ getPhaseDisplayText() }}
     </div>
+
+    <!-- Hiding Period Timer -->
+    <HidingPeriodTimer v-if="isHidingPeriod" role="seeker" />
 
     <!-- Answers Summary -->
     <div

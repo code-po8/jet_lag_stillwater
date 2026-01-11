@@ -695,22 +695,76 @@ describe('useTimer', () => {
 
 ### T-002: Hiding Period Timer
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** T-001, FOUND-003
 
 **Story:** As a player (hider or seeker), I need a 30-minute hiding period countdown so that both sides know when seeking begins.
 
 **Acceptance Criteria:**
-- [ ] Timer counts down from 30:00
-- [ ] Timer displays in MM:SS format
-- [ ] Timer visible on both hider and seeker views
-- [ ] Seekers are frozen during this period (can't move or ask questions)
-- [ ] Visual/audio alert at 5 minutes remaining
-- [ ] Visual/audio alert when timer expires (seeking begins)
-- [ ] Timer can be paused (game pause rule)
-- [ ] Timer state persists if app is closed
+- [x] Timer counts down from 30:00
+- [x] Timer displays in MM:SS format
+- [x] Timer visible on both hider and seeker views
+- [x] Seekers are frozen during this period (can't move or ask questions)
+- [x] Visual/audio alert at 5 minutes remaining
+- [x] Visual/audio alert when timer expires (seeking begins)
+- [x] Timer can be paused (game pause rule)
+- [x] Timer state persists if app is closed
 
 **Size:** M
+
+**Tests Written (25 tests):**
+```typescript
+describe('HidingPeriodTimer', () => {
+  describe('timer display', () => {
+    it('should countdown from 30:00')
+    it('should display time in MM:SS format')
+    it('should update countdown as time passes')
+    it('should be visible on both hider and seeker views')
+  })
+  describe('seeking freeze indicator', () => {
+    it('should show freeze message for seekers during hiding period')
+    it('should not show freeze message for hiders')
+  })
+  describe('5-minute warning alert', () => {
+    it('should show visual alert at 5 minutes remaining')
+    it('should emit warning event at 5 minutes remaining')
+  })
+  describe('timer expiration', () => {
+    it('should show visual alert when timer expires')
+    it('should emit complete event when timer expires')
+    it('should display 00:00 when timer expires')
+    it('should show "Seeking begins!" message when timer expires')
+  })
+  describe('pause functionality', () => {
+    it('should display pause button')
+    it('should pause timer when pause button clicked')
+    it('should show resume button when paused')
+    it('should resume timer when resume button clicked')
+    it('should show paused indicator when timer is paused')
+  })
+  describe('persistence', () => {
+    it('should persist timer state if app is closed')
+  })
+  describe('phase awareness', () => {
+    it('should not display when not in hiding-period phase')
+    it('should display when in hiding-period phase')
+    it('should hide when phase transitions to seeking')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly pause button (min 44px)')
+    it('should have large readable timer text')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA label for timer')
+    it('should announce time remaining for screen readers')
+  })
+})
+```
+
+**Notes:**
+- Audio alerts not implemented (visual only) - can be added in UX-003
+- Timer integrated into both HiderView and SeekerView
+- Uses persistence service for state restoration across app restarts
 
 ---
 
@@ -1704,11 +1758,11 @@ User experience improvements.
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 9 | 2 |
-| 2: Timers | 4 | 1 | 3 |
+| 2: Timers | 4 | 2 | 2 |
 | 3: Card Management | 12 | 3 | 9 |
 | 4: Game State | 7 | 3 | 4 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **21** | **26** |
+| **Total** | **47** | **22** | **25** |
 
 ---
 
@@ -1742,11 +1796,10 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, T-001, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, T-001, T-002, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
-- **T-002**: Hiding Period Timer
 - **T-003**: Hiding Duration Timer
 - **T-004**: Question Response Timer
 - **Q-005**: Question History View
@@ -1758,10 +1811,11 @@ With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, 
 - **CARD-007b**: Draw 1, Expand Powerup Effect
 - **CARD-007c**: Duplicate Powerup Effect
 - **CARD-008**: Time Trap Card Implementation
+- **UX-003**: Notifications and Alerts (now unblocked by T-002)
 - **UX-004**: Visual Design System
 - **GS-007**: Unified Game Pause/Resume
 
-**Note:** UX-002 completion doesn't unblock any new cards (UX-003 still depends on T-002 and CARD-006b).
+**Note:** T-002 completion unblocks UX-003 (partially - still needs CARD-006b).
 
 ---
 
