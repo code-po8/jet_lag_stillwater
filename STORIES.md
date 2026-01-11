@@ -634,17 +634,17 @@ describe('QuestionHistory', () => {
 
 ### Q-006: Re-ask Question with Double Cost
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** Q-004b
 
 **Story:** As a seeker, I need the option to re-ask a previously asked question at double the card cost so that I can get updated information.
 
 **Acceptance Criteria:**
-- [ ] Previously asked questions show "Re-ask (2x cost)" option
-- [ ] Re-asking shows confirmation with doubled draw/keep values
-- [ ] Hider draws double the normal cards when re-asked question is answered
-- [ ] Re-asked questions tracked separately in history (marked as re-ask)
-- [ ] Vetoed questions can be re-asked at normal cost (not doubled)
+- [x] Previously asked questions show "Re-ask (2x cost)" option
+- [x] Re-asking shows confirmation with doubled draw/keep values
+- [x] Hider draws double the normal cards when re-asked question is answered
+- [x] Re-asked questions tracked separately in history (marked as re-ask)
+- [x] Vetoed questions can be re-asked at normal cost (not doubled)
 
 **Size:** S
 
@@ -2146,12 +2146,12 @@ User experience improvements.
 | Epic | Stories | Complete | Remaining |
 |------|---------|----------|-----------|
 | 0: Project Foundation | 9 | 4 | 5 |
-| 1: Question Tracking | 11 | 10 | 1 |
+| 1: Question Tracking | 11 | 11 | 0 |
 | 2: Timers | 4 | 3 | 1 |
 | 3: Card Management | 12 | 7 | 5 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **31** | **16** |
+| **Total** | **47** | **32** | **15** |
 
 ---
 
@@ -2185,12 +2185,11 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, Q-005, Q-006, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, CARD-005, CARD-006a, CARD-006b, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-004**: Question Response Timer
-- **Q-006**: Re-ask Question with Double Cost
 - **CARD-007a**: Discard/Draw Powerup Effect
 - **CARD-007b**: Draw 1, Expand Powerup Effect
 - **CARD-007c**: Duplicate Powerup Effect

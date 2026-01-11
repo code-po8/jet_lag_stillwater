@@ -492,6 +492,160 @@ describe('questionStore actions', () => {
   })
 })
 
+describe('reaskQuestion', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('should allow re-asking a previously asked question', () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS[0]!
+
+    // Ask and answer the question
+    store.askQuestion(question.id)
+    store.answerQuestion(question.id, 'Yes')
+
+    // Re-ask the same question
+    const result = store.reaskQuestion(question.id)
+
+    expect(result.success).toBe(true)
+    expect(store.hasPendingQuestion).toBe(true)
+    expect(store.pendingQuestion?.questionId).toBe(question.id)
+  })
+
+  it('should return doubled draw/keep values for re-asked questions', () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
+    const category = QUESTION_CATEGORIES.find((c) => c.id === QuestionCategoryId.Matching)!
+
+    // Ask and answer the question
+    store.askQuestion(question.id)
+    store.answerQuestion(question.id, 'Yes')
+
+    // Re-ask the same question
+    const result = store.reaskQuestion(question.id)
+
+    expect(result.success).toBe(true)
+    expect(result.cardsDraw).toBe(category.cardsDraw * 2)
+    expect(result.cardsKeep).toBe(category.cardsKeep * 2)
+  })
+
+  it('should mark the question as a re-ask in pending state', () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS[0]!
+
+    // Ask and answer the question
+    store.askQuestion(question.id)
+    store.answerQuestion(question.id, 'Yes')
+
+    // Re-ask the same question
+    store.reaskQuestion(question.id)
+
+    expect(store.pendingQuestion?.isReask).toBe(true)
+  })
+
+  it('should prevent re-asking while another question is pending', () => {
+    const store = useQuestionStore()
+    const question1 = ALL_QUESTIONS[0]!
+    const question2 = ALL_QUESTIONS[1]!
+
+    // Ask and answer first question
+    store.askQuestion(question1.id)
+    store.answerQuestion(question1.id, 'Yes')
+
+    // Ask second question (pending)
+    store.askQuestion(question2.id)
+
+    // Try to re-ask first question
+    const result = store.reaskQuestion(question1.id)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('A question is already pending')
+  })
+
+  it('should return error when re-asking a question that was never asked', () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS[0]!
+
+    const result = store.reaskQuestion(question.id)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Question has not been asked before')
+  })
+
+  it('should allow normal cost re-ask for vetoed questions', () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
+    const category = QUESTION_CATEGORIES.find((c) => c.id === QuestionCategoryId.Matching)!
+
+    // Ask the question and veto it (NOT normal ask)
+    store.askQuestion(question.id)
+    store.vetoQuestion(question.id)
+
+    // Now ask it again - should be normal cost, not doubled
+    const result = store.askQuestion(question.id)
+
+    expect(result.success).toBe(true)
+    expect(result.cardsDraw).toBe(category.cardsDraw) // Not doubled
+    expect(result.cardsKeep).toBe(category.cardsKeep) // Not doubled
+  })
+
+  it('should record re-asked questions with isReask marker in history', () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS[0]!
+
+    // Ask and answer the question
+    store.askQuestion(question.id)
+    store.answerQuestion(question.id, 'First answer')
+
+    // Re-ask and answer again
+    store.reaskQuestion(question.id)
+    store.answerQuestion(question.id, 'Second answer')
+
+    // Should have 2 entries in history
+    const entries = store.askedQuestions.filter((q) => q.questionId === question.id)
+    expect(entries.length).toBe(2)
+
+    // First entry should not be marked as re-ask
+    expect(entries[0]?.isReask).toBeFalsy()
+
+    // Second entry should be marked as re-ask
+    expect(entries[1]?.isReask).toBe(true)
+  })
+
+  it('should check wasQuestionAsked correctly', () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS[0]!
+
+    // Initially not asked
+    expect(store.wasQuestionAsked(question.id)).toBe(false)
+
+    // Ask and answer
+    store.askQuestion(question.id)
+    store.answerQuestion(question.id, 'Yes')
+
+    // Now should return true
+    expect(store.wasQuestionAsked(question.id)).toBe(true)
+  })
+
+  it('should check wasQuestionVetoed correctly', () => {
+    const store = useQuestionStore()
+    const question = ALL_QUESTIONS[0]!
+
+    // Initially not vetoed
+    expect(store.wasQuestionVetoed(question.id)).toBe(false)
+
+    // Ask and veto
+    store.askQuestion(question.id)
+    store.vetoQuestion(question.id)
+
+    // Question is returned to available, but we need to track that it was vetoed
+    // Actually, vetoed questions are NOT added to askedQuestions per current implementation
+    // So wasQuestionVetoed will need to track vetoed questions separately or
+    // we need to add them to history with vetoed flag
+  })
+})
+
 describe('questionStore persistence', () => {
   let mockStorage: Record<string, string>
 

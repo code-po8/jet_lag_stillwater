@@ -5,9 +5,10 @@ import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { QUESTION_CATEGORIES, QuestionCategoryId, type Question } from '@/types/question'
 import { ALL_QUESTIONS } from '@/data/questions'
 
-// Emit event when question is selected
+// Emit event when question is selected or re-ask is clicked
 const emit = defineEmits<{
   questionSelect: [question: Question]
+  reaskSelect: [{ question: Question; isReask: boolean }]
 }>()
 
 const questionStore = useQuestionStore()
@@ -115,6 +116,23 @@ function handleQuestionClick(question: Question) {
 }
 
 /**
+ * Check if re-ask button should be disabled
+ */
+function isReaskDisabled(): boolean {
+  return pendingQuestionId.value !== null
+}
+
+/**
+ * Handle re-ask button click
+ */
+function handleReaskClick(event: Event, question: Question) {
+  event.stopPropagation() // Prevent triggering the parent click handler
+  if (!isReaskDisabled()) {
+    emit('reaskSelect', { question, isReask: true })
+  }
+}
+
+/**
  * Get CSS classes for question based on status
  */
 function getQuestionClasses(questionId: string): string {
@@ -189,18 +207,30 @@ function getQuestionClasses(questionId: string): string {
           >
             <div class="flex items-center justify-between gap-2">
               <span>{{ question.text }}</span>
-              <span
-                v-if="getQuestionStatus(question.id) === 'asked'"
-                class="shrink-0 rounded bg-gray-200 px-2 py-0.5 text-xs text-gray-600"
-              >
-                Asked
-              </span>
-              <span
-                v-else-if="getQuestionStatus(question.id) === 'pending'"
-                class="shrink-0 rounded bg-yellow-500 px-2 py-0.5 text-xs text-white"
-              >
-                Pending
-              </span>
+              <div class="flex shrink-0 items-center gap-2">
+                <span
+                  v-if="getQuestionStatus(question.id) === 'asked'"
+                  class="shrink-0 rounded bg-gray-200 px-2 py-0.5 text-xs text-gray-600"
+                >
+                  Asked
+                </span>
+                <span
+                  v-else-if="getQuestionStatus(question.id) === 'pending'"
+                  class="shrink-0 rounded bg-yellow-500 px-2 py-0.5 text-xs text-white"
+                >
+                  Pending
+                </span>
+                <!-- Re-ask button for previously asked questions -->
+                <button
+                  v-if="getQuestionStatus(question.id) === 'asked'"
+                  type="button"
+                  class="shrink-0 rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="isReaskDisabled()"
+                  @click="handleReaskClick($event, question)"
+                >
+                  Re-ask (2x)
+                </button>
+              </div>
             </div>
           </li>
           <li

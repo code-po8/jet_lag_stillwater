@@ -354,6 +354,89 @@ describe('QuestionHistory', () => {
     })
   })
 
+  describe('re-ask marker (Q-006)', () => {
+    it('should show re-ask badge for re-asked questions', async () => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const questionStore = useQuestionStore()
+
+      // Add a re-asked question (has isReask: true)
+      const reaskQuestion: AskedQuestion = {
+        ...mockAskedQuestions[0]!,
+        isReask: true,
+      }
+      questionStore.askedQuestions.push(reaskQuestion)
+
+      render(QuestionHistory, { global: { plugins: [pinia] } })
+
+      expect(screen.getByTestId('reask-badge')).toBeTruthy()
+    })
+
+    it('should not show re-ask badge for regular questions', async () => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const questionStore = useQuestionStore()
+      questionStore.askedQuestions.push(mockAskedQuestions[0]!)
+
+      render(QuestionHistory, { global: { plugins: [pinia] } })
+
+      expect(screen.queryByTestId('reask-badge')).toBeFalsy()
+    })
+
+    it('should display re-ask indicator text', async () => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const questionStore = useQuestionStore()
+
+      // Add a re-asked question
+      const reaskQuestion: AskedQuestion = {
+        ...mockAskedQuestions[0]!,
+        isReask: true,
+      }
+      questionStore.askedQuestions.push(reaskQuestion)
+
+      render(QuestionHistory, { global: { plugins: [pinia] } })
+
+      const historyItem = screen.getByTestId('history-item-matching-transit-airport')
+      expect(historyItem.textContent).toMatch(/re-?ask|2x/i)
+    })
+
+    it('should show multiple entries for same question re-asked multiple times', async () => {
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const questionStore = useQuestionStore()
+
+      // Add original ask
+      questionStore.askedQuestions.push({
+        ...mockAskedQuestions[0]!,
+        answer: 'First answer',
+        askedAt: new Date('2026-01-11T10:00:00'),
+      })
+
+      // Add re-ask with different answer
+      questionStore.askedQuestions.push({
+        ...mockAskedQuestions[0]!,
+        answer: 'Second answer',
+        askedAt: new Date('2026-01-11T11:00:00'),
+        isReask: true,
+      })
+
+      render(QuestionHistory, { global: { plugins: [pinia] } })
+
+      // Should have 2 history items for the same question
+      const historyItems = screen.getAllByTestId(/^history-item-/)
+      expect(historyItems.length).toBe(2)
+
+      // Both should show the question text
+      expect(historyItems[0]!.textContent).toContain('airport')
+      expect(historyItems[1]!.textContent).toContain('airport')
+
+      // Different answers
+      expect(screen.getByText('First answer')).toBeTruthy()
+      expect(screen.getByText('Second answer')).toBeTruthy()
+    })
+  })
+
   describe('mobile-friendly design', () => {
     it('should have proper spacing for touch targets', async () => {
       const pinia = createPinia()

@@ -98,6 +98,8 @@ export interface AskedQuestion {
   answeredAt?: Date
   /** Whether the question was vetoed by the hider */
   vetoed?: boolean
+  /** Whether this is a re-ask (costs double cards) */
+  isReask?: boolean
 }
 
 /**

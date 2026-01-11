@@ -151,8 +151,8 @@ function isFilterActive(categoryId: QuestionCategoryId | null): boolean {
     <!-- History List -->
     <div v-else class="flex flex-col gap-3">
       <div
-        v-for="askedQuestion in sortedAskedQuestions"
-        :key="askedQuestion.questionId"
+        v-for="(askedQuestion, index) in sortedAskedQuestions"
+        :key="`${askedQuestion.questionId}-${index}`"
         :data-testid="`history-item-${askedQuestion.questionId}`"
         role="button"
         tabindex="0"
@@ -166,6 +166,14 @@ function isFilterActive(categoryId: QuestionCategoryId | null): boolean {
             {{ getCategoryName(askedQuestion.categoryId) }}
           </span>
           <div class="flex items-center gap-2">
+            <!-- Re-ask Badge -->
+            <span
+              v-if="askedQuestion.isReask"
+              data-testid="reask-badge"
+              class="rounded bg-blue-600 px-2 py-0.5 text-xs font-medium text-white"
+            >
+              Re-ask
+            </span>
             <!-- Vetoed Badge -->
             <span
               v-if="askedQuestion.vetoed"

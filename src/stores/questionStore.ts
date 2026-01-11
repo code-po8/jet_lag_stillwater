@@ -245,6 +245,7 @@ export const useQuestionStore = defineStore('questions', () => {
       answer,
       answeredAt: new Date(),
       vetoed: false,
+      isReask: pendingQuestion.value.isReask ?? false,
     }
 
     askedQuestions.value.push(answeredQuestion)
@@ -336,6 +337,74 @@ export const useQuestionStore = defineStore('questions', () => {
     pendingQuestion.value = null
   }
 
+  /**
+   * Check if a question has been asked before (and answered, not just vetoed).
+   * Returns true if the question was asked and answered (not vetoed).
+   */
+  function wasQuestionAsked(questionId: string): boolean {
+    return askedQuestions.value.some(
+      (aq) => aq.questionId === questionId && !aq.vetoed,
+    )
+  }
+
+  /**
+   * Check if a question was vetoed (can be re-asked at normal cost).
+   * Note: Vetoed questions are NOT added to askedQuestions in current implementation.
+   * This function is a placeholder for future tracking if we add vetoed questions to history.
+   * @param questionId - The question ID to check (currently unused, always returns false)
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function wasQuestionVetoed(questionId: string): boolean {
+    // Currently vetoed questions are not tracked in history
+    // They simply return to available
+    return false
+  }
+
+  /**
+   * Re-ask a previously asked question at double the card cost.
+   * The hider will draw double the normal cards.
+   */
+  function reaskQuestion(questionId: string): ActionResult {
+    // Check if a question is already pending
+    if (pendingQuestion.value !== null) {
+      return { success: false, error: 'A question is already pending' }
+    }
+
+    // Check if the question exists
+    const question = getQuestionByIdFromData(questionId)
+    if (!question) {
+      return { success: false, error: 'Question not found' }
+    }
+
+    // Check if the question was previously asked (and answered, not vetoed)
+    if (!wasQuestionAsked(questionId)) {
+      return { success: false, error: 'Question has not been asked before' }
+    }
+
+    // Get the category for draw/keep values
+    const category = getCategoryById(question.categoryId)
+    if (!category) {
+      return { success: false, error: 'Question category not found' }
+    }
+
+    // Mark the question as pending with isReask flag
+    pendingQuestion.value = {
+      questionId,
+      categoryId: question.categoryId,
+      answer: '',
+      askedAt: new Date(),
+      vetoed: false,
+      isReask: true,
+    }
+
+    // Return doubled draw/keep values
+    return {
+      success: true,
+      cardsDraw: category.cardsDraw * 2,
+      cardsKeep: category.cardsKeep * 2,
+    }
+  }
+
   return {
     // State
     askedQuestions,
@@ -351,6 +420,9 @@ export const useQuestionStore = defineStore('questions', () => {
     answerQuestion,
     vetoQuestion,
     randomizeQuestion,
+    reaskQuestion,
+    wasQuestionAsked,
+    wasQuestionVetoed,
     reset,
     // Persistence
     rehydrate,

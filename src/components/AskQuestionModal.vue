@@ -5,9 +5,12 @@ import { getCategoryById, type Question } from '@/types/question'
 
 interface Props {
   question: Question | null
+  isReask?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isReask: false,
+})
 
 const emit = defineEmits<{
   cancel: []
@@ -29,6 +32,17 @@ const confirmationMessage = ref('')
 const category = computed(() => {
   if (!props.question) return null
   return getCategoryById(props.question.categoryId)
+})
+
+// Get draw/keep values, doubled if isReask
+const cardsDraw = computed(() => {
+  if (!category.value) return 0
+  return props.isReask ? category.value.cardsDraw * 2 : category.value.cardsDraw
+})
+
+const cardsKeep = computed(() => {
+  if (!category.value) return 0
+  return props.isReask ? category.value.cardsKeep * 2 : category.value.cardsKeep
 })
 
 // Check if this question is already pending (to show answer mode directly)
@@ -72,10 +86,16 @@ function handleCancel() {
 function handleAsk() {
   if (!props.question || !category.value) return
 
-  const result = questionStore.askQuestion(props.question.id)
+  // Use reaskQuestion for re-asks, askQuestion for normal asks
+  const result = props.isReask
+    ? questionStore.reaskQuestion(props.question.id)
+    : questionStore.askQuestion(props.question.id)
+
   if (result.success) {
     showConfirmation.value = true
-    confirmationMessage.value = 'Question asked! Waiting for hider\'s response.'
+    confirmationMessage.value = props.isReask
+      ? 'Question re-asked (2x cost)! Waiting for hider\'s response.'
+      : 'Question asked! Waiting for hider\'s response.'
     emit('asked', {
       questionId: props.question.id,
       cardsDraw: result.cardsDraw!,
@@ -95,8 +115,8 @@ function handleSubmitAnswer() {
       answer: answerText.value,
     })
     emit('cardDraw', {
-      cardsDraw: category.value.cardsDraw,
-      cardsKeep: category.value.cardsKeep,
+      cardsDraw: cardsDraw.value,
+      cardsKeep: cardsKeep.value,
     })
   }
 }
@@ -142,10 +162,15 @@ function handleRandomize() {
       <!-- Header -->
       <div class="border-b border-gray-200 px-6 py-4">
         <div class="flex items-center justify-between">
-          <span class="text-lg font-semibold">{{ category.name }}</span>
+          <div>
+            <span class="text-lg font-semibold">{{ category.name }}</span>
+            <span v-if="isReask" class="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+              Re-ask (2x cost)
+            </span>
+          </div>
           <div class="text-right text-sm text-gray-600">
-            <div>Draw {{ category.cardsDraw }}</div>
-            <div>Keep {{ category.cardsKeep }}</div>
+            <div>Draw {{ cardsDraw }}</div>
+            <div>Keep {{ cardsKeep }}</div>
           </div>
         </div>
       </div>

@@ -474,4 +474,109 @@ describe('AskQuestionModal', () => {
       expect(screen.getByText(/question randomized/i)).toBeInTheDocument()
     })
   })
+
+  describe('re-ask mode (Q-006)', () => {
+    it('should display doubled draw/keep values when isReask is true', () => {
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          isReask: true,
+        },
+      })
+
+      // Matching category normally has Draw 3, Keep 1
+      // With 2x cost, should show Draw 6, Keep 2
+      expect(screen.getByText(/draw.*6/i)).toBeInTheDocument()
+      expect(screen.getByText(/keep.*2/i)).toBeInTheDocument()
+    })
+
+    it('should show re-ask indicator in header when isReask is true', () => {
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          isReask: true,
+        },
+      })
+
+      // Should indicate this is a re-ask with doubled cost
+      expect(screen.getByText(/re-?ask|2x.*cost|double/i)).toBeInTheDocument()
+    })
+
+    it('should use reaskQuestion action instead of askQuestion when isReask is true', async () => {
+      const store = useQuestionStore()
+      // Pre-ask and answer the question so it can be re-asked
+      store.askQuestion(testQuestion.id)
+      store.answerQuestion(testQuestion.id, 'First answer')
+
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          isReask: true,
+        },
+      })
+
+      await fireEvent.click(screen.getByRole('button', { name: /ask|re-?ask/i }))
+
+      // Should have marked as pending with isReask flag
+      expect(store.hasPendingQuestion).toBe(true)
+      expect(store.pendingQuestion?.isReask).toBe(true)
+    })
+
+    it('should emit asked event with doubled draw/keep values when isReask is true', async () => {
+      const store = useQuestionStore()
+      const onAsked = vi.fn()
+
+      // Pre-ask and answer the question so it can be re-asked
+      store.askQuestion(testQuestion.id)
+      store.answerQuestion(testQuestion.id, 'First answer')
+
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          isReask: true,
+          onAsked,
+        },
+      })
+
+      await fireEvent.click(screen.getByRole('button', { name: /ask|re-?ask/i }))
+
+      // Should emit doubled values (3*2=6 draw, 1*2=2 keep)
+      expect(onAsked).toHaveBeenCalledWith({
+        questionId: testQuestion.id,
+        cardsDraw: 6,
+        cardsKeep: 2,
+      })
+    })
+
+    it('should emit cardDraw event with doubled values when answer is submitted for re-ask', async () => {
+      const store = useQuestionStore()
+      const onCardDraw = vi.fn()
+
+      // Pre-ask and answer the question so it can be re-asked
+      store.askQuestion(testQuestion.id)
+      store.answerQuestion(testQuestion.id, 'First answer')
+
+      render(AskQuestionModal, {
+        props: {
+          question: testQuestion,
+          isReask: true,
+          onCardDraw,
+        },
+      })
+
+      // Ask the re-ask question
+      await fireEvent.click(screen.getByRole('button', { name: /ask|re-?ask/i }))
+
+      // Enter and submit answer
+      const answerInput = screen.getByPlaceholderText(/enter the hider's answer/i)
+      await fireEvent.update(answerInput, 'Updated answer')
+      await fireEvent.click(screen.getByRole('button', { name: /submit answer/i }))
+
+      // Should emit doubled values
+      expect(onCardDraw).toHaveBeenCalledWith({
+        cardsDraw: 6,
+        cardsKeep: 2,
+      })
+    })
+  })
 })

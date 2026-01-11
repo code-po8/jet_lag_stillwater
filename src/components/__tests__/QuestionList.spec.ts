@@ -245,6 +245,101 @@ describe('QuestionList', () => {
     })
   })
 
+  describe('re-ask question (Q-006)', () => {
+    it('should show re-ask option for previously asked questions', async () => {
+      render(QuestionList)
+      const store = useQuestionStore()
+
+      // Ask and answer a question
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+      store.askQuestion(matchingQuestion.id)
+      store.answerQuestion(matchingQuestion.id, 'Yes')
+
+      await nextTick()
+
+      // The asked question should show a "Re-ask (2x cost)" option
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      expect(within(questionElement).getByText(/re-?ask.*2x|re-?ask.*double/i)).toBeInTheDocument()
+    })
+
+    it('should emit reaskSelect event when re-ask is clicked', async () => {
+      const onReaskSelect = vi.fn()
+      render(QuestionList, {
+        props: {
+          onReaskSelect,
+        },
+      })
+      const store = useQuestionStore()
+
+      // Ask and answer a question
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+      store.askQuestion(matchingQuestion.id)
+      store.answerQuestion(matchingQuestion.id, 'Yes')
+
+      await nextTick()
+
+      // Click the re-ask button
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      const reaskButton = within(questionElement).getByRole('button', { name: /re-?ask/i })
+      await fireEvent.click(reaskButton)
+
+      // Should emit the event with the question and isReask flag
+      expect(onReaskSelect).toHaveBeenCalledWith(expect.objectContaining({
+        question: matchingQuestion,
+        isReask: true,
+      }))
+    })
+
+    it('should not show re-ask option for pending questions', async () => {
+      render(QuestionList)
+      const store = useQuestionStore()
+
+      // Mark a question as pending (not answered yet)
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+      store.askQuestion(matchingQuestion.id)
+
+      await nextTick()
+
+      // The pending question should NOT show re-ask option
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      expect(within(questionElement).queryByText(/re-?ask/i)).not.toBeInTheDocument()
+    })
+
+    it('should not show re-ask option for available questions', async () => {
+      render(QuestionList)
+
+      // Get an available question (never asked)
+      const matchingQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
+
+      // The available question should NOT show re-ask option
+      const questionElement = screen.getByTestId(`question-${matchingQuestion.id}`)
+      expect(within(questionElement).queryByText(/re-?ask/i)).not.toBeInTheDocument()
+    })
+
+    it('should disable re-ask button while another question is pending', async () => {
+      render(QuestionList)
+      const store = useQuestionStore()
+
+      // Ask and answer first question
+      const matchingQuestions = ALL_QUESTIONS.filter((q) => q.categoryId === 'matching')
+      const firstQuestion = matchingQuestions[0]!
+      const secondQuestion = matchingQuestions[1]!
+
+      store.askQuestion(firstQuestion.id)
+      store.answerQuestion(firstQuestion.id, 'Yes')
+
+      // Ask second question (pending)
+      store.askQuestion(secondQuestion.id)
+
+      await nextTick()
+
+      // The re-ask button on first question should be disabled
+      const questionElement = screen.getByTestId(`question-${firstQuestion.id}`)
+      const reaskButton = within(questionElement).getByRole('button', { name: /re-?ask/i })
+      expect(reaskButton).toBeDisabled()
+    })
+  })
+
   describe('end-game phase restrictions (GS-005)', () => {
     function setupEndGamePhase() {
       const gameStore = useGameStore()
