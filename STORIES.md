@@ -1109,18 +1109,82 @@ describe('CardHand', () => {
 
 ### CARD-004: Card Draw Simulation
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002
 
 **Story:** As a hider, I need to draw cards when questions are answered so that I get new options.
 
 **Acceptance Criteria:**
-- [ ] Draw count based on question category
-- [ ] Cards drawn from simulated deck (weighted random)
-- [ ] Animation/feedback when cards are drawn
-- [ ] Hand limit enforced (must discard if over)
+- [x] Draw count based on question category
+- [x] Cards drawn from simulated deck (weighted random)
+- [x] Animation/feedback when cards are drawn
+- [x] Hand limit enforced (must discard if over)
 
 **Size:** M
+
+**Tests Written (29 tests):**
+```typescript
+describe('CardDrawModal', () => {
+  describe('visibility', () => {
+    it('should not render when drawnCards is empty')
+    it('should render when drawnCards has cards')
+  })
+  describe('card display', () => {
+    it('should display all drawn cards')
+    it('should show card name for each drawn card')
+    it('should show visual distinction for different card types')
+  })
+  describe('keep count display', () => {
+    it('should display how many cards to keep')
+    it('should display different keep counts correctly')
+    it('should show selection counter (e.g., "0/1 selected")')
+  })
+  describe('card selection', () => {
+    it('should allow selecting a card by clicking')
+    it('should update selection counter when card is selected')
+    it('should allow deselecting a card by clicking again')
+    it('should prevent selecting more cards than keepCount')
+    it('should allow selecting multiple cards when keepCount > 1')
+  })
+  describe('confirm button', () => {
+    it('should display confirm button')
+    it('should disable confirm button when not enough cards selected')
+    it('should enable confirm button when correct number of cards selected')
+    it('should emit confirm event with selected cards when clicked')
+  })
+  describe('auto-confirm when keepCount equals draw count', () => {
+    it('should auto-select all cards when keepCount equals drawn count')
+    it('should show all cards as selected in message when keep equals draw')
+  })
+  describe('animation feedback', () => {
+    it('should show draw animation class when modal first appears')
+    it('should show card reveal animation on each card')
+  })
+  describe('hand limit enforcement', () => {
+    it('should show warning when kept cards would exceed hand limit')
+    it('should indicate how many cards must be discarded to fit hand limit')
+  })
+  describe('header and instructions', () => {
+    it('should show descriptive header')
+    it('should show instructions for selection')
+  })
+  describe('mobile-friendly design', () => {
+    it('should have touch-friendly card sizes (min 44px touch targets)')
+    it('should have touch-friendly confirm button')
+  })
+  describe('accessibility', () => {
+    it('should have proper ARIA labels for modal')
+    it('should have proper ARIA labels for selectable cards')
+  })
+})
+```
+
+**Notes:**
+- CardDrawModal component created with draw X, keep Y selection mechanic
+- Integrated with SeekerView to trigger after question answered/vetoed
+- Cards are drawn to hand, then player selects which to keep (unselected are discarded)
+- Animations: fade-in for modal, staggered card reveal animation
+- Full accessibility support with ARIA roles and keyboard navigation
 
 ---
 
@@ -1946,10 +2010,10 @@ User experience improvements.
 | 0: Project Foundation | 9 | 4 | 5 |
 | 1: Question Tracking | 11 | 9 | 2 |
 | 2: Timers | 4 | 3 | 1 |
-| 3: Card Management | 12 | 3 | 9 |
+| 3: Card Management | 12 | 4 | 8 |
 | 4: Game State | 7 | 6 | 1 |
 | 5: Mobile UX Polish | 4 | 1 | 3 |
-| **Total** | **47** | **26** | **21** |
+| **Total** | **47** | **27** | **20** |
 
 ---
 
@@ -1983,14 +2047,13 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ### Currently Ready (No Pending Dependencies)
 
-With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, and UX-002 complete, the following cards are now ready:
+With FOUND-001, FOUND-002, FOUND-003, FOUND-008, Q-001, Q-001a, Q-002a, Q-002b, Q-002c, Q-003a, Q-003b, Q-004a, Q-004b, GS-001, GS-002, GS-003, GS-004, GS-005, GS-006, T-001, T-002, T-003, CARD-001, CARD-002, CARD-003, CARD-004, and UX-002 complete, the following cards are now ready:
 - **FOUND-004**: Configure Playwright for E2E Testing
 - **FOUND-005**: Configure Pre-Commit Hooks
 - **FOUND-007**: Configure PWA Support
 - **T-004**: Question Response Timer
 - **Q-005**: Question History View
 - **Q-006**: Re-ask Question with Double Cost
-- **CARD-004**: Card Draw Simulation
 - **CARD-005**: Time Bonus Calculator
 - **CARD-006a**: Curse Display
 - **CARD-007a**: Discard/Draw Powerup Effect

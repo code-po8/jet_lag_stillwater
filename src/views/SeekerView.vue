@@ -2,16 +2,23 @@
 import { ref, computed } from 'vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useQuestionStore } from '@/stores/questionStore'
+import { useCardStore, type CardInstance } from '@/stores/cardStore'
 import QuestionList from '@/components/QuestionList.vue'
 import AskQuestionModal from '@/components/AskQuestionModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
+import CardDrawModal from '@/components/CardDrawModal.vue'
 import type { Question } from '@/types/question'
 
 const gameStore = useGameStore()
 const questionStore = useQuestionStore()
+const cardStore = useCardStore()
 
 // Local state
 const selectedQuestion = ref<Question | null>(null)
+
+// Card draw state
+const drawnCards = ref<CardInstance[]>([])
+const cardsToKeep = ref(0)
 
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
@@ -62,6 +69,41 @@ function handleQuestionAsked() {
 function handleQuestionAnswered() {
   selectedQuestion.value = null
 }
+
+/**
+ * Handle card draw event from AskQuestionModal
+ * Draws cards from the deck and shows the CardDrawModal for selection
+ */
+function handleCardDraw(event: { cardsDraw: number; cardsKeep: number }) {
+  // Close the question modal
+  selectedQuestion.value = null
+
+  // Draw cards from deck (temporarily, not to hand yet)
+  const result = cardStore.drawCards(event.cardsDraw)
+  if (result.success && result.drawnCards) {
+    // Store the drawn cards temporarily - they're already in the hand from drawCards
+    // We need to remove them and let the player choose which to keep
+    drawnCards.value = result.drawnCards
+    cardsToKeep.value = event.cardsKeep
+
+    // Note: drawCards already added cards to hand, so we need a different approach
+    // The player will select which to keep, and we'll discard the rest
+  }
+}
+
+/**
+ * Handle card selection confirmation from CardDrawModal
+ */
+function handleCardDrawConfirm(event: { keptCards: CardInstance[]; discardedCards: CardInstance[] }) {
+  // Discard the cards that weren't selected
+  for (const card of event.discardedCards) {
+    cardStore.discardCard(card.instanceId)
+  }
+
+  // Clear the drawn cards state
+  drawnCards.value = []
+  cardsToKeep.value = 0
+}
 </script>
 
 <template>
@@ -111,6 +153,14 @@ function handleQuestionAnswered() {
       @cancel="handleModalClose"
       @asked="handleQuestionAsked"
       @answered="handleQuestionAnswered"
+      @card-draw="handleCardDraw"
+    />
+
+    <!-- Card Draw Modal -->
+    <CardDrawModal
+      :drawn-cards="drawnCards"
+      :keep-count="cardsToKeep"
+      @confirm="handleCardDrawConfirm"
     />
   </div>
 </template>
