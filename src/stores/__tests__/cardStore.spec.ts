@@ -2,10 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { nextTick } from 'vue'
 import { useCardStore, type CardInstance } from '../cardStore'
-import {
-  CardType,
-  TOTAL_DECK_SIZE,
-} from '@/types/card'
+import { CardType, PowerupType, TOTAL_DECK_SIZE } from '@/types/card'
 import { GameSize } from '@/types/question'
 
 describe('cardStore core', () => {
@@ -88,7 +85,7 @@ describe('cardStore core', () => {
       // Check if time bonus getter works (may or may not have any)
       const timeBonuses = store.timeBonusCards
       expect(Array.isArray(timeBonuses)).toBe(true)
-      timeBonuses.forEach(card => {
+      timeBonuses.forEach((card) => {
         expect(card.type).toBe(CardType.TimeBonus)
       })
     })
@@ -137,7 +134,7 @@ describe('cardStore actions', () => {
       const result = store.drawCards(3)
 
       expect(result.drawnCards).toHaveLength(3)
-      expect(result.drawnCards!.every(card => card.id && card.type)).toBe(true)
+      expect(result.drawnCards!.every((card) => card.id && card.type)).toBe(true)
     })
 
     it('should reduce deck size', () => {
@@ -194,7 +191,7 @@ describe('cardStore actions', () => {
       }
 
       // Time bonus should be most common (55 of 100 cards)
-      const timeBonusCount = drawnTypes.filter(t => t === CardType.TimeBonus).length
+      const timeBonusCount = drawnTypes.filter((t) => t === CardType.TimeBonus).length
       expect(timeBonusCount).toBeGreaterThan(15) // Should be roughly 55%
     })
 
@@ -203,7 +200,7 @@ describe('cardStore actions', () => {
 
       store.drawCards(6)
 
-      const instanceIds = store.hand.map(card => card.instanceId)
+      const instanceIds = store.hand.map((card) => card.instanceId)
       const uniqueIds = new Set(instanceIds)
       expect(uniqueIds.size).toBe(6) // All IDs should be unique
     })
@@ -219,7 +216,7 @@ describe('cardStore actions', () => {
 
       expect(result.success).toBe(true)
       expect(store.hand.length).toBe(2)
-      expect(store.hand.find(c => c.instanceId === cardToPlay.instanceId)).toBeUndefined()
+      expect(store.hand.find((c) => c.instanceId === cardToPlay.instanceId)).toBeUndefined()
     })
 
     it('should return the played card', () => {
@@ -660,7 +657,8 @@ describe('cardStore Time Trap functionality (CARD-008)', () => {
       instanceId: 'time-trap-test-instance',
       type: CardType.TimeTrap,
       name: 'Time Trap',
-      description: 'Designate a transit station as a trap. If seekers visit it, you gain bonus time.',
+      description:
+        'Designate a transit station as a trap. If seekers visit it, you gain bonus time.',
       bonusMinutesWhenTriggered: 15,
     } as CardInstance
     store.hand.push(timeTrapCard)
@@ -743,7 +741,9 @@ describe('cardStore Time Trap functionality (CARD-008)', () => {
       store.playTimeTrapCard(timeTrap.instanceId, 'Test Station')
 
       const afterTime = new Date()
-      expect(store.activeTimeTraps[0]!.createdAt.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime())
+      expect(store.activeTimeTraps[0]!.createdAt.getTime()).toBeGreaterThanOrEqual(
+        beforeTime.getTime(),
+      )
       expect(store.activeTimeTraps[0]!.createdAt.getTime()).toBeLessThanOrEqual(afterTime.getTime())
     })
 
@@ -846,8 +846,12 @@ describe('cardStore Time Trap functionality (CARD-008)', () => {
 
       const afterTime = new Date()
       expect(store.activeTimeTraps[0]!.triggeredAt).toBeDefined()
-      expect(store.activeTimeTraps[0]!.triggeredAt!.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime())
-      expect(store.activeTimeTraps[0]!.triggeredAt!.getTime()).toBeLessThanOrEqual(afterTime.getTime())
+      expect(store.activeTimeTraps[0]!.triggeredAt!.getTime()).toBeGreaterThanOrEqual(
+        beforeTime.getTime(),
+      )
+      expect(store.activeTimeTraps[0]!.triggeredAt!.getTime()).toBeLessThanOrEqual(
+        afterTime.getTime(),
+      )
     })
 
     it('should return bonus minutes when triggered', () => {
@@ -962,6 +966,203 @@ describe('cardStore Time Trap functionality (CARD-008)', () => {
   })
 })
 
+describe('cardStore addCardToHand (PHYS-001)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  describe('adding time bonus cards', () => {
+    it('should add a time bonus card to hand', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.TimeBonus, { tier: 1 })
+
+      expect(result.success).toBe(true)
+      expect(store.hand.length).toBe(1)
+      expect(store.hand[0]!.type).toBe(CardType.TimeBonus)
+    })
+
+    it('should add correct tier time bonus card', () => {
+      const store = useCardStore()
+      store.addCardToHand(CardType.TimeBonus, { tier: 3 })
+
+      const card = store.hand[0] as CardInstance & { tier: number }
+      expect(card.tier).toBe(3)
+    })
+
+    it('should add time bonus with correct bonus minutes for the tier', () => {
+      const store = useCardStore()
+      store.addCardToHand(CardType.TimeBonus, { tier: 2 })
+
+      const card = store.hand[0] as CardInstance & { bonusMinutes: Record<string, number> }
+      // Tier 2: Small=4, Medium=6, Large=10
+      expect(card.bonusMinutes[GameSize.Small]).toBe(4)
+      expect(card.bonusMinutes[GameSize.Medium]).toBe(6)
+      expect(card.bonusMinutes[GameSize.Large]).toBe(10)
+    })
+
+    it('should return error for invalid tier', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.TimeBonus, { tier: 99 })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Invalid tier')
+    })
+
+    it('should return error when tier is not provided for time bonus', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.TimeBonus, {})
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('tier')
+    })
+  })
+
+  describe('adding powerup cards', () => {
+    it('should add a powerup card to hand', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.Powerup, { powerupType: PowerupType.Veto })
+
+      expect(result.success).toBe(true)
+      expect(store.hand.length).toBe(1)
+      expect(store.hand[0]!.type).toBe(CardType.Powerup)
+    })
+
+    it('should add correct powerup type', () => {
+      const store = useCardStore()
+      store.addCardToHand(CardType.Powerup, { powerupType: PowerupType.Duplicate })
+
+      const card = store.hand[0] as CardInstance & { powerupType: PowerupType }
+      expect(card.powerupType).toBe(PowerupType.Duplicate)
+    })
+
+    it('should return error for invalid powerup type', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.Powerup, { powerupType: 'invalid-type' })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Invalid powerup type')
+    })
+
+    it('should return error when powerup type is not provided', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.Powerup, {})
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('powerupType')
+    })
+  })
+
+  describe('adding curse cards', () => {
+    it('should add a curse card to hand', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.Curse, { curseId: 'curse-lemon-phylactery' })
+
+      expect(result.success).toBe(true)
+      expect(store.hand.length).toBe(1)
+      expect(store.hand[0]!.type).toBe(CardType.Curse)
+    })
+
+    it('should add correct curse by ID', () => {
+      const store = useCardStore()
+      store.addCardToHand(CardType.Curse, { curseId: 'curse-water-weight' })
+
+      const card = store.hand[0] as CardInstance & { id: string }
+      expect(card.id).toBe('curse-water-weight')
+    })
+
+    it('should return error for invalid curse ID', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.Curse, { curseId: 'invalid-curse' })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Invalid curse ID')
+    })
+
+    it('should return error when curse ID is not provided', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.Curse, {})
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('curseId')
+    })
+  })
+
+  describe('adding time trap cards', () => {
+    it('should add a time trap card to hand', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.TimeTrap, {})
+
+      expect(result.success).toBe(true)
+      expect(store.hand.length).toBe(1)
+      expect(store.hand[0]!.type).toBe(CardType.TimeTrap)
+    })
+  })
+
+  describe('hand limit enforcement', () => {
+    it('should respect hand limit when adding cards', () => {
+      const store = useCardStore()
+      // Fill hand to limit
+      for (let i = 0; i < store.handLimit; i++) {
+        store.addCardToHand(CardType.TimeBonus, { tier: 1 })
+      }
+      expect(store.hand.length).toBe(store.handLimit)
+
+      // Try to add one more
+      const result = store.addCardToHand(CardType.TimeBonus, { tier: 1 })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Hand is full')
+    })
+
+    it('should work with expanded hand limit', () => {
+      const store = useCardStore()
+      store.expandHandLimit(2)
+      expect(store.handLimit).toBe(8)
+
+      // Fill to new limit
+      for (let i = 0; i < 8; i++) {
+        store.addCardToHand(CardType.TimeBonus, { tier: 1 })
+      }
+
+      expect(store.hand.length).toBe(8)
+    })
+  })
+
+  describe('instance ID assignment', () => {
+    it('should assign unique instance ID to manually added cards', () => {
+      const store = useCardStore()
+      store.addCardToHand(CardType.TimeBonus, { tier: 1 })
+      store.addCardToHand(CardType.TimeBonus, { tier: 1 })
+
+      expect(store.hand[0]!.instanceId).toBeDefined()
+      expect(store.hand[1]!.instanceId).toBeDefined()
+      expect(store.hand[0]!.instanceId).not.toBe(store.hand[1]!.instanceId)
+    })
+  })
+
+  describe('return value', () => {
+    it('should return the added card on success', () => {
+      const store = useCardStore()
+      const result = store.addCardToHand(CardType.TimeBonus, { tier: 2 })
+
+      expect(result.success).toBe(true)
+      expect(result.addedCard).toBeDefined()
+      expect(result.addedCard!.type).toBe(CardType.TimeBonus)
+    })
+  })
+
+  describe('does not affect deck', () => {
+    it('should not reduce deck size when adding cards manually', () => {
+      const store = useCardStore()
+      const initialDeckSize = store.deckSize
+
+      store.addCardToHand(CardType.TimeBonus, { tier: 1 })
+
+      expect(store.deckSize).toBe(initialDeckSize)
+    })
+  })
+})
+
 describe('cardStore persistence', () => {
   let mockStorage: Record<string, string>
 
@@ -1001,7 +1202,7 @@ describe('cardStore persistence', () => {
     expect(localStorage.setItem).toHaveBeenCalled()
 
     // Verify persisted data
-    const persistedKey = Object.keys(mockStorage).find(key => key.includes('cards'))
+    const persistedKey = Object.keys(mockStorage).find((key) => key.includes('cards'))
     expect(persistedKey).toBeDefined()
 
     const persistedData = JSON.parse(mockStorage[persistedKey!]!)
@@ -1092,7 +1293,7 @@ describe('cardStore persistence', () => {
     expect(localStorage.setItem).toHaveBeenCalled()
 
     // Verify persisted data includes time traps
-    const persistedKey = Object.keys(mockStorage).find(key => key.includes('cards'))
+    const persistedKey = Object.keys(mockStorage).find((key) => key.includes('cards'))
     expect(persistedKey).toBeDefined()
 
     const persistedData = JSON.parse(mockStorage[persistedKey!]!)
@@ -1110,14 +1311,16 @@ describe('cardStore persistence', () => {
       handLimit: 6,
       discardPile: [],
       deckComposition: {},
-      activeTimeTraps: [{
-        instanceId: 'trap-rehydrate-test',
-        stationName: 'Rehydrated Station',
-        bonusMinutes: 15,
-        isTriggered: true,
-        createdAt: testDate.toISOString(),
-        triggeredAt: triggeredDate.toISOString(),
-      }],
+      activeTimeTraps: [
+        {
+          instanceId: 'trap-rehydrate-test',
+          stationName: 'Rehydrated Station',
+          bonusMinutes: 15,
+          isTriggered: true,
+          createdAt: testDate.toISOString(),
+          triggeredAt: triggeredDate.toISOString(),
+        },
+      ],
     })
 
     const store = useCardStore()

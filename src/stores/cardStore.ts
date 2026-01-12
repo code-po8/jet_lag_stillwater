@@ -19,6 +19,7 @@ import {
   TIME_BONUS_TIERS,
   POWERUP_CARDS,
   CURSE_CARDS,
+  TIME_TRAP_CARD,
 } from '@/types/card'
 import { GameSize } from '@/types/question'
 import { createPersistenceService } from '@/services/persistence'
@@ -116,6 +117,8 @@ export interface CardActionResult {
   drawnCards?: CardInstance[]
   playedCard?: CardInstance
   duplicatedCard?: CardInstance
+  /** Card added manually to hand (for PHYS-001) */
+  addedCard?: CardInstance
   /** Bonus minutes gained (for time trap triggers) */
   bonusMinutes?: number
 }
@@ -157,6 +160,18 @@ interface PersistedCardState {
 }
 
 /**
+ * Options for manually adding a card to hand (PHYS-001)
+ */
+export interface AddCardOptions {
+  /** Tier for time bonus cards (1-5) */
+  tier?: number
+  /** Powerup type for powerup cards */
+  powerupType?: PowerupType | string
+  /** Curse ID for curse cards */
+  curseId?: string
+}
+
+/**
  * Generate a unique instance ID
  */
 function generateInstanceId(): string {
@@ -174,17 +189,17 @@ function createInitialDeckComposition(): DeckComposition {
   }
 
   // Time bonus tiers (55 total)
-  TIME_BONUS_TIERS.forEach(tier => {
+  TIME_BONUS_TIERS.forEach((tier) => {
     composition.timeBonusByTier[tier.tier] = tier.quantity
   })
 
   // Powerup cards (21 total)
-  POWERUP_CARDS.forEach(card => {
+  POWERUP_CARDS.forEach((card) => {
     composition.powerupByType[card.powerupType] = card.quantity
   })
 
   // Curse cards (24 total, each is unique)
-  CURSE_CARDS.forEach(card => {
+  CURSE_CARDS.forEach((card) => {
     composition.curseById[card.id] = 1
   })
 
@@ -195,8 +210,14 @@ function createInitialDeckComposition(): DeckComposition {
  * Get total cards remaining in deck from composition
  */
 function getTotalRemainingCards(composition: DeckComposition): number {
-  const timeBonusCount = Object.values(composition.timeBonusByTier).reduce((sum, count) => sum + count, 0)
-  const powerupCount = Object.values(composition.powerupByType).reduce((sum, count) => sum + count, 0)
+  const timeBonusCount = Object.values(composition.timeBonusByTier).reduce(
+    (sum, count) => sum + count,
+    0,
+  )
+  const powerupCount = Object.values(composition.powerupByType).reduce(
+    (sum, count) => sum + count,
+    0,
+  )
   const curseCount = Object.values(composition.curseById).reduce((sum, count) => sum + count, 0)
   return timeBonusCount + powerupCount + curseCount
 }
@@ -216,7 +237,7 @@ function drawSingleCard(composition: DeckComposition): CardInstance | null {
     if (count <= 0) continue
     if (roll < count) {
       const tier = parseInt(tierStr, 10)
-      const tierData = TIME_BONUS_TIERS.find(t => t.tier === tier)
+      const tierData = TIME_BONUS_TIERS.find((t) => t.tier === tier)
       if (!tierData) continue
       const currentCount = composition.timeBonusByTier[tier]
       if (currentCount !== undefined) {
@@ -239,7 +260,7 @@ function drawSingleCard(composition: DeckComposition): CardInstance | null {
   for (const [powerupType, count] of Object.entries(composition.powerupByType)) {
     if (count <= 0) continue
     if (roll < count) {
-      const card = POWERUP_CARDS.find(c => c.powerupType === powerupType)
+      const card = POWERUP_CARDS.find((c) => c.powerupType === powerupType)
       if (!card) continue
       const currentCount = composition.powerupByType[powerupType]
       if (currentCount !== undefined) {
@@ -257,7 +278,7 @@ function drawSingleCard(composition: DeckComposition): CardInstance | null {
   for (const [curseId, count] of Object.entries(composition.curseById)) {
     if (count <= 0) continue
     if (roll < count) {
-      const card = CURSE_CARDS.find(c => c.id === curseId)
+      const card = CURSE_CARDS.find((c) => c.id === curseId)
       if (!card) continue
       const currentCount = composition.curseById[curseId]
       if (currentCount !== undefined) {
@@ -293,32 +314,28 @@ export const useCardStore = defineStore('cards', () => {
   const deckSize = computed(() => getTotalRemainingCards(deckComposition.value))
 
   const timeBonusCards = computed(() =>
-    hand.value.filter((card): card is TimeBonusCardInstance => card.type === CardType.TimeBonus)
+    hand.value.filter((card): card is TimeBonusCardInstance => card.type === CardType.TimeBonus),
   )
 
   const powerupCards = computed(() =>
-    hand.value.filter((card): card is PowerupCardInstance => card.type === CardType.Powerup)
+    hand.value.filter((card): card is PowerupCardInstance => card.type === CardType.Powerup),
   )
 
   const curseCards = computed(() =>
-    hand.value.filter((card): card is CurseCardInstance => card.type === CardType.Curse)
+    hand.value.filter((card): card is CurseCardInstance => card.type === CardType.Curse),
   )
 
   const timeTrapCards = computed(() =>
-    hand.value.filter((card): card is TimeTrapCardInstance => card.type === CardType.TimeTrap)
+    hand.value.filter((card): card is TimeTrapCardInstance => card.type === CardType.TimeTrap),
   )
 
   // Time Trap getters
-  const untriggeredTraps = computed(() =>
-    activeTimeTraps.value.filter(trap => !trap.isTriggered)
-  )
+  const untriggeredTraps = computed(() => activeTimeTraps.value.filter((trap) => !trap.isTriggered))
 
-  const triggeredTraps = computed(() =>
-    activeTimeTraps.value.filter(trap => trap.isTriggered)
-  )
+  const triggeredTraps = computed(() => activeTimeTraps.value.filter((trap) => trap.isTriggered))
 
   const totalTimeTrapBonus = computed(() =>
-    triggeredTraps.value.reduce((sum, trap) => sum + trap.bonusMinutes, 0)
+    triggeredTraps.value.reduce((sum, trap) => sum + trap.bonusMinutes, 0),
   )
 
   /**
@@ -339,11 +356,11 @@ export const useCardStore = defineStore('cards', () => {
       handLimit: handLimit.value,
       discardPile: discardPile.value,
       deckComposition: deckComposition.value,
-      activeCurses: activeCurses.value.map(curse => ({
+      activeCurses: activeCurses.value.map((curse) => ({
         ...curse,
         activatedAt: curse.activatedAt.toISOString(),
       })),
-      activeTimeTraps: activeTimeTraps.value.map(trap => ({
+      activeTimeTraps: activeTimeTraps.value.map((trap) => ({
         ...trap,
         createdAt: trap.createdAt.toISOString(),
         triggeredAt: trap.triggeredAt?.toISOString(),
@@ -367,14 +384,14 @@ export const useCardStore = defineStore('cards', () => {
         }
         // Rehydrate active curses with date conversion
         if (persisted.activeCurses) {
-          activeCurses.value = persisted.activeCurses.map(curse => ({
+          activeCurses.value = persisted.activeCurses.map((curse) => ({
             ...curse,
             activatedAt: new Date(curse.activatedAt),
           }))
         }
         // Rehydrate active time traps with date conversion
         if (persisted.activeTimeTraps) {
-          activeTimeTraps.value = persisted.activeTimeTraps.map(trap => ({
+          activeTimeTraps.value = persisted.activeTimeTraps.map((trap) => ({
             ...trap,
             createdAt: new Date(trap.createdAt),
             triggeredAt: trap.triggeredAt ? new Date(trap.triggeredAt) : undefined,
@@ -392,7 +409,7 @@ export const useCardStore = defineStore('cards', () => {
     () => {
       persist()
     },
-    { deep: true }
+    { deep: true },
   )
 
   /**
@@ -424,7 +441,7 @@ export const useCardStore = defineStore('cards', () => {
    * Play a card from hand (removes it and adds to discard)
    */
   function playCard(instanceId: string): CardActionResult {
-    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    const cardIndex = hand.value.findIndex((c) => c.instanceId === instanceId)
     if (cardIndex === -1) {
       return { success: false, error: 'Card not found in hand' }
     }
@@ -442,7 +459,7 @@ export const useCardStore = defineStore('cards', () => {
    * Discard a card from hand (removes it and adds to discard)
    */
   function discardCard(instanceId: string): CardActionResult {
-    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    const cardIndex = hand.value.findIndex((c) => c.instanceId === instanceId)
     if (cardIndex === -1) {
       return { success: false, error: 'Card not found in hand' }
     }
@@ -475,7 +492,7 @@ export const useCardStore = defineStore('cards', () => {
    * Play a curse card from hand - adds it to active curses affecting seekers
    */
   function playCurseCard(instanceId: string): CardActionResult {
-    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    const cardIndex = hand.value.findIndex((c) => c.instanceId === instanceId)
     if (cardIndex === -1) {
       return { success: false, error: 'Card not found in hand' }
     }
@@ -537,7 +554,7 @@ export const useCardStore = defineStore('cards', () => {
    * Clear a curse (remove from active curses)
    */
   function clearCurse(instanceId: string): CardActionResult {
-    const curseIndex = activeCurses.value.findIndex(c => c.instanceId === instanceId)
+    const curseIndex = activeCurses.value.findIndex((c) => c.instanceId === instanceId)
     if (curseIndex === -1) {
       return { success: false, error: 'Curse not found in active curses' }
     }
@@ -554,7 +571,7 @@ export const useCardStore = defineStore('cards', () => {
     // Validate all cards exist in hand
     const cardsToDiscard: CardInstance[] = []
     for (const instanceId of cardInstanceIds) {
-      const card = hand.value.find(c => c.instanceId === instanceId)
+      const card = hand.value.find((c) => c.instanceId === instanceId)
       if (!card) {
         return { success: false, error: 'One or more cards not found in hand' }
       }
@@ -568,7 +585,7 @@ export const useCardStore = defineStore('cards', () => {
 
     // Discard the selected cards
     for (const card of cardsToDiscard) {
-      const cardIndex = hand.value.findIndex(c => c.instanceId === card.instanceId)
+      const cardIndex = hand.value.findIndex((c) => c.instanceId === card.instanceId)
       if (cardIndex !== -1) {
         const [removedCard] = hand.value.splice(cardIndex, 1)
         discardPile.value.push(removedCard!)
@@ -610,7 +627,7 @@ export const useCardStore = defineStore('cards', () => {
    * Draws one card and permanently increases hand limit by 1
    */
   function playDrawExpandPowerup(instanceId: string): CardActionResult {
-    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    const cardIndex = hand.value.findIndex((c) => c.instanceId === instanceId)
     if (cardIndex === -1) {
       return { success: false, error: 'Card not found in hand' }
     }
@@ -653,9 +670,12 @@ export const useCardStore = defineStore('cards', () => {
    * Play the Duplicate powerup
    * Creates a copy of another card in hand. If duplicating a time bonus, the copy has doubled values.
    */
-  function playDuplicatePowerup(duplicateCardInstanceId: string, targetCardInstanceId: string): CardActionResult {
+  function playDuplicatePowerup(
+    duplicateCardInstanceId: string,
+    targetCardInstanceId: string,
+  ): CardActionResult {
     // Validate duplicate card exists in hand
-    const duplicateCardIndex = hand.value.findIndex(c => c.instanceId === duplicateCardInstanceId)
+    const duplicateCardIndex = hand.value.findIndex((c) => c.instanceId === duplicateCardInstanceId)
     if (duplicateCardIndex === -1) {
       return { success: false, error: 'Duplicate powerup card not found in hand' }
     }
@@ -678,7 +698,7 @@ export const useCardStore = defineStore('cards', () => {
     }
 
     // Validate target card exists in hand
-    const targetCard = hand.value.find(c => c.instanceId === targetCardInstanceId)
+    const targetCard = hand.value.find((c) => c.instanceId === targetCardInstanceId)
     if (!targetCard) {
       return { success: false, error: 'Target card not found in hand' }
     }
@@ -729,7 +749,7 @@ export const useCardStore = defineStore('cards', () => {
    */
   function playMovePowerup(instanceId: string): CardActionResult {
     // Validate card exists in hand
-    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    const cardIndex = hand.value.findIndex((c) => c.instanceId === instanceId)
     if (cardIndex === -1) {
       return { success: false, error: 'Card not found in hand' }
     }
@@ -770,7 +790,7 @@ export const useCardStore = defineStore('cards', () => {
     }
 
     // Validate card exists in hand
-    const cardIndex = hand.value.findIndex(c => c.instanceId === instanceId)
+    const cardIndex = hand.value.findIndex((c) => c.instanceId === instanceId)
     if (cardIndex === -1) {
       return { success: false, error: 'Card not found in hand' }
     }
@@ -810,7 +830,7 @@ export const useCardStore = defineStore('cards', () => {
    * Returns the bonus minutes gained
    */
   function triggerTimeTrap(trapInstanceId: string): CardActionResult {
-    const trap = activeTimeTraps.value.find(t => t.instanceId === trapInstanceId)
+    const trap = activeTimeTraps.value.find((t) => t.instanceId === trapInstanceId)
     if (!trap) {
       return { success: false, error: 'Time trap not found' }
     }
@@ -826,6 +846,90 @@ export const useCardStore = defineStore('cards', () => {
     return {
       success: true,
       bonusMinutes: trap.bonusMinutes,
+    }
+  }
+
+  /**
+   * Manually add a card to hand (PHYS-001 - for physical deck players)
+   * Does NOT draw from the deck - creates a new card instance based on specifications
+   */
+  function addCardToHand(cardType: CardType, options: AddCardOptions): CardActionResult {
+    // Check hand limit
+    if (isHandFull.value) {
+      return { success: false, error: 'Hand is full. Cannot add more cards.' }
+    }
+
+    let cardToAdd: CardInstance
+
+    switch (cardType) {
+      case CardType.TimeBonus: {
+        if (options.tier === undefined) {
+          return { success: false, error: 'tier is required for time bonus cards' }
+        }
+        const tierData = TIME_BONUS_TIERS.find((t) => t.tier === options.tier)
+        if (!tierData) {
+          return { success: false, error: `Invalid tier: ${options.tier}. Valid tiers are 1-5.` }
+        }
+        cardToAdd = {
+          id: `time-bonus-tier-${options.tier}`,
+          instanceId: generateInstanceId(),
+          type: CardType.TimeBonus,
+          name: `Time Bonus (Tier ${options.tier})`,
+          description: `Adds ${tierData.minutes[GameSize.Small]}/${tierData.minutes[GameSize.Medium]}/${tierData.minutes[GameSize.Large]} minutes (S/M/L) to hiding duration`,
+          tier: options.tier,
+          bonusMinutes: tierData.minutes,
+        } as TimeBonusCardInstance
+        break
+      }
+
+      case CardType.Powerup: {
+        if (!options.powerupType) {
+          return { success: false, error: 'powerupType is required for powerup cards' }
+        }
+        const powerupCard = POWERUP_CARDS.find((c) => c.powerupType === options.powerupType)
+        if (!powerupCard) {
+          return { success: false, error: `Invalid powerup type: ${options.powerupType}` }
+        }
+        cardToAdd = {
+          ...powerupCard,
+          instanceId: generateInstanceId(),
+        } as PowerupCardInstance
+        break
+      }
+
+      case CardType.Curse: {
+        if (!options.curseId) {
+          return { success: false, error: 'curseId is required for curse cards' }
+        }
+        const curseCard = CURSE_CARDS.find((c) => c.id === options.curseId)
+        if (!curseCard) {
+          return { success: false, error: `Invalid curse ID: ${options.curseId}` }
+        }
+        cardToAdd = {
+          ...curseCard,
+          instanceId: generateInstanceId(),
+        } as CurseCardInstance
+        break
+      }
+
+      case CardType.TimeTrap: {
+        cardToAdd = {
+          ...TIME_TRAP_CARD,
+          instanceId: generateInstanceId(),
+        } as TimeTrapCardInstance
+        break
+      }
+
+      default:
+        return { success: false, error: `Unknown card type: ${cardType}` }
+    }
+
+    // Add to hand
+    hand.value.push(cardToAdd)
+
+    return {
+      success: true,
+      addedCard: cardToAdd,
     }
   }
 
@@ -864,6 +968,7 @@ export const useCardStore = defineStore('cards', () => {
     playMovePowerup,
     playTimeTrapCard,
     triggerTimeTrap,
+    addCardToHand,
     reset,
     // Persistence
     rehydrate,

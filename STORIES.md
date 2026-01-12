@@ -3053,53 +3053,93 @@ Support for playing with physical card decks and running hider/seeker modes inde
 
 ### PHYS-001: Manual Card Entry for Hiders
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-002
 
 **Story:** As a hider using a physical card deck, I need to manually specify which cards are in my hand so that the app can track my time bonuses and available powerups.
 
 **Acceptance Criteria:**
 
-- [ ] "Add Card" button available in HiderView
-- [ ] Modal/panel allows selecting card type (Time Bonus, Powerup, Curse, Time Trap)
-- [ ] For Time Bonus: select tier (1-5)
-- [ ] For Powerup: select from available powerup types
-- [ ] For Curse: select from available curse cards
-- [ ] For Time Trap: select Time Trap card
-- [ ] Added card appears in hand immediately
-- [ ] Hand limit is still enforced (cannot add beyond limit)
-- [ ] Cards added manually are tracked the same as drawn cards
+- [x] "Add Card" button available in HiderView
+- [x] Modal/panel allows selecting card type (Time Bonus, Powerup, Curse, Time Trap)
+- [x] For Time Bonus: select tier (1-5)
+- [x] For Powerup: select from available powerup types
+- [x] For Curse: select from available curse cards
+- [x] For Time Trap: select Time Trap card
+- [x] Added card appears in hand immediately
+- [x] Hand limit is still enforced (cannot add beyond limit)
+- [x] Cards added manually are tracked the same as drawn cards
 
 **Size:** M
 
-**Tests to Write:**
+**Tests Written (49 new tests):**
 
 ```typescript
-describe('manual card entry', () => {
-  describe('add card UI', () => {
-    it('should show Add Card button in hider view')
-    it('should open card selection modal when Add Card clicked')
-    it('should show card type options')
+// cardStore.spec.ts - 19 tests for addCardToHand
+describe('cardStore addCardToHand (PHYS-001)', () => {
+  describe('adding time bonus cards', () => {
+    it('should add a time bonus card to hand')
+    it('should add correct tier time bonus card')
+    it('should add time bonus with correct bonus minutes for the tier')
+    it('should return error for invalid tier')
+    it('should return error when tier is not provided for time bonus')
   })
-  describe('card type selection', () => {
-    it('should show tier options when Time Bonus selected')
-    it('should show powerup type options when Powerup selected')
-    it('should show curse list when Curse selected')
-    it('should allow Time Trap selection')
+  describe('adding powerup cards', () => {
+    it('should add a powerup card to hand')
+    it('should add correct powerup type')
+    it('should return error for invalid powerup type')
+    it('should return error when powerup type is not provided')
   })
-  describe('card addition', () => {
-    it('should add selected card to hand')
-    it('should enforce hand limit')
-    it('should close modal after adding card')
+  describe('adding curse cards', () => {
+    it('should add a curse card to hand')
+    it('should add correct curse by ID')
+    it('should return error for invalid curse ID')
+    it('should return error when curse ID is not provided')
   })
+  describe('adding time trap cards', () => {
+    it('should add a time trap card to hand')
+  })
+  describe('hand limit enforcement', () => {
+    it('should respect hand limit when adding cards')
+    it('should work with expanded hand limit')
+  })
+  describe('instance ID assignment', () => {
+    it('should assign unique instance ID to manually added cards')
+  })
+  describe('return value', () => {
+    it('should return the added card on success')
+  })
+  describe('does not affect deck', () => {
+    it('should not reduce deck size when adding cards manually')
+  })
+})
+
+// AddCardModal.spec.ts - 30 tests for component
+describe('AddCardModal', () => {
+  describe('visibility')
+  describe('header and instructions')
+  describe('card type selection')
+  describe('time bonus tier selection')
+  describe('powerup type selection')
+  describe('curse selection')
+  describe('time trap selection')
+  describe('confirm button')
+  describe('cancel button')
+  describe('hand full warning')
+  describe('mobile-friendly design')
+  describe('accessibility')
 })
 ```
 
 **Implementation Notes:**
 
-- Add `addCardToHand(card)` action to cardStore that bypasses deck drawing
-- UI could be a floating action button or section in HiderView
-- Consider grouping with existing card hand display
+- Added `addCardToHand(cardType, options)` action to cardStore that bypasses deck drawing
+- Added `AddCardOptions` interface for type-safe options
+- Created `AddCardModal.vue` component with full card type selection UI
+- Added "+ Add Card" button to HiderView Cards section header
+- Button is disabled when hand is full
+- Modal shows warning when hand is full
+- All card types supported: Time Bonus (with tier selection), Powerup, Curse, Time Trap
 
 ---
 
@@ -3366,10 +3406,10 @@ describe('room creation and join', () => {
 | 5: Mobile UX Polish           | 4       | 4        | 0         |
 | 6: Developer Tools            | 1       | 0        | 1         |
 | 7: Question UX Improvements   | 2       | 2        | 0         |
-| 8: Physical Play & Standalone | 3       | 0        | 3         |
+| 8: Physical Play & Standalone | 3       | 1        | 2         |
 | 9: User Guides                | 2       | 0        | 2         |
 | 10: Multiplayer Sync          | 4       | 0        | 4         |
-| **Total**                     | **59**  | **49**   | **10**    |
+| **Total**                     | **59**  | **50**   | **9**     |
 
 ---
 
@@ -3414,13 +3454,13 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 8: Physical Play & Standalone Mode**
 
-- **PHYS-001**: Manual Card Entry for Hiders (depends on CARD-002 ✅)
+- ~~**PHYS-001**: Manual Card Entry for Hiders~~ ✅ COMPLETE
 - **PHYS-002**: Manual Curse Activation for Seekers (depends on CARD-006a ✅)
-- **PHYS-003**: Standalone Mode Documentation (depends on PHYS-001, PHYS-002) ⏳
+- **PHYS-003**: Standalone Mode Documentation (depends on PHYS-001 ✅, PHYS-002 ⏳)
 
 **Epic 9: User Guides**
 
-- **GUIDE-001**: Hider Mode User Guide (depends on PHYS-001, DEV-001) ⏳
+- **GUIDE-001**: Hider Mode User Guide (depends on PHYS-001 ✅, DEV-001 ⏳)
 - **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002 ⏳, QUX-001 ✅)
 
 **Epic 10: Multiplayer Sync**
@@ -3449,4 +3489,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 11, 2026 - Added Epics 7-10_
+_Last updated: January 11, 2026 - Completed PHYS-001 (Manual Card Entry for Hiders)_

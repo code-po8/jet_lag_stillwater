@@ -10,6 +10,8 @@ import PowerupDuplicateModal from '@/components/PowerupDuplicateModal.vue'
 import PowerupMoveModal from '@/components/PowerupMoveModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionResponseTimer from '@/components/QuestionResponseTimer.vue'
+import AddCardModal from '@/components/AddCardModal.vue'
+import type { AddCardOptions } from '@/stores/cardStore'
 import { GameSize } from '@/types/question'
 import { CardType, PowerupType } from '@/types/card'
 
@@ -29,6 +31,9 @@ const selectedMoveCard = ref<CardInstance | null>(null)
 const drawnCards = ref<CardInstance[]>([])
 const keepCount = ref(0)
 
+// State for AddCardModal (PHYS-001)
+const isAddCardModalOpen = ref(false)
+
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
 const isHidingPeriod = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
@@ -37,13 +42,15 @@ const totalTimeBonus = computed(() => cardStore.totalTimeBonus(props.gameSize ??
 // Get selectable cards for discard/draw (all cards except the powerup being played)
 const selectableCardsForDiscard = computed(() => {
   if (!selectedPowerupCard.value) return []
-  return cardStore.hand.filter(card => card.instanceId !== selectedPowerupCard.value?.instanceId)
+  return cardStore.hand.filter((card) => card.instanceId !== selectedPowerupCard.value?.instanceId)
 })
 
 // Get selectable cards for duplicate (all cards except the duplicate powerup being played)
 const selectableCardsForDuplicate = computed(() => {
   if (!selectedDuplicateCard.value) return []
-  return cardStore.hand.filter(card => card.instanceId !== selectedDuplicateCard.value?.instanceId)
+  return cardStore.hand.filter(
+    (card) => card.instanceId !== selectedDuplicateCard.value?.instanceId,
+  )
 })
 
 /**
@@ -71,10 +78,7 @@ function handleCardSelect(card: CardInstance) {
     const powerupType = (card as CardInstance & { powerupType: PowerupType }).powerupType
 
     // Handle Discard/Draw powerups
-    if (
-      powerupType === PowerupType.Discard1Draw2 ||
-      powerupType === PowerupType.Discard2Draw3
-    ) {
+    if (powerupType === PowerupType.Discard1Draw2 || powerupType === PowerupType.Discard2Draw3) {
       selectedPowerupCard.value = card
       return
     }
@@ -107,7 +111,8 @@ function handleDiscardDrawConfirm(cardsToDiscard: CardInstance[]) {
   if (!selectedPowerupCard.value) return
 
   // Determine draw count based on powerup type
-  const powerupType = (selectedPowerupCard.value as CardInstance & { powerupType: PowerupType }).powerupType
+  const powerupType = (selectedPowerupCard.value as CardInstance & { powerupType: PowerupType })
+    .powerupType
   const drawCountNum = powerupType === PowerupType.Discard1Draw2 ? 2 : 3
 
   // First, play the powerup card (remove it from hand)
@@ -115,8 +120,8 @@ function handleDiscardDrawConfirm(cardsToDiscard: CardInstance[]) {
 
   // Then discard selected cards and draw new ones
   const result = cardStore.discardAndDraw(
-    cardsToDiscard.map(c => c.instanceId),
-    drawCountNum
+    cardsToDiscard.map((c) => c.instanceId),
+    drawCountNum,
   )
 
   // Show drawn cards in CardDrawModal (keep all of them)
@@ -220,6 +225,28 @@ function handleMoveCancel() {
 function handleConfirmNewZone() {
   gameStore.confirmNewZone()
 }
+
+/**
+ * Open the Add Card modal (PHYS-001)
+ */
+function openAddCardModal() {
+  isAddCardModalOpen.value = true
+}
+
+/**
+ * Handle Add Card confirmation (PHYS-001)
+ */
+function handleAddCardConfirm(payload: { cardType: CardType; options: AddCardOptions }) {
+  cardStore.addCardToHand(payload.cardType, payload.options)
+  isAddCardModalOpen.value = false
+}
+
+/**
+ * Handle Add Card cancel (PHYS-001)
+ */
+function handleAddCardCancel() {
+  isAddCardModalOpen.value = false
+}
 </script>
 
 <template>
@@ -230,10 +257,7 @@ function handleConfirmNewZone() {
     </div>
 
     <!-- Phase Status -->
-    <div
-      data-testid="phase-status"
-      class="rounded-lg bg-slate-800 p-3 text-center text-slate-300"
-    >
+    <div data-testid="phase-status" class="rounded-lg bg-slate-800 p-3 text-center text-slate-300">
       {{ getPhaseDisplayText() }}
     </div>
 
@@ -244,8 +268,17 @@ function handleConfirmNewZone() {
       class="rounded-lg bg-amber-900 p-4"
     >
       <div class="mb-3 flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6 text-amber-400"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+            clip-rule="evenodd"
+          />
         </svg>
         <span class="text-lg font-bold text-amber-200">Moving to New Zone</span>
       </div>
@@ -278,7 +311,17 @@ function handleConfirmNewZone() {
 
     <!-- Cards Section -->
     <section data-testid="hider-cards-section" class="flex-1">
-      <h2 class="mb-3 text-lg font-semibold text-white">Your Cards</h2>
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-white">Your Cards</h2>
+        <button
+          data-testid="add-card-btn"
+          class="min-h-11 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="cardStore.isHandFull"
+          @click="openAddCardModal"
+        >
+          + Add Card
+        </button>
+      </div>
       <CardHand :game-size="props.gameSize ?? GameSize.Small" @card-select="handleCardSelect" />
     </section>
 
@@ -321,6 +364,13 @@ function handleConfirmNewZone() {
       :drawn-cards="drawnCards"
       :keep-count="keepCount"
       @confirm="handleCardDrawConfirm"
+    />
+
+    <!-- Add Card Modal (PHYS-001 - Manual card entry for physical deck players) -->
+    <AddCardModal
+      :is-open="isAddCardModalOpen"
+      @confirm="handleAddCardConfirm"
+      @cancel="handleAddCardCancel"
     />
   </div>
 </template>
