@@ -121,6 +121,8 @@ export interface CardActionResult {
   addedCard?: CardInstance
   /** Bonus minutes gained (for time trap triggers) */
   bonusMinutes?: number
+  /** Curse activated manually (for PHYS-002) */
+  activatedCurse?: ActiveCurse
 }
 
 /**
@@ -933,6 +935,66 @@ export const useCardStore = defineStore('cards', () => {
     }
   }
 
+  /**
+   * Manually activate a curse (PHYS-002 - for standalone/physical play mode)
+   * Creates an active curse without needing a curse card in hand
+   * Used when hider announces curse verbally and seeker needs to track it
+   */
+  function activateCurseManually(curseId: string): CardActionResult {
+    // Validate curse ID
+    if (!curseId) {
+      return { success: false, error: 'Invalid curse ID: curse ID is required' }
+    }
+
+    // Find the curse definition
+    const curseCard = CURSE_CARDS.find((c) => c.id === curseId)
+    if (!curseCard) {
+      return { success: false, error: `Invalid curse ID: ${curseId}` }
+    }
+
+    // Create active curse from the curse card definition
+    const activeCurse: ActiveCurse = {
+      instanceId: generateInstanceId(),
+      curseId: curseCard.id,
+      name: curseCard.name,
+      description: curseCard.description,
+      effect: curseCard.effect,
+      castingCost: curseCard.castingCost,
+      blocksQuestions: curseCard.blocksQuestions,
+      blocksTransit: curseCard.blocksTransit,
+      activatedAt: new Date(),
+    }
+
+    // Add optional fields if they exist on the curse card
+    if (curseCard.durationMinutes) {
+      activeCurse.durationMinutes = {
+        small: curseCard.durationMinutes[GameSize.Small],
+        medium: curseCard.durationMinutes[GameSize.Medium],
+        large: curseCard.durationMinutes[GameSize.Large],
+      }
+    }
+
+    if (curseCard.penaltyMinutes) {
+      activeCurse.penaltyMinutes = {
+        small: curseCard.penaltyMinutes[GameSize.Small],
+        medium: curseCard.penaltyMinutes[GameSize.Medium],
+        large: curseCard.penaltyMinutes[GameSize.Large],
+      }
+    }
+
+    // Mark as until-found for certain curses (those that say "rest of run")
+    if (curseCard.effect.toLowerCase().includes('rest of run')) {
+      activeCurse.untilFound = true
+    }
+
+    activeCurses.value.push(activeCurse)
+
+    return {
+      success: true,
+      activatedCurse: activeCurse,
+    }
+  }
+
   return {
     // State
     hand,
@@ -969,6 +1031,7 @@ export const useCardStore = defineStore('cards', () => {
     playTimeTrapCard,
     triggerTimeTrap,
     addCardToHand,
+    activateCurseManually,
     reset,
     // Persistence
     rehydrate,

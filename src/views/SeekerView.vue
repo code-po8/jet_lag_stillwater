@@ -10,6 +10,7 @@ import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionResponseTimer from '@/components/QuestionResponseTimer.vue'
 import CardDrawModal from '@/components/CardDrawModal.vue'
 import CurseDisplay from '@/components/CurseDisplay.vue'
+import CurseActivationModal from '@/components/CurseActivationModal.vue'
 import { GameSize, type Question } from '@/types/question'
 
 // Props
@@ -19,7 +20,7 @@ const props = withDefaults(
   }>(),
   {
     gameSize: GameSize.Small,
-  }
+  },
 )
 
 const gameStore = useGameStore()
@@ -33,6 +34,9 @@ const selectedQuestion = ref<Question | null>(null)
 // Card draw state
 const drawnCards = ref<CardInstance[]>([])
 const cardsToKeep = ref(0)
+
+// Curse activation modal state
+const showCurseActivationModal = ref(false)
 
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
@@ -110,7 +114,10 @@ function handleCardDraw(event: { cardsDraw: number; cardsKeep: number }) {
 /**
  * Handle card selection confirmation from CardDrawModal
  */
-function handleCardDrawConfirm(event: { keptCards: CardInstance[]; discardedCards: CardInstance[] }) {
+function handleCardDrawConfirm(event: {
+  keptCards: CardInstance[]
+  discardedCards: CardInstance[]
+}) {
   // Discard the cards that weren't selected
   for (const card of event.discardedCards) {
     cardStore.discardCard(card.instanceId)
@@ -127,6 +134,29 @@ function handleCardDrawConfirm(event: { keptCards: CardInstance[]; discardedCard
 function handleCurseCleared(event: { curseName: string; reason: 'manual' | 'expired' }) {
   notifications.notifyCurseCleared(event.curseName)
 }
+
+/**
+ * Open the curse activation modal
+ */
+function openCurseActivationModal() {
+  showCurseActivationModal.value = true
+}
+
+/**
+ * Handle curse activation confirmation
+ */
+function handleCurseActivationConfirm(event: { curseId: string }) {
+  cardStore.activateCurseManually(event.curseId)
+  showCurseActivationModal.value = false
+  notifications.notify('Curse activated!', 'warning')
+}
+
+/**
+ * Handle curse activation cancellation
+ */
+function handleCurseActivationCancel() {
+  showCurseActivationModal.value = false
+}
 </script>
 
 <template>
@@ -137,10 +167,7 @@ function handleCurseCleared(event: { curseName: string; reason: 'manual' | 'expi
     </div>
 
     <!-- Phase Status -->
-    <div
-      data-testid="phase-status"
-      class="rounded-lg bg-slate-800 p-3 text-center text-slate-300"
-    >
+    <div data-testid="phase-status" class="rounded-lg bg-slate-800 p-3 text-center text-slate-300">
       {{ getPhaseDisplayText() }}
     </div>
 
@@ -151,14 +178,22 @@ function handleCurseCleared(event: { curseName: string; reason: 'manual' | 'expi
       class="rounded-lg border-2 border-amber-500 bg-amber-900 p-4"
     >
       <div class="mb-2 flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 animate-pulse text-amber-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6 animate-pulse text-amber-400"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+            clip-rule="evenodd"
+          />
         </svg>
         <span class="text-lg font-bold text-amber-200">Hider is Moving!</span>
       </div>
       <p class="text-center text-amber-200">
-        Stay put and wait for the hider to establish a new hiding zone.
-        The hiding timer is paused.
+        Stay put and wait for the hider to establish a new hiding zone. The hiding timer is paused.
       </p>
     </div>
 
@@ -185,8 +220,34 @@ function handleCurseCleared(event: { curseName: string; reason: 'manual' | 'expi
       Awaiting answer...
     </div>
 
+    <!-- Hider Played Curse Button (PHYS-002) -->
+    <button
+      data-testid="hider-played-curse-button"
+      type="button"
+      class="flex items-center justify-center gap-2 rounded-lg border border-purple-600/50 bg-purple-900/30 px-4 py-3 font-medium text-purple-300 transition-colors hover:bg-purple-900/50"
+      @click="openCurseActivationModal"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      Hider Played Curse
+    </button>
+
     <!-- Active Curses Section -->
-    <section v-if="hasActiveCurses" data-testid="seeker-curses-section" class="max-h-64 overflow-hidden">
+    <section
+      v-if="hasActiveCurses"
+      data-testid="seeker-curses-section"
+      class="max-h-64 overflow-hidden"
+    >
       <CurseDisplay :game-size="gameSize" @curse-cleared="handleCurseCleared" />
     </section>
 
@@ -210,6 +271,14 @@ function handleCurseCleared(event: { curseName: string; reason: 'manual' | 'expi
       :drawn-cards="drawnCards"
       :keep-count="cardsToKeep"
       @confirm="handleCardDrawConfirm"
+    />
+
+    <!-- Curse Activation Modal (PHYS-002) -->
+    <CurseActivationModal
+      :is-open="showCurseActivationModal"
+      :game-size="gameSize"
+      @confirm="handleCurseActivationConfirm"
+      @cancel="handleCurseActivationCancel"
     />
   </div>
 </template>

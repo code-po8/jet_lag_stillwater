@@ -1334,3 +1334,178 @@ describe('cardStore persistence', () => {
     expect(store.activeTimeTraps[0]!.triggeredAt!.toISOString()).toBe(triggeredDate.toISOString())
   })
 })
+
+describe('cardStore activateCurseManually (PHYS-002)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  describe('activating valid curse', () => {
+    it('should add curse to active curses', () => {
+      const store = useCardStore()
+
+      const result = store.activateCurseManually('curse-lemon-phylactery')
+
+      expect(result.success).toBe(true)
+      expect(store.activeCurses.length).toBe(1)
+      expect(store.activeCurses[0]!.curseId).toBe('curse-lemon-phylactery')
+    })
+
+    it('should set correct curse properties from curse definition', () => {
+      const store = useCardStore()
+
+      store.activateCurseManually('curse-lemon-phylactery')
+
+      const curse = store.activeCurses[0]!
+      expect(curse.name).toBe('Lemon Phylactery')
+      expect(curse.description).toBe('Seekers must find and wear lemons')
+      expect(curse.effect).toContain('Seekers must each find a lemon')
+      expect(curse.castingCost).toBe('Discard a powerup')
+      expect(curse.blocksQuestions).toBe(true)
+      expect(curse.blocksTransit).toBe(false)
+    })
+
+    it('should assign unique instance ID to activated curse', () => {
+      const store = useCardStore()
+
+      store.activateCurseManually('curse-lemon-phylactery')
+      store.activateCurseManually('curse-luxury-car')
+
+      expect(store.activeCurses[0]!.instanceId).toBeDefined()
+      expect(store.activeCurses[1]!.instanceId).toBeDefined()
+      expect(store.activeCurses[0]!.instanceId).not.toBe(store.activeCurses[1]!.instanceId)
+    })
+
+    it('should set activatedAt timestamp', () => {
+      const store = useCardStore()
+      const beforeActivation = new Date()
+
+      store.activateCurseManually('curse-lemon-phylactery')
+
+      const afterActivation = new Date()
+      const curse = store.activeCurses[0]!
+      expect(curse.activatedAt).toBeInstanceOf(Date)
+      expect(curse.activatedAt.getTime()).toBeGreaterThanOrEqual(beforeActivation.getTime())
+      expect(curse.activatedAt.getTime()).toBeLessThanOrEqual(afterActivation.getTime())
+    })
+
+    it('should set durationMinutes for time-based curses', () => {
+      const store = useCardStore()
+
+      // Gambler's Feet has durationMinutes: { small: 20, medium: 40, large: 60 }
+      store.activateCurseManually('curse-gamblers-feet')
+
+      const curse = store.activeCurses[0]!
+      expect(curse.durationMinutes).toBeDefined()
+      expect(curse.durationMinutes!.small).toBe(20)
+      expect(curse.durationMinutes!.medium).toBe(40)
+      expect(curse.durationMinutes!.large).toBe(60)
+    })
+
+    it('should set penaltyMinutes for penalty curses', () => {
+      const store = useCardStore()
+
+      // Lemon Phylactery has penaltyMinutes: { small: 30, medium: 45, large: 60 }
+      store.activateCurseManually('curse-lemon-phylactery')
+
+      const curse = store.activeCurses[0]!
+      expect(curse.penaltyMinutes).toBeDefined()
+      expect(curse.penaltyMinutes!.small).toBe(30)
+      expect(curse.penaltyMinutes!.medium).toBe(45)
+      expect(curse.penaltyMinutes!.large).toBe(60)
+    })
+
+    it('should mark until-found curses appropriately', () => {
+      const store = useCardStore()
+
+      // Water Weight effect includes "rest of run"
+      store.activateCurseManually('curse-water-weight')
+
+      const curse = store.activeCurses[0]!
+      expect(curse.untilFound).toBe(true)
+    })
+
+    it('should return the activated curse', () => {
+      const store = useCardStore()
+
+      const result = store.activateCurseManually('curse-lemon-phylactery')
+
+      expect(result.activatedCurse).toBeDefined()
+      expect(result.activatedCurse!.curseId).toBe('curse-lemon-phylactery')
+    })
+  })
+
+  describe('error handling', () => {
+    it('should return error for invalid curse ID', () => {
+      const store = useCardStore()
+
+      const result = store.activateCurseManually('invalid-curse-id')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Invalid curse ID')
+      expect(store.activeCurses.length).toBe(0)
+    })
+
+    it('should return error for empty curse ID', () => {
+      const store = useCardStore()
+
+      const result = store.activateCurseManually('')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Invalid curse ID')
+      expect(store.activeCurses.length).toBe(0)
+    })
+  })
+
+  describe('multiple curse activation', () => {
+    it('should allow activating multiple different curses', () => {
+      const store = useCardStore()
+
+      store.activateCurseManually('curse-lemon-phylactery')
+      store.activateCurseManually('curse-luxury-car')
+      store.activateCurseManually('curse-gamblers-feet')
+
+      expect(store.activeCurses.length).toBe(3)
+    })
+
+    it('should allow activating the same curse multiple times', () => {
+      const store = useCardStore()
+
+      store.activateCurseManually('curse-lemon-phylactery')
+      store.activateCurseManually('curse-lemon-phylactery')
+
+      expect(store.activeCurses.length).toBe(2)
+      expect(store.activeCurses[0]!.instanceId).not.toBe(store.activeCurses[1]!.instanceId)
+    })
+  })
+
+  describe('does not affect hand or deck', () => {
+    it('should not modify hand when activating curse', () => {
+      const store = useCardStore()
+      store.drawCards(3)
+      const handBefore = [...store.hand]
+
+      store.activateCurseManually('curse-lemon-phylactery')
+
+      expect(store.hand).toEqual(handBefore)
+    })
+
+    it('should not modify deck size when activating curse', () => {
+      const store = useCardStore()
+      const deckSizeBefore = store.deckSize
+
+      store.activateCurseManually('curse-lemon-phylactery')
+
+      expect(store.deckSize).toBe(deckSizeBefore)
+    })
+
+    it('should not add to discard pile when activating curse', () => {
+      const store = useCardStore()
+      const discardSizeBefore = store.discardPile.length
+
+      store.activateCurseManually('curse-lemon-phylactery')
+
+      expect(store.discardPile.length).toBe(discardSizeBefore)
+    })
+  })
+})

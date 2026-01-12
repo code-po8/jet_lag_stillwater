@@ -3145,45 +3145,90 @@ describe('AddCardModal', () => {
 
 ### PHYS-002: Manual Curse Activation for Seekers
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** CARD-006a
 
 **Story:** As a seeker in standalone mode, I need to manually activate curses that the hider announced in the real world so that the app can track my restrictions.
 
 **Acceptance Criteria:**
 
-- [ ] "Hider Played Curse" button available in SeekerView
-- [ ] Modal shows list of all available curse cards
-- [ ] Each curse shows: name, effect, duration (if applicable)
-- [ ] Selecting a curse adds it to active curses for the seeker
-- [ ] Curse display shows the manually-added curse with its restrictions
-- [ ] Time-based curses start their countdown timer upon activation
-- [ ] Curses can be cleared when conditions are met (same as existing behavior)
+- [x] "Hider Played Curse" button available in SeekerView
+- [x] Modal shows list of all available curse cards
+- [x] Each curse shows: name, effect, duration (if applicable)
+- [x] Selecting a curse adds it to active curses for the seeker
+- [x] Curse display shows the manually-added curse with its restrictions
+- [x] Time-based curses start their countdown timer upon activation
+- [x] Curses can be cleared when conditions are met (same as existing behavior)
 
 **Size:** S
 
-**Tests to Write:**
+**Tests Written (46 tests):**
 
 ```typescript
-describe('manual curse activation for seekers', () => {
-  describe('curse trigger UI', () => {
+// cardStore.spec.ts - 15 tests for activateCurseManually
+describe('cardStore activateCurseManually (PHYS-002)', () => {
+  describe('activating valid curse', () => {
+    it('should add curse to active curses')
+    it('should set correct curse properties from curse definition')
+    it('should assign unique instance ID to activated curse')
+    it('should set activatedAt timestamp')
+    it('should set durationMinutes for time-based curses')
+    it('should set penaltyMinutes for penalty curses')
+    it('should mark until-found curses appropriately')
+    it('should return the activated curse')
+  })
+  describe('error handling', () => {
+    it('should return error for invalid curse ID')
+    it('should return error for empty curse ID')
+  })
+  describe('multiple curse activation', () => {
+    it('should allow activating multiple different curses')
+    it('should allow activating the same curse multiple times')
+  })
+  describe('does not affect hand or deck', () => {
+    it('should not modify hand when activating curse')
+    it('should not modify deck size when activating curse')
+    it('should not add to discard pile when activating curse')
+  })
+})
+
+// CurseActivationModal.spec.ts - 24 tests for component
+describe('CurseActivationModal', () => {
+  describe('visibility')
+  describe('header and instructions')
+  describe('curse list display')
+  describe('curse selection')
+  describe('confirm button')
+  describe('cancel button')
+  describe('curse effect display')
+  describe('mobile-friendly design')
+  describe('accessibility')
+})
+
+// SeekerView.spec.ts - 7 tests for integration
+describe('SeekerView curse activation UI (PHYS-002)', () => {
+  describe('curse trigger button', () => {
     it('should show "Hider Played Curse" button in seeker view')
     it('should open curse selection modal when button clicked')
-    it('should display all available curse cards')
   })
   describe('curse activation', () => {
-    it('should add selected curse to active curses')
+    it('should add selected curse to active curses when confirmed')
     it('should start countdown for time-based curses')
     it('should show curse restrictions in curse display')
+    it('should close modal after confirmation')
+    it('should close modal when cancel is clicked')
   })
 })
 ```
 
 **Implementation Notes:**
 
-- Add `activateCurseManually(curseId)` action to cardStore
-- Reuse existing CurseDisplay component for showing active curses
-- Curses are defined in `CURSE_CARDS` array in card types
+- Added `activateCurseManually(curseId)` action to cardStore that creates ActiveCurse without needing card in hand
+- Created `CurseActivationModal.vue` component with full curse card selection UI
+- Added "Hider Played Curse" button to SeekerView with lightning bolt icon
+- Modal shows all 23 curses with name, description, effect, and duration badges
+- Selected curse is immediately added to activeCurses and shown in existing CurseDisplay
+- Time-based curses automatically start countdown using existing CurseDisplay timer logic
 
 ---
 
@@ -3406,10 +3451,10 @@ describe('room creation and join', () => {
 | 5: Mobile UX Polish           | 4       | 4        | 0         |
 | 6: Developer Tools            | 1       | 0        | 1         |
 | 7: Question UX Improvements   | 2       | 2        | 0         |
-| 8: Physical Play & Standalone | 3       | 1        | 2         |
+| 8: Physical Play & Standalone | 3       | 2        | 1         |
 | 9: User Guides                | 2       | 0        | 2         |
 | 10: Multiplayer Sync          | 4       | 0        | 4         |
-| **Total**                     | **59**  | **50**   | **9**     |
+| **Total**                     | **59**  | **51**   | **8**     |
 
 ---
 
@@ -3455,13 +3500,13 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 **Epic 8: Physical Play & Standalone Mode**
 
 - ~~**PHYS-001**: Manual Card Entry for Hiders~~ ✅ COMPLETE
-- **PHYS-002**: Manual Curse Activation for Seekers (depends on CARD-006a ✅)
-- **PHYS-003**: Standalone Mode Documentation (depends on PHYS-001 ✅, PHYS-002 ⏳)
+- ~~**PHYS-002**: Manual Curse Activation for Seekers~~ ✅ COMPLETE
+- **PHYS-003**: Standalone Mode Documentation (depends on PHYS-001 ✅, PHYS-002 ✅)
 
 **Epic 9: User Guides**
 
 - **GUIDE-001**: Hider Mode User Guide (depends on PHYS-001 ✅, DEV-001 ⏳)
-- **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002 ⏳, QUX-001 ✅)
+- **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002 ✅, QUX-001 ✅)
 
 **Epic 10: Multiplayer Sync**
 
@@ -3489,4 +3534,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 11, 2026 - Completed PHYS-001 (Manual Card Entry for Hiders)_
+_Last updated: January 12, 2026 - Completed PHYS-002 (Manual Curse Activation for Seekers)_
