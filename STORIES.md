@@ -3323,29 +3323,49 @@ In-app documentation to help players understand how to use the app.
 
 ### GUIDE-002: Seeker Mode User Guide
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** PHYS-002, QUX-001
 
 **Story:** As a seeker, I need an in-app guide explaining how to use all the seeker features so that I can play effectively.
 
 **Acceptance Criteria:**
 
-- [ ] Guide accessible from SeekerView (help icon or menu item)
-- [ ] Covers: hiding period and what seekers do during it
-- [ ] Covers: browsing and asking questions
-- [ ] Covers: question categories and draw/keep rules
-- [ ] Covers: recording answers
-- [ ] Covers: active curses and their restrictions
-- [ ] Covers: time traps and what happens when triggered
-- [ ] Covers: end-game phase and finding the hider
-- [ ] Mobile-friendly layout (scrollable, readable)
+- [x] Guide accessible from SeekerView (help icon or menu item)
+- [x] Covers: hiding period and what seekers do during it
+- [x] Covers: browsing and asking questions
+- [x] Covers: question categories and draw/keep rules
+- [x] Covers: recording answers
+- [x] Covers: active curses and their restrictions
+- [x] Covers: time traps and what happens when triggered
+- [x] Covers: end-game phase and finding the hider
+- [x] Mobile-friendly layout (scrollable, readable)
 
 **Size:** M
 
+**Tests Written (30 tests):**
+
+- SeekerGuide.spec.ts (27 tests):
+  - Visibility tests (3): modal renders/hides based on isOpen prop
+  - Header tests (2): displays title and close button
+  - Content sections tests (7): all 7 guide sections present with correct titles
+  - Section content details tests (7): each section contains expected content
+  - Interactions tests (3): close button, overlay click, content click handling
+  - Collapsible sections tests (2): expand/collapse functionality
+  - Mobile-friendly layout tests (1): scrollable content area
+  - Accessibility tests (2): aria-modal and aria-labelledby attributes
+
+- RoleBasedViews.spec.ts integration tests (3 tests):
+  - Help button displays in SeekerView
+  - Clicking help button opens guide modal
+  - Clicking close button closes guide modal
+
 **Implementation Notes:**
 
-- Mirror structure of hider guide for consistency
-- Could share common help components with GUIDE-001
+- Mirrors structure of hider guide for consistency
+- SeekerGuide.vue component with 7 collapsible sections
+- Help button added to SeekerView header row
+- Blue theme (seeker color) for guide header styling
+- Sections cover: hiding period, asking questions, question categories, recording answers, active curses, time traps, end-game phase
 
 ---
 
@@ -3480,9 +3500,9 @@ describe('room creation and join', () => {
 | 6: Developer Tools            | 1       | 1        | 0         |
 | 7: Question UX Improvements   | 2       | 2        | 0         |
 | 8: Physical Play & Standalone | 3       | 2        | 1         |
-| 9: User Guides                | 2       | 1        | 1         |
+| 9: User Guides                | 2       | 2        | 0         |
 | 10: Multiplayer Sync          | 4       | 0        | 4         |
-| **Total**                     | **59**  | **53**   | **6**     |
+| **Total**                     | **59**  | **54**   | **5**     |
 
 ---
 

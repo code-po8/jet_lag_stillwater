@@ -245,6 +245,36 @@ describe('SeekerView', () => {
       expect(screen.getByTestId('role-indicator')).toHaveTextContent(/seeker/i)
     })
   })
+
+  describe('help guide (GUIDE-002)', () => {
+    it('should display help button', () => {
+      renderSeekerView()
+      expect(screen.getByTestId('seeker-help-btn')).toBeInTheDocument()
+    })
+
+    it('should open help guide modal when help button clicked', async () => {
+      renderSeekerView()
+      const helpButton = screen.getByTestId('seeker-help-btn')
+      await fireEvent.click(helpButton)
+      await nextTick()
+      expect(screen.getByTestId('seeker-guide-modal')).toBeInTheDocument()
+    })
+
+    it('should close help guide when close button clicked', async () => {
+      renderSeekerView()
+      // Open the guide
+      const helpButton = screen.getByTestId('seeker-help-btn')
+      await fireEvent.click(helpButton)
+      await nextTick()
+      expect(screen.getByTestId('seeker-guide-modal')).toBeInTheDocument()
+
+      // Close the guide
+      const closeButton = screen.getByTestId('seeker-guide-close-btn')
+      await fireEvent.click(closeButton)
+      await nextTick()
+      expect(screen.queryByTestId('seeker-guide-modal')).not.toBeInTheDocument()
+    })
+  })
 })
 
 describe('GamePlayView (role toggle)', () => {
