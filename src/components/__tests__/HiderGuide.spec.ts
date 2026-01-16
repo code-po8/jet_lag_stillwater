@@ -287,4 +287,49 @@ describe('HiderGuide', () => {
       expect(title?.textContent).toMatch(/hider guide/i)
     })
   })
+
+  describe('standalone mode section (PHYS-003)', () => {
+    beforeEach(() => {
+      render(HiderGuide, {
+        props: { isOpen: true },
+      })
+    })
+
+    it('should have standalone mode section', () => {
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section).toBeInTheDocument()
+      const header = screen.getByTestId('guide-section-standalone-header')
+      expect(header.textContent).toMatch(/standalone mode/i)
+    })
+
+    it('should explain standalone mode concept', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/separate devices|independent/i)
+    })
+
+    it('should explain hider device setup', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/add card|manual/i)
+    })
+
+    it('should explain what needs to be communicated verbally', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/announce|communicate|tell|verbally/i)
+    })
+
+    it('should explain curse announcement to seekers', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/curse.*seeker|seeker.*curse/i)
+    })
+
+    it('should explain time trap announcement', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/time trap.*announce|announce.*time trap/i)
+    })
+  })
 })

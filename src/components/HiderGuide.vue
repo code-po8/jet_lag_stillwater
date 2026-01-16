@@ -19,6 +19,7 @@ const expandedSections = ref<Record<string, boolean>>({
   'time-traps': false,
   questions: false,
   move: false,
+  standalone: false,
 })
 
 function toggleSection(sectionId: string) {
@@ -403,6 +404,67 @@ function toggleSection(sectionId: string) {
               <strong>Warning:</strong> Move can only be used during the seeking phase, not during
               end-game when seekers are in your zone!
             </p>
+          </div>
+        </section>
+
+        <!-- Standalone Mode Section -->
+        <section
+          data-testid="guide-section-standalone"
+          class="guide-section"
+          :data-expanded="expandedSections.standalone"
+        >
+          <button
+            data-testid="guide-section-standalone-header"
+            class="guide-section-header"
+            @click="toggleSection('standalone')"
+          >
+            <span class="guide-section-icon text-slate-400">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"
+                />
+              </svg>
+            </span>
+            <span class="guide-section-title">Standalone Mode</span>
+            <span class="guide-section-chevron" :class="{ expanded: expandedSections.standalone }">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
+              </svg>
+            </span>
+          </button>
+          <div v-show="expandedSections.standalone" class="guide-section-content">
+            <p>
+              <strong>Standalone mode</strong> lets hiders and seekers use the app on separate
+              devices independently, without automatic synchronization.
+            </p>
+            <p><strong>Hider Device Setup:</strong></p>
+            <ul>
+              <li>Use "Add Card" to manually add cards from your physical deck</li>
+              <li>Track your time bonuses, powerups, and curses in the app</li>
+              <li>Play cards by selecting them from your hand</li>
+            </ul>
+            <p><strong>What You Must Announce to Seekers:</strong></p>
+            <ul>
+              <li>
+                <strong>Curses:</strong> When you play a curse, tell seekers the curse name so they
+                can activate it on their devices
+              </li>
+              <li>
+                <strong>Time Traps:</strong> When you set a time trap, announce the station/zone
+                name publicly
+              </li>
+              <li>
+                <strong>Question Answers:</strong> Communicate your answers verbally or via text
+                message
+              </li>
+              <li>
+                <strong>Veto/Randomize:</strong> Tell seekers if you veto or randomize a question
+              </li>
+            </ul>
+            <p><strong>Game End:</strong></p>
+            <ul>
+              <li>When found, announce your final time bonuses to calculate your score</li>
+            </ul>
           </div>
         </section>
       </div>

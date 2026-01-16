@@ -18,6 +18,7 @@ const expandedSections = ref<Record<string, boolean>>({
   curses: false,
   'time-traps': false,
   'end-game': false,
+  standalone: false,
 })
 
 function toggleSection(sectionId: string) {
@@ -352,6 +353,69 @@ function toggleSection(sectionId: string) {
               The game ends when you physically locate and tag the hider. Their total hiding time is
               then recorded!
             </p>
+          </div>
+        </section>
+
+        <!-- Standalone Mode Section -->
+        <section
+          data-testid="guide-section-standalone"
+          class="guide-section"
+          :data-expanded="expandedSections.standalone"
+        >
+          <button
+            data-testid="guide-section-standalone-header"
+            class="guide-section-header"
+            @click="toggleSection('standalone')"
+          >
+            <span class="guide-section-icon text-slate-400">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"
+                />
+              </svg>
+            </span>
+            <span class="guide-section-title">Standalone Mode</span>
+            <span class="guide-section-chevron" :class="{ expanded: expandedSections.standalone }">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
+              </svg>
+            </span>
+          </button>
+          <div v-show="expandedSections.standalone" class="guide-section-content">
+            <p>
+              <strong>Standalone mode</strong> lets hiders and seekers use the app on separate
+              devices independently, without automatic synchronization.
+            </p>
+            <p><strong>Seeker Device Setup:</strong></p>
+            <ul>
+              <li>Use "Hider Played Curse" to manually activate curses announced by the hider</li>
+              <li>Track your question history and answers in the app</li>
+              <li>Mark time traps as triggered when you enter a trapped zone</li>
+            </ul>
+            <p><strong>What the Hider Will Announce to You:</strong></p>
+            <ul>
+              <li>
+                <strong>Curses:</strong> When the hider plays a curse, they'll tell you the name -
+                tap "Hider Played Curse" to activate it
+              </li>
+              <li>
+                <strong>Time Traps:</strong> The hider announces trap locations publicly - track
+                them and trigger if you enter
+              </li>
+              <li>
+                <strong>Question Answers:</strong> Record the hider's verbal or text answers in the
+                app
+              </li>
+              <li>
+                <strong>Veto/Randomize:</strong> The hider will tell you if they veto or randomize a
+                question
+              </li>
+            </ul>
+            <p><strong>Communication Tips:</strong></p>
+            <ul>
+              <li>Use a group chat or walkie-talkies for real-time communication</li>
+              <li>Confirm card draw counts verbally after each question</li>
+            </ul>
           </div>
         </section>
       </div>

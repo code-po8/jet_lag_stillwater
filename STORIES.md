@@ -3243,26 +3243,48 @@ describe('SeekerView curse activation UI (PHYS-002)', () => {
 
 ### PHYS-003: Standalone Mode Documentation
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** PHYS-001, PHYS-002
 
 **Story:** As a player, I need to understand how to use the app in standalone mode (without multiplayer sync) so that hiders and seekers can use separate devices independently.
 
 **Acceptance Criteria:**
 
-- [ ] Document explains standalone mode concept
-- [ ] Instructions for hider device setup
-- [ ] Instructions for seeker device setup
-- [ ] Explains what needs to be communicated verbally between players
-- [ ] Covers: game start, questions, curses, time traps, game end
-- [ ] Accessible from in-app help/guide
+- [x] Document explains standalone mode concept
+- [x] Instructions for hider device setup
+- [x] Instructions for seeker device setup
+- [x] Explains what needs to be communicated verbally between players
+- [x] Covers: game start, questions, curses, time traps, game end
+- [x] Accessible from in-app help/guide
 
 **Size:** S
 
-**Notes:**
+**Tests Written (13 tests):**
 
-- This is documentation content, not code
-- Will be incorporated into user guides (GUIDE-001, GUIDE-002)
+- HiderGuide.spec.ts (6 tests for standalone mode section):
+  - should have standalone mode section
+  - should explain standalone mode concept
+  - should explain hider device setup
+  - should explain what needs to be communicated verbally
+  - should explain curse announcement to seekers
+  - should explain time trap announcement
+
+- SeekerGuide.spec.ts (7 tests for standalone mode section):
+  - should have standalone mode section
+  - should explain standalone mode concept
+  - should explain seeker device setup
+  - should explain what hider communicates to seekers
+  - should explain how to receive curse announcements
+  - should explain how to handle time trap announcements
+  - should explain question and answer flow
+
+**Implementation Notes:**
+
+- Added "Standalone Mode" section to HiderGuide.vue (9th section)
+- Added "Standalone Mode" section to SeekerGuide.vue (8th section)
+- Hider guide covers: manual card entry, curse announcements, time trap announcements, question answers, game end
+- Seeker guide covers: "Hider Played Curse" button, time trap handling, question/answer flow, communication tips
+- Both guides accessible from existing help buttons in HiderView and SeekerView
 
 ---
 
@@ -3499,10 +3521,10 @@ describe('room creation and join', () => {
 | 5: Mobile UX Polish           | 4       | 4        | 0         |
 | 6: Developer Tools            | 1       | 1        | 0         |
 | 7: Question UX Improvements   | 2       | 2        | 0         |
-| 8: Physical Play & Standalone | 3       | 2        | 1         |
+| 8: Physical Play & Standalone | 3       | 3        | 0         |
 | 9: User Guides                | 2       | 2        | 0         |
 | 10: Multiplayer Sync          | 4       | 0        | 4         |
-| **Total**                     | **59**  | **54**   | **5**     |
+| **Total**                     | **59**  | **55**   | **4**     |
 
 ---
 
@@ -3549,16 +3571,16 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 - ~~**PHYS-001**: Manual Card Entry for Hiders~~ ✅ COMPLETE
 - ~~**PHYS-002**: Manual Curse Activation for Seekers~~ ✅ COMPLETE
-- **PHYS-003**: Standalone Mode Documentation (depends on PHYS-001 ✅, PHYS-002 ✅)
+- ~~**PHYS-003**: Standalone Mode Documentation~~ ✅ COMPLETE
 
 **Epic 9: User Guides**
 
 - ~~**GUIDE-001**: Hider Mode User Guide~~ ✅ COMPLETE
-- **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002 ✅, QUX-001 ✅)
+- ~~**GUIDE-002**: Seeker Mode User Guide~~ ✅ COMPLETE
 
 **Epic 10: Multiplayer Sync**
 
-- **MULTI-001**: Multiplayer Architecture Planning (no dependencies)
+- **MULTI-001**: Multiplayer Architecture Planning (no dependencies) - READY
 - **MULTI-002**: Room Creation & Join Flow (depends on MULTI-001) ⏳
 - **MULTI-003**: Real-Time State Synchronization (depends on MULTI-002) ⏳
 - **MULTI-004**: Offline Handling & Reconnection (depends on MULTI-003) ⏳
@@ -3582,4 +3604,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 16, 2026 - Completed DEV-001 (Skip Hiding Period Button)_
+_Last updated: January 16, 2026 - Completed PHYS-003 (Standalone Mode Documentation)_

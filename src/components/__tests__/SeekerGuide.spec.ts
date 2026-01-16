@@ -263,4 +263,55 @@ describe('SeekerGuide', () => {
       expect(title?.textContent).toMatch(/seeker guide/i)
     })
   })
+
+  describe('standalone mode section (PHYS-003)', () => {
+    beforeEach(() => {
+      render(SeekerGuide, {
+        props: { isOpen: true },
+      })
+    })
+
+    it('should have standalone mode section', () => {
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section).toBeInTheDocument()
+      const header = screen.getByTestId('guide-section-standalone-header')
+      expect(header.textContent).toMatch(/standalone mode/i)
+    })
+
+    it('should explain standalone mode concept', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/separate devices|independent/i)
+    })
+
+    it('should explain seeker device setup', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/hider played curse|manual/i)
+    })
+
+    it('should explain what hider communicates to seekers', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/announce|communicate|tell|verbally/i)
+    })
+
+    it('should explain how to receive curse announcements', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/curse/i)
+    })
+
+    it('should explain how to handle time trap announcements', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/time trap/i)
+    })
+
+    it('should explain question and answer flow', async () => {
+      await fireEvent.click(screen.getByTestId('guide-section-standalone-header'))
+      const section = screen.getByTestId('guide-section-standalone')
+      expect(section.textContent).toMatch(/question|answer/i)
+    })
+  })
 })
