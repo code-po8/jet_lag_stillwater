@@ -3274,31 +3274,50 @@ In-app documentation to help players understand how to use the app.
 
 ### GUIDE-001: Hider Mode User Guide
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** PHYS-001, DEV-001
 
 **Story:** As a hider, I need an in-app guide explaining how to use all the hider features so that I can play effectively.
 
 **Acceptance Criteria:**
 
-- [ ] Guide accessible from HiderView (help icon or menu item)
-- [ ] Covers: hiding period timer and what to do
-- [ ] Covers: card hand - viewing, understanding card types
-- [ ] Covers: playing powerup cards (each type explained)
-- [ ] Covers: playing curse cards and their effects
-- [ ] Covers: time bonuses and how they work
-- [ ] Covers: time traps and how to set them
-- [ ] Covers: answering questions and veto/randomize options
-- [ ] Covers: using the Move powerup
-- [ ] Mobile-friendly layout (scrollable, readable)
+- [x] Guide accessible from HiderView (help icon or menu item)
+- [x] Covers: hiding period timer and what to do
+- [x] Covers: card hand - viewing, understanding card types
+- [x] Covers: playing powerup cards (each type explained)
+- [x] Covers: playing curse cards and their effects
+- [x] Covers: time bonuses and how they work
+- [x] Covers: time traps and how to set them
+- [x] Covers: answering questions and veto/randomize options
+- [x] Covers: using the Move powerup
+- [x] Mobile-friendly layout (scrollable, readable)
 
 **Size:** M
 
+**Tests Written (32 tests in HiderGuide.spec.ts):**
+
+- Visibility tests (3): modal renders/hides based on isOpen prop
+- Header tests (2): displays title and close button
+- Content sections tests (8): all 8 guide sections present with correct titles
+- Section content details tests (8): each section contains expected content
+- Interactions tests (3): close button, overlay click, content click handling
+- Collapsible sections tests (2): expand/collapse functionality
+- Mobile-friendly layout tests (1): scrollable content area
+- Accessibility tests (2): aria-modal and aria-labelledby attributes
+
+**Integration tests (3 tests in RoleBasedViews.spec.ts):**
+
+- Help button displays in HiderView
+- Clicking help button opens guide modal
+- Clicking close button closes guide modal
+
 **Implementation Notes:**
 
-- Could be a modal, slide-out panel, or dedicated route
-- Consider step-by-step walkthrough vs reference guide format
-- Include visual examples where helpful
+- Implemented as a modal component (HiderGuide.vue)
+- Collapsible accordion-style sections for easy navigation
+- 8 content sections covering all hider features
+- Help icon button added to HiderView header row
+- Mobile-friendly with scrollable content and touch-friendly targets
 
 ---
 
@@ -3461,9 +3480,9 @@ describe('room creation and join', () => {
 | 6: Developer Tools            | 1       | 1        | 0         |
 | 7: Question UX Improvements   | 2       | 2        | 0         |
 | 8: Physical Play & Standalone | 3       | 2        | 1         |
-| 9: User Guides                | 2       | 0        | 2         |
+| 9: User Guides                | 2       | 1        | 1         |
 | 10: Multiplayer Sync          | 4       | 0        | 4         |
-| **Total**                     | **59**  | **52**   | **7**     |
+| **Total**                     | **59**  | **53**   | **6**     |
 
 ---
 
@@ -3514,7 +3533,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 9: User Guides**
 
-- **GUIDE-001**: Hider Mode User Guide (depends on PHYS-001 ✅, DEV-001 ✅)
+- ~~**GUIDE-001**: Hider Mode User Guide~~ ✅ COMPLETE
 - **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002 ✅, QUX-001 ✅)
 
 **Epic 10: Multiplayer Sync**

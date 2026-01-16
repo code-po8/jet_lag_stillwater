@@ -12,6 +12,7 @@ import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionResponseTimer from '@/components/QuestionResponseTimer.vue'
 import AddCardModal from '@/components/AddCardModal.vue'
 import DevSkipHidingPeriod from '@/components/DevSkipHidingPeriod.vue'
+import HiderGuide from '@/components/HiderGuide.vue'
 import type { AddCardOptions } from '@/stores/cardStore'
 import { GameSize } from '@/types/question'
 import { CardType, PowerupType } from '@/types/card'
@@ -34,6 +35,9 @@ const keepCount = ref(0)
 
 // State for AddCardModal (PHYS-001)
 const isAddCardModalOpen = ref(false)
+
+// State for HiderGuide (GUIDE-001)
+const isHiderGuideOpen = ref(false)
 
 // Computed properties
 const currentPhase = computed(() => gameStore.currentPhase)
@@ -252,14 +256,28 @@ function handleAddCardCancel() {
 
 <template>
   <div data-testid="hider-view" class="hider-view">
-    <!-- Role Indicator -->
-    <div data-testid="role-indicator" class="hider-role-indicator">
-      <svg class="hider-role-icon" viewBox="0 0 24 24" fill="currentColor">
-        <path
-          d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-        />
-      </svg>
-      <span>Hider</span>
+    <!-- Role Indicator with Help Button -->
+    <div class="hider-header-row">
+      <div data-testid="role-indicator" class="hider-role-indicator">
+        <svg class="hider-role-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+          />
+        </svg>
+        <span>Hider</span>
+      </div>
+      <button
+        data-testid="hider-help-btn"
+        class="hider-help-btn"
+        aria-label="Open hider guide"
+        @click="isHiderGuideOpen = true"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"
+          />
+        </svg>
+      </button>
     </div>
 
     <!-- Phase Status -->
@@ -390,6 +408,9 @@ function handleAddCardCancel() {
       @confirm="handleAddCardConfirm"
       @cancel="handleAddCardCancel"
     />
+
+    <!-- Hider Guide (GUIDE-001) -->
+    <HiderGuide :is-open="isHiderGuideOpen" @close="isHiderGuideOpen = false" />
   </div>
 </template>
 
@@ -401,17 +422,48 @@ function handleAddCardCancel() {
   padding: 1rem;
 }
 
+/* Header row with role indicator and help button */
+.hider-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* Role indicator */
 .hider-role-indicator {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem;
   font-family: var(--font-display);
   font-size: 1.25rem;
   letter-spacing: 0.1em;
   color: var(--color-role-hider);
+}
+
+/* Help button */
+.hider-help-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--color-ui-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hider-help-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.hider-help-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .hider-role-icon {
