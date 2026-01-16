@@ -11,6 +11,7 @@ import PowerupMoveModal from '@/components/PowerupMoveModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionResponseTimer from '@/components/QuestionResponseTimer.vue'
 import AddCardModal from '@/components/AddCardModal.vue'
+import DevSkipHidingPeriod from '@/components/DevSkipHidingPeriod.vue'
 import type { AddCardOptions } from '@/stores/cardStore'
 import { GameSize } from '@/types/question'
 import { CardType, PowerupType } from '@/types/card'
@@ -250,14 +251,19 @@ function handleAddCardCancel() {
 </script>
 
 <template>
-  <div data-testid="hider-view" class="flex flex-col gap-4 p-4">
+  <div data-testid="hider-view" class="hider-view">
     <!-- Role Indicator -->
-    <div data-testid="role-indicator" class="text-center text-xl font-bold text-amber-400">
-      Hider
+    <div data-testid="role-indicator" class="hider-role-indicator">
+      <svg class="hider-role-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path
+          d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+        />
+      </svg>
+      <span>Hider</span>
     </div>
 
     <!-- Phase Status -->
-    <div data-testid="phase-status" class="rounded-lg bg-slate-800 p-3 text-center text-slate-300">
+    <div data-testid="phase-status" class="hider-phase-status">
       {{ getPhaseDisplayText() }}
     </div>
 
@@ -265,29 +271,24 @@ function handleAddCardCancel() {
     <div
       v-if="gameStore.isHiderMoving"
       data-testid="move-in-progress-banner"
-      class="rounded-lg bg-amber-900 p-4"
+      class="hider-move-banner"
     >
-      <div class="mb-3 flex items-center gap-2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-6 w-6 text-amber-400"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
+      <div class="hider-move-header">
+        <svg class="hider-move-icon" viewBox="0 0 20 20" fill="currentColor">
           <path
             fill-rule="evenodd"
             d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
             clip-rule="evenodd"
           />
         </svg>
-        <span class="text-lg font-bold text-amber-200">Moving to New Zone</span>
+        <span class="hider-move-title">Moving to New Zone</span>
       </div>
-      <p class="mb-4 text-amber-200">
+      <p class="hider-move-text">
         Travel to your new hiding spot. The hiding timer is paused and seekers are frozen.
       </p>
       <button
         data-testid="confirm-new-zone-btn"
-        class="min-h-11 w-full rounded-lg bg-amber-500 px-4 py-3 font-bold text-white transition-colors hover:bg-amber-400"
+        class="btn-show btn-show-hider hider-move-btn"
         @click="handleConfirmNewZone"
       >
         Confirm New Zone
@@ -297,29 +298,46 @@ function handleAddCardCancel() {
     <!-- Hiding Period Timer -->
     <HidingPeriodTimer v-if="isHidingPeriod" role="hider" />
 
+    <!-- Dev Skip Button (only in dev mode during hiding period) -->
+    <DevSkipHidingPeriod />
+
     <!-- Question Response Timer -->
     <QuestionResponseTimer role="hider" :game-size="props.gameSize ?? GameSize.Small" />
 
     <!-- Time Bonus Total -->
-    <div
-      data-testid="time-bonus-total"
-      class="flex items-center justify-between rounded-lg bg-green-900/50 p-4"
-    >
-      <span class="text-lg font-medium text-green-200">Total Time Bonus</span>
-      <span class="text-2xl font-bold text-green-400">+{{ totalTimeBonus }} min</span>
+    <div data-testid="time-bonus-total" class="stat-card stat-card-green hider-time-bonus">
+      <div class="hider-time-bonus-info">
+        <svg class="hider-time-bonus-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"
+          />
+        </svg>
+        <span class="stat-card-label">Total Time Bonus</span>
+      </div>
+      <span class="stat-card-value hider-time-value">+{{ totalTimeBonus }} min</span>
     </div>
 
     <!-- Cards Section -->
-    <section data-testid="hider-cards-section" class="flex-1">
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-white">Your Cards</h2>
+    <section data-testid="hider-cards-section" class="hider-cards-section">
+      <div class="hider-cards-header">
+        <h2 class="hider-cards-title">
+          <svg class="hider-cards-title-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M21.47 4.35l-1.34-.56v9.03l2.43-5.86c.41-1.02-.06-2.19-1.09-2.61zm-19.5 3.7L6.93 20a2.01 2.01 0 001.81 1.26c.26 0 .53-.05.79-.16l7.37-3.05c.75-.31 1.21-1.05 1.23-1.79.01-.26-.04-.55-.13-.81L13 3.5c-.29-.72-.97-1.17-1.73-1.17-.27 0-.54.05-.79.15L3.11 5.54c-1.03.42-1.51 1.6-1.14 2.51z"
+            />
+          </svg>
+          Your Cards
+        </h2>
         <button
           data-testid="add-card-btn"
-          class="min-h-11 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+          class="btn-show btn-show-secondary hider-add-card-btn"
           :disabled="cardStore.isHandFull"
           @click="openAddCardModal"
         >
-          + Add Card
+          <svg viewBox="0 0 24 24" fill="currentColor" class="hider-add-icon">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+          </svg>
+          Add Card
         </button>
       </div>
       <CardHand :game-size="props.gameSize ?? GameSize.Small" @card-select="handleCardSelect" />
@@ -374,3 +392,142 @@ function handleAddCardCancel() {
     />
   </div>
 </template>
+
+<style scoped>
+.hider-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+/* Role indicator */
+.hider-role-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+  color: var(--color-role-hider);
+}
+
+.hider-role-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Phase status */
+.hider-phase-status {
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  text-align: center;
+  color: var(--color-ui-text-secondary);
+  font-weight: 500;
+}
+
+/* Move banner */
+.hider-move-banner {
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(180, 83, 9, 0.15) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
+}
+
+.hider-move-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.hider-move-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--color-role-hider);
+}
+
+.hider-move-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  letter-spacing: 0.05em;
+  color: var(--color-role-hider);
+}
+
+.hider-move-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.hider-move-btn {
+  width: 100%;
+}
+
+/* Time bonus card */
+.hider-time-bonus {
+  padding: 1rem 1.25rem;
+}
+
+.hider-time-bonus-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hider-time-bonus-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-status-success);
+}
+
+.hider-time-value {
+  color: var(--color-status-success);
+}
+
+/* Cards section */
+.hider-cards-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.hider-cards-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0 0.25rem;
+}
+
+.hider-cards-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  letter-spacing: 0.05em;
+  color: white;
+}
+
+.hider-cards-title-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-brand-gold);
+}
+
+.hider-add-card-btn {
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.hider-add-icon {
+  width: 1rem;
+  height: 1rem;
+}
+</style>

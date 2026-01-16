@@ -2917,34 +2917,41 @@ Tools to help with local development and testing. Only visible/active when runni
 
 ### DEV-001: Skip Hiding Period Button
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** GS-001, GS-003
 
 **Story:** As a developer testing the game, I need to skip the 30-minute hiding period so that I can quickly test the seeking and end-game phases.
 
 **Acceptance Criteria:**
 
-- [ ] Button only appears when `import.meta.env.DEV` is true (dev mode)
-- [ ] Button only appears during the `hiding-period` phase
-- [ ] Button appears in both HiderView and SeekerView
-- [ ] Clicking the button calls `gameStore.startSeeking()` to transition to seeking phase
-- [ ] Button is visually distinct (e.g., yellow/warning style with "DEV" badge) to clearly indicate it's a dev tool
-- [ ] Button has accessible label indicating its purpose
+- [x] Button only appears when `import.meta.env.DEV` is true (dev mode)
+- [x] Button only appears during the `hiding-period` phase
+- [x] Button appears in both HiderView and SeekerView
+- [x] Clicking the button calls `gameStore.startSeeking()` to transition to seeking phase
+- [x] Button is visually distinct (e.g., yellow/warning style with "DEV" badge) to clearly indicate it's a dev tool
+- [x] Button has accessible label indicating its purpose
 
 **Size:** S
 
-**Tests to Write:**
+**Tests Written (12 tests):**
 
 ```typescript
 describe('DevSkipHidingPeriod', () => {
   describe('visibility', () => {
     it('should not render in production mode')
     it('should render in dev mode during hiding period')
-    it('should not render during other game phases')
+    it('should not render during setup phase')
+    it('should not render during seeking phase')
+    it('should not render during end-game phase')
+    it('should not render during round-complete phase')
   })
   describe('functionality', () => {
     it('should call startSeeking when clicked')
     it('should transition game to seeking phase')
+  })
+  describe('visual styling', () => {
+    it('should display DEV badge')
+    it('should have visually distinct styling (warning/yellow appearance)')
   })
   describe('accessibility', () => {
     it('should have accessible label')
@@ -2955,9 +2962,11 @@ describe('DevSkipHidingPeriod', () => {
 
 **Implementation Notes:**
 
-- Consider creating a reusable `DevOnly` wrapper component for future dev tools
-- Button could be placed inside the HidingPeriodTimer component or as a separate component
-- Style with distinct "dev tool" appearance (e.g., dashed border, yellow background, "DEV" badge)
+- DevSkipHidingPeriod component created as standalone component
+- Button styled with yellow gradient background, dashed border, and red "DEV" badge
+- Integrated into both HiderView and SeekerView after HidingPeriodTimer
+- Uses `import.meta.env.DEV` for dev mode detection
+- Uses gameStore.currentPhase for phase detection
 
 ---
 
@@ -3449,12 +3458,12 @@ describe('room creation and join', () => {
 | 3: Card Management            | 12      | 12       | 0         |
 | 4: Game State                 | 7       | 7        | 0         |
 | 5: Mobile UX Polish           | 4       | 4        | 0         |
-| 6: Developer Tools            | 1       | 0        | 1         |
+| 6: Developer Tools            | 1       | 1        | 0         |
 | 7: Question UX Improvements   | 2       | 2        | 0         |
 | 8: Physical Play & Standalone | 3       | 2        | 1         |
 | 9: User Guides                | 2       | 0        | 2         |
 | 10: Multiplayer Sync          | 4       | 0        | 4         |
-| **Total**                     | **59**  | **51**   | **8**     |
+| **Total**                     | **59**  | **52**   | **7**     |
 
 ---
 
@@ -3490,7 +3499,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 6: Developer Tools**
 
-- **DEV-001**: Skip Hiding Period Button (depends on GS-001 ✅, GS-003 ✅)
+- ~~**DEV-001**: Skip Hiding Period Button~~ ✅ COMPLETE
 
 **Epic 7: Question UX Improvements**
 
@@ -3505,7 +3514,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 9: User Guides**
 
-- **GUIDE-001**: Hider Mode User Guide (depends on PHYS-001 ✅, DEV-001 ⏳)
+- **GUIDE-001**: Hider Mode User Guide (depends on PHYS-001 ✅, DEV-001 ✅)
 - **GUIDE-002**: Seeker Mode User Guide (depends on PHYS-002 ✅, QUX-001 ✅)
 
 **Epic 10: Multiplayer Sync**
@@ -3534,4 +3543,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 12, 2026 - Completed PHYS-002 (Manual Curse Activation for Seekers)_
+_Last updated: January 16, 2026 - Completed DEV-001 (Skip Hiding Period Button)_
