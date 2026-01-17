@@ -32,16 +32,24 @@ const keepingAll = computed(() => props.keepCount >= props.drawnCards.length)
 // How many cards are currently selected
 const selectedCount = computed(() => selectedCardIds.value.size)
 
-// Available hand slots
+// Available hand slots (raw value from store)
 const availableSlots = computed(() => cardStore.availableSlots)
 
-// Warning when kept cards would exceed hand limit
-const handLimitExceeded = computed(() => props.keepCount > availableSlots.value)
+// Effective available slots for keeping drawn cards
+// The drawnCards are ALREADY in the hand, so we need to account for that.
+// If we discard some drawn cards, we free up those slots.
+// effectiveAvailable = handLimit - (currentHandSize - drawnCardsCount)
+//                    = availableSlots + drawnCardsCount
+const effectiveAvailableSlots = computed(() => availableSlots.value + props.drawnCards.length)
 
-// How many extra cards need to be discarded from hand
+// Warning when kept cards would exceed hand limit
+// Only show warning when keeping cards would truly exceed the limit
+const handLimitExceeded = computed(() => props.keepCount > effectiveAvailableSlots.value)
+
+// How many extra cards need to be discarded from hand (not from drawn cards)
 const cardsToDiscardFromHand = computed(() => {
   if (!handLimitExceeded.value) return 0
-  return props.keepCount - availableSlots.value
+  return props.keepCount - effectiveAvailableSlots.value
 })
 
 // Is confirm button enabled?
@@ -57,7 +65,7 @@ watch(
       selectedCardIds.value = new Set()
     }
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 /**
@@ -142,9 +150,7 @@ function handleConfirm(): void {
       <div class="border-b border-slate-700 px-6 py-4">
         <h2 id="card-draw-title" class="text-xl font-bold text-white">Cards Drawn!</h2>
         <p class="mt-1 text-sm text-slate-300">
-          <template v-if="keepingAll">
-            Keeping all cards!
-          </template>
+          <template v-if="keepingAll"> Keeping all cards! </template>
           <template v-else>
             Select {{ keepCount }} card{{ keepCount > 1 ? 's' : '' }} to keep
           </template>
@@ -165,7 +171,10 @@ function handleConfirm(): void {
         class="mx-6 mt-4 rounded-lg border border-yellow-500/50 bg-yellow-900/30 p-3 text-sm text-yellow-200"
       >
         <span class="font-medium">Hand limit reached!</span>
-        You must discard {{ cardsToDiscardFromHand }} card{{ cardsToDiscardFromHand > 1 ? 's' : '' }} from hand to fit these.
+        You must discard {{ cardsToDiscardFromHand }} card{{
+          cardsToDiscardFromHand > 1 ? 's' : ''
+        }}
+        from hand to fit these.
       </div>
 
       <!-- Cards Container -->
@@ -180,7 +189,9 @@ function handleConfirm(): void {
           :class="[
             'min-h-[44px] cursor-pointer rounded-lg border-2 p-3 transition-all animate-card-reveal',
             getCardTypeClass(card),
-            isSelected(card) ? 'selected ring-2 ring-white ring-offset-2 ring-offset-slate-800' : 'opacity-70 hover:opacity-100',
+            isSelected(card)
+              ? 'selected ring-2 ring-white ring-offset-2 ring-offset-slate-800'
+              : 'opacity-70 hover:opacity-100',
             keepingAll ? 'cursor-default' : '',
           ]"
           :style="{ animationDelay: `${index * 100}ms` }"
@@ -201,7 +212,12 @@ function handleConfirm(): void {
               class="flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-white"
             >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
           </div>

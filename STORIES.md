@@ -2909,6 +2909,42 @@ describe('Design System Colors', () => {
 
 ---
 
+### UX-005: Auto-focus Player Name Input After Adding Player
+
+**Status:** `pending`
+**Depends On:** None
+
+**Story:** As a user setting up a game, after I add a player, the cursor should automatically return to the name input field so I can quickly add multiple players without clicking into the text box each time.
+
+**Acceptance Criteria:**
+
+- [ ] After clicking "Add" button, focus returns to player name input
+- [ ] After pressing Enter to add a player, focus remains in player name input
+- [ ] Focus behavior works on both desktop and mobile
+- [ ] Screen reader announces focus change appropriately
+
+**Size:** S
+
+**Tests Written (4 tests):**
+
+```typescript
+// GameSetupView.spec.ts - additional tests for focus behavior
+describe('player name input focus behavior (UX-005)', () => {
+  it('should focus player name input after clicking Add button')
+  it('should keep focus in player name input after pressing Enter to add')
+  it('should have input focused and ready for next entry')
+  it('should work correctly when adding multiple players in sequence')
+})
+```
+
+**Implementation Notes:**
+
+- Add `ref` to player name input element in GameSetupView.vue
+- Call `inputRef.value?.focus()` at end of `addPlayer()` function
+- Use `nextTick()` if needed to ensure DOM update completes before focus
+
+---
+
 ## Epic 6: Developer Tools
 
 Tools to help with local development and testing. Only visible/active when running in dev mode (`npm run dev`).
@@ -3509,22 +3545,192 @@ describe('room creation and join', () => {
 
 ---
 
+## Epic 11: Branding & Visual Identity
+
+Logo and branding assets to give the app a polished, recognizable identity.
+
+---
+
+### BRAND-001: Create Jet Lag Stillwater Edition Logo Component
+
+**Status:** `pending`
+**Depends On:** None
+
+**Story:** As a player, I want to see a distinctive logo that combines Jet Lag branding with Oklahoma State University identity, so the app feels like an authentic Stillwater adaptation.
+
+**Acceptance Criteria:**
+
+- [ ] SVG logo component created at `src/components/JetLagLogo.vue`
+- [ ] Logo mimics Jet Lag style: rounded rectangle badge with gradient stripes
+- [ ] Instead of airplane, features OSU "pistols firing" hand gesture silhouette
+- [ ] Text layout: "JET" + [pistol icon] + "LAG" in display font
+- [ ] Subtitle "STILLWATER EDITION" in gold/orange badge below
+- [ ] Component accepts `size` prop (sm, md, lg) for responsive use
+- [ ] Logo colors use existing brand palette from design system
+- [ ] Component is accessible (proper ARIA labels, respects reduced-motion)
+
+**Size:** S
+
+**Tests Written (8 tests):**
+
+```typescript
+// JetLagLogo.spec.ts
+describe('JetLagLogo component (BRAND-001)', () => {
+  describe('rendering', () => {
+    it('should render SVG logo element')
+    it('should display "JET" and "LAG" text elements')
+    it('should display "STILLWATER EDITION" subtitle')
+    it('should include pistol firing hand gesture graphic')
+  })
+  describe('size prop', () => {
+    it('should render small size when size="sm"')
+    it('should render medium size when size="md" (default)')
+    it('should render large size when size="lg"')
+  })
+  describe('accessibility', () => {
+    it('should have appropriate aria-label for screen readers')
+  })
+})
+```
+
+**Implementation Notes:**
+
+- Use frontend-design skill to create high-quality SVG
+- Reference existing Jet Lag logo style: navy background, orange/red/gold stripes
+- Pistols firing: hand with index finger and thumb extended, other fingers curled
+- Ensure crisp rendering at all sizes (vector, not raster)
+
+---
+
+### BRAND-002: Display Logo on Game and Setup Pages
+
+**Status:** `pending`
+**Depends On:** BRAND-001
+
+**Story:** As a player, I see the Jet Lag Stillwater Edition logo prominently on the game and setup screens, reinforcing the game's identity.
+
+**Acceptance Criteria:**
+
+- [ ] Logo displayed on `/setup` page (GameSetupView.vue) in header area
+- [ ] Logo displayed on `/game` page (GamePlayView.vue) in appropriate location
+- [ ] Logo is responsive and scales appropriately on mobile (320px+)
+- [ ] Logo placement follows mobile-first design principles
+- [ ] Logo does not obstruct game controls or important information
+- [ ] Logo uses appropriate size variant for each context
+
+**Size:** S
+
+**Tests Written (6 tests):**
+
+```typescript
+// GameSetupView.spec.ts - additional tests
+describe('logo display (BRAND-002)', () => {
+  it('should render JetLagLogo component')
+  it('should position logo in header area')
+  it('should use appropriate size for mobile viewport')
+})
+
+// GamePlayView.spec.ts - additional tests
+describe('logo display (BRAND-002)', () => {
+  it('should render JetLagLogo component')
+  it('should position logo without obstructing controls')
+  it('should use appropriate size for context')
+})
+```
+
+**Implementation Notes:**
+
+- Import and use JetLagLogo component from BRAND-001
+- Consider replacing or augmenting existing header text with logo
+- Test on 320px, 375px, and 768px+ viewports
+
+---
+
+## Epic 12: Bug Fixes
+
+Bug fixes discovered during playtesting or development.
+
+---
+
+### BUG-001: Fix Incorrect "Hand Limit Reached" Warning in Card Draw Modal
+
+**Status:** `complete`
+**Depends On:** None
+
+**Story:** As a hider drawing cards after answering a question, I should only see a "hand limit reached" warning if keeping the drawn cards would actually exceed my hand limit, not when my hand still has room.
+
+**Bug Description:**
+
+When cards are drawn via `discardAndDraw` or powerup effects, they are immediately added to the hand before the CardDrawModal displays. This causes `availableSlots` to show 0 (or low), triggering a false "Hand limit reached!" warning even when the player's hand has room for the cards they're selecting.
+
+**Root Cause:**
+
+In `cardStore.ts`, `discardAndDraw()` and `playDrawExpandPowerup()` add cards to `hand.value` immediately:
+
+```typescript
+drawnCards.push(card)
+hand.value.push(card) // <-- Cards already in hand
+```
+
+Then in `CardDrawModal.vue`:
+
+```typescript
+const availableSlots = computed(() => cardStore.availableSlots)
+const handLimitExceeded = computed(() => props.keepCount > availableSlots.value)
+```
+
+Since drawn cards are already counted in the hand, `availableSlots` doesn't reflect the true available space.
+
+**Acceptance Criteria:**
+
+- [x] Card draw modal does NOT show "Hand limit reached" warning when hand has room
+- [x] Warning only appears when keeping cards would genuinely exceed hand limit
+- [x] Fix handles both `discardAndDraw` and powerup draw scenarios
+- [x] Existing card draw flow continues to work correctly
+- [x] Unit tests verify correct warning behavior
+
+**Size:** S
+
+**Tests Written (4 tests):**
+
+```typescript
+// CardDrawModal.spec.ts - BUG-001 fix tests
+describe('hand limit warning display (BUG-001)', () => {
+  it('should NOT show warning when drawn cards are already in hand and there is room')
+  it('should NOT show warning when hand has room after discarding unselected drawn cards')
+  it('should show warning ONLY when keeping cards would truly exceed hand limit')
+  it('should correctly calculate available space excluding already-drawn cards')
+})
+```
+
+**Implementation Notes:**
+
+- Implemented Option B: Calculate effective available slots as `availableSlots + drawnCards.length`
+- The fix accounts for the fact that drawnCards are already counted in the hand
+- Added `effectiveAvailableSlots` computed property to CardDrawModal.vue
+- Updated `handLimitExceeded` to compare `keepCount > effectiveAvailableSlots`
+- Updated existing tests to reflect correct behavior with realistic scenarios
+
+---
+
 ## Backlog Summary
 
-| Epic                          | Stories | Complete | Remaining |
-| ----------------------------- | ------- | -------- | --------- |
-| 0: Project Foundation         | 9       | 9        | 0         |
-| 1: Question Tracking          | 11      | 11       | 0         |
-| 2: Timers                     | 4       | 4        | 0         |
-| 3: Card Management            | 12      | 12       | 0         |
-| 4: Game State                 | 7       | 7        | 0         |
-| 5: Mobile UX Polish           | 4       | 4        | 0         |
-| 6: Developer Tools            | 1       | 1        | 0         |
-| 7: Question UX Improvements   | 2       | 2        | 0         |
-| 8: Physical Play & Standalone | 3       | 3        | 0         |
-| 9: User Guides                | 2       | 2        | 0         |
-| 10: Multiplayer Sync          | 4       | 0        | 4         |
-| **Total**                     | **59**  | **55**   | **4**     |
+| Epic                           | Stories | Complete | Remaining |
+| ------------------------------ | ------- | -------- | --------- |
+| 0: Project Foundation          | 9       | 9        | 0         |
+| 1: Question Tracking           | 11      | 11       | 0         |
+| 2: Timers                      | 4       | 4        | 0         |
+| 3: Card Management             | 12      | 12       | 0         |
+| 4: Game State                  | 7       | 7        | 0         |
+| 5: Mobile UX Polish            | 5       | 4        | 1         |
+| 6: Developer Tools             | 1       | 1        | 0         |
+| 7: Question UX Improvements    | 2       | 2        | 0         |
+| 8: Physical Play & Standalone  | 3       | 3        | 0         |
+| 9: User Guides                 | 2       | 2        | 0         |
+| 10: Multiplayer Sync           | 4       | 0        | 4         |
+| 11: Branding & Visual Identity | 2       | 0        | 2         |
+| 12: Bug Fixes                  | 1       | 1        | 0         |
+| **Total**                      | **63**  | **56**   | **7**     |
 
 ---
 
@@ -3578,12 +3784,25 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 - ~~**GUIDE-001**: Hider Mode User Guide~~ ✅ COMPLETE
 - ~~**GUIDE-002**: Seeker Mode User Guide~~ ✅ COMPLETE
 
+**Epic 5: Mobile UX Polish**
+
+- **UX-005**: Auto-focus Player Name Input After Adding Player (no dependencies) - READY
+
 **Epic 10: Multiplayer Sync**
 
 - **MULTI-001**: Multiplayer Architecture Planning (no dependencies) - READY
 - **MULTI-002**: Room Creation & Join Flow (depends on MULTI-001) ⏳
 - **MULTI-003**: Real-Time State Synchronization (depends on MULTI-002) ⏳
 - **MULTI-004**: Offline Handling & Reconnection (depends on MULTI-003) ⏳
+
+**Epic 11: Branding & Visual Identity**
+
+- **BRAND-001**: Create Jet Lag Stillwater Edition Logo Component (no dependencies) - READY
+- **BRAND-002**: Display Logo on Game and Setup Pages (depends on BRAND-001) ⏳
+
+**Epic 12: Bug Fixes**
+
+- ~~**BUG-001**: Fix Incorrect "Hand Limit Reached" Warning in Card Draw Modal~~ ✅ COMPLETE
 
 ✅ = dependency complete | ⏳ = waiting on other new stories
 
@@ -3604,4 +3823,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 16, 2026 - Completed PHYS-003 (Standalone Mode Documentation)_
+_Last updated: January 17, 2026 - Completed BUG-001_

@@ -24,7 +24,9 @@ function createMockCards(count: number): CardInstance[] {
       description: `Description for card ${i}`,
       ...(i % 3 === 0 ? { tier: 1, bonusMinutes: { small: 5, medium: 10, large: 15 } } : {}),
       ...(i % 3 === 1 ? { powerupType: PowerupType.Veto, effect: 'Veto effect' } : {}),
-      ...(i % 3 === 2 ? { curseType: 'duration', effectDescription: 'Curse effect', durationMinutes: 10 } : {}),
+      ...(i % 3 === 2
+        ? { curseType: 'duration', effectDescription: 'Curse effect', durationMinutes: 10 }
+        : {}),
     } as CardInstance)
   }
   return cards
@@ -33,7 +35,7 @@ function createMockCards(count: number): CardInstance[] {
 // Helper to render with Pinia
 function renderWithPinia(
   component: typeof CardDrawModal,
-  options: { props: { drawnCards: CardInstance[]; keepCount: number } }
+  options: { props: { drawnCards: CardInstance[]; keepCount: number } },
 ) {
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -389,16 +391,40 @@ describe('CardDrawModal', () => {
 
   describe('hand limit enforcement', () => {
     it('should show warning when kept cards would exceed hand limit', async () => {
-      // Set up store with filled hand BEFORE rendering
+      // Scenario: Hand limit 6, hand has 5 OTHER cards + 2 drawn cards = 7 total
+      // Keeping 2 of 2 drawn = need 7 slots but only have 6
+      // This is an edge case that shouldn't happen in normal flow (drawCards respects limit)
+      // but we test the warning logic works correctly
       const pinia = createPinia()
       setActivePinia(pinia)
       const cardStore = useCardStore(pinia)
-      cardStore.drawCards(5) // Fill hand to 5 cards (only 1 slot available)
+
+      // Add 5 "other" cards to hand
+      const otherCards = createMockCards(5)
+      otherCards.forEach((c, i) => {
+        c.instanceId = `other-${i}`
+        cardStore.$patch((state) => {
+          state.hand.push(c)
+        })
+      })
+
+      // Add 2 "drawn" cards to hand
+      const drawnCards = createMockCards(2)
+      for (const card of drawnCards) {
+        cardStore.$patch((state) => {
+          state.hand.push(card)
+        })
+      }
+
+      // Hand: 7 cards (5 other + 2 drawn), limit is 6
+      // Keeping 2 drawn cards: other cards (5) + kept (2) = 7 > 6
+      // effectiveAvailable = availableSlots + drawnCards.length = -1 + 2 = 1
+      // keepCount (2) > effectiveAvailable (1) = true, show warning
 
       render(CardDrawModal, {
         props: {
-          drawnCards: createMockCards(3),
-          keepCount: 2, // Would need 2 slots but only 1 available
+          drawnCards: drawnCards,
+          keepCount: 2,
         },
         global: {
           plugins: [pinia],
@@ -409,35 +435,41 @@ describe('CardDrawModal', () => {
     })
 
     it('should indicate how many cards must be discarded to fit hand limit', async () => {
-      const { pinia } = renderWithPinia(CardDrawModal, {
-        props: {
-          drawnCards: createMockCards(3),
-          keepCount: 2,
-        },
+      // Same scenario as above, but check the message content
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const cardStore = useCardStore(pinia)
+
+      // Add 5 "other" cards to hand
+      const otherCards = createMockCards(5)
+      otherCards.forEach((c, i) => {
+        c.instanceId = `other-${i}`
+        cardStore.$patch((state) => {
+          state.hand.push(c)
+        })
       })
 
-      // Fill hand to 5 cards
-      const cardStore = useCardStore(pinia)
-      cardStore.drawCards(5)
+      // Add 2 "drawn" cards to hand
+      const drawnCards = createMockCards(2)
+      for (const card of drawnCards) {
+        cardStore.$patch((state) => {
+          state.hand.push(card)
+        })
+      }
 
-      // Re-render with filled hand - the reactive state should update
-      cleanup()
-      const pinia2 = createPinia()
-      setActivePinia(pinia2)
-      const cardStore2 = useCardStore(pinia2)
-      cardStore2.drawCards(5)
+      // Hand: 7 cards, keepCount: 2, effectiveAvailable: 1
+      // cardsToDiscardFromHand = 2 - 1 = 1
 
       render(CardDrawModal, {
         props: {
-          drawnCards: createMockCards(3),
+          drawnCards: drawnCards,
           keepCount: 2,
         },
         global: {
-          plugins: [pinia2],
+          plugins: [pinia],
         },
       })
 
-      // Available slots = 1, keeping 2, so need to discard 1 from hand
       expect(screen.getByText(/discard 1 card/i)).toBeInTheDocument()
     })
   })
@@ -524,6 +556,199 @@ describe('CardDrawModal', () => {
       const card0 = screen.getByTestId('drawn-card-instance-0')
       expect(card0).toHaveAttribute('role', 'checkbox')
       expect(card0).toHaveAttribute('aria-checked')
+    })
+  })
+
+  describe('hand limit warning display (BUG-001)', () => {
+    it('should NOT show warning when drawn cards are already in hand and there is room', () => {
+      // Simulate the real scenario: drawnCards are already counted in the hand
+      // Hand limit is 6, we have 3 drawn cards already in hand
+      // We're keeping 2 of them - this should NOT show a warning
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const cardStore = useCardStore(pinia)
+
+      // The drawn cards that will be passed to the modal
+      const drawnCards = createMockCards(3)
+
+      // Add the drawn cards to the hand (simulating what drawCards does)
+      for (const card of drawnCards) {
+        cardStore.$patch((state) => {
+          state.hand.push(card)
+        })
+      }
+
+      // Now hand has 3/6 cards (the drawnCards), availableSlots = 3
+      // But modal will calculate: keepCount (2) > availableSlots (3)? No.
+      // However, the bug is that if we had other cards too, it would be wrong.
+      // Let's add some other cards to make the scenario clearer.
+
+      // Add 2 more cards to hand (not part of drawnCards)
+      const otherCards = createMockCards(2)
+      otherCards.forEach((c, i) => {
+        c.instanceId = `other-${i}`
+        cardStore.$patch((state) => {
+          state.hand.push(c)
+        })
+      })
+
+      // Now hand has 5 cards total (3 drawn + 2 other), availableSlots = 1
+      // We're keeping 2 of the 3 drawn cards
+      // The WARNING should NOT appear because:
+      // - Actual available slots for NEW cards = 1
+      // - But we're not adding NEW cards, we're KEEPING 2 of the 3 that are ALREADY in hand
+      // - So we're effectively removing 1 from the 3 drawn, ending up with 5-1=4 cards
+      // - This is well under the limit of 6
+
+      render(CardDrawModal, {
+        props: {
+          drawnCards: drawnCards,
+          keepCount: 2,
+        },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      // The warning should NOT appear
+      expect(screen.queryByTestId('hand-limit-warning')).not.toBeInTheDocument()
+    })
+
+    it('should NOT show warning when hand has room after discarding unselected drawn cards', () => {
+      // Scenario: Hand limit 6, hand has 5 cards (including 3 drawn)
+      // Keeping 1 of 3 drawn = 2 will be discarded
+      // Final hand: 5 - 2 = 3 cards, well under limit
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const cardStore = useCardStore(pinia)
+
+      const drawnCards = createMockCards(3)
+      for (const card of drawnCards) {
+        cardStore.$patch((state) => {
+          state.hand.push(card)
+        })
+      }
+
+      // Add 2 more cards
+      const otherCards = createMockCards(2)
+      otherCards.forEach((c, i) => {
+        c.instanceId = `other-${i}`
+        cardStore.$patch((state) => {
+          state.hand.push(c)
+        })
+      })
+
+      // Hand: 5 cards, availableSlots = 1
+      // Keeping 1 drawn card, discarding 2 drawn cards
+      // Result: 5 - 2 = 3 cards, no warning needed
+
+      render(CardDrawModal, {
+        props: {
+          drawnCards: drawnCards,
+          keepCount: 1,
+        },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      expect(screen.queryByTestId('hand-limit-warning')).not.toBeInTheDocument()
+    })
+
+    it('should show warning ONLY when keeping cards would truly exceed hand limit', () => {
+      // Scenario: Hand limit 6, hand has 6 cards (including 2 drawn)
+      // We have 4 other cards + 2 drawn cards = 6 total
+      // Keeping 2 of 2 drawn = 0 discarded from drawn
+      // Final hand: 6 cards = exactly at limit, no warning
+
+      // But if we had 5 other + 2 drawn = 7 (exceeds limit by 1)
+      // Keeping 2 of 2 = 0 discarded from drawn
+      // Final: 7 cards (but this can't happen in practice because drawCards respects limit)
+
+      // The REAL scenario where warning should show:
+      // Hand limit 6, we have 4 other cards, drew 3, kept all 3 = 7 cards
+      // But drawCards limits to availableSlots, so max drawn would be 2
+
+      // Let me create a scenario where the warning SHOULD legitimately appear:
+      // This would require the hand limit to have been exceeded somehow
+      // or the keepCount exceeds what can fit after discards
+
+      // Actually, looking at the code flow:
+      // - drawCards already respects hand limit (maxDraw = Math.min(count, availableSlots))
+      // - So in normal flow, we can never draw more than available slots
+      // - The warning might have been designed for a different scenario
+
+      // Let's test the correct case: hand is full (6/6), all 6 are the "drawn" cards
+      // keeping all 6 = no warning (they're already in hand)
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const cardStore = useCardStore(pinia)
+
+      const drawnCards = createMockCards(6)
+      for (const card of drawnCards) {
+        cardStore.$patch((state) => {
+          state.hand.push(card)
+        })
+      }
+
+      // Hand: 6/6 cards (all drawn), availableSlots = 0
+      // Keeping all 6 - they're already in hand, no warning needed
+
+      render(CardDrawModal, {
+        props: {
+          drawnCards: drawnCards,
+          keepCount: 6,
+        },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      expect(screen.queryByTestId('hand-limit-warning')).not.toBeInTheDocument()
+    })
+
+    it('should correctly calculate available space excluding already-drawn cards', () => {
+      // The fix should make availableSlots effectively = handLimit - (handCount - drawnCards.length)
+      // This means: "how many slots would be available if we removed the drawn cards"
+      // Or equivalently: "slots available for keeping" = (handLimit - otherCardsCount)
+
+      const pinia = createPinia()
+      setActivePinia(pinia)
+      const cardStore = useCardStore(pinia)
+
+      // Add 2 "other" cards to hand first
+      const otherCards = createMockCards(2)
+      otherCards.forEach((c, i) => {
+        c.instanceId = `other-${i}`
+        cardStore.$patch((state) => {
+          state.hand.push(c)
+        })
+      })
+
+      // Now add 3 drawn cards
+      const drawnCards = createMockCards(3)
+      for (const card of drawnCards) {
+        cardStore.$patch((state) => {
+          state.hand.push(card)
+        })
+      }
+
+      // Hand: 5 cards total (2 other + 3 drawn), availableSlots = 1
+      // But effective available for keeping drawn cards = 6 - 2 = 4
+      // Keeping 3 drawn cards (need 3 slots for drawn cards to stay)
+      // Since 4 > 3, should NOT show warning
+
+      render(CardDrawModal, {
+        props: {
+          drawnCards: drawnCards,
+          keepCount: 3,
+        },
+        global: {
+          plugins: [pinia],
+        },
+      })
+
+      expect(screen.queryByTestId('hand-limit-warning')).not.toBeInTheDocument()
     })
   })
 })
