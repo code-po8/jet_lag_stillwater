@@ -10,6 +10,7 @@ import HidingDurationTimer from '@/components/HidingDurationTimer.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionHistory from '@/components/QuestionHistory.vue'
 import GamePauseOverlay from '@/components/GamePauseOverlay.vue'
+import JetLagLogo from '@/components/JetLagLogo.vue'
 import { GameSize } from '@/types/question'
 
 // Props
@@ -19,7 +20,7 @@ const props = withDefaults(
   }>(),
   {
     gameSize: GameSize.Small,
-  }
+  },
 )
 
 const router = useRouter()
@@ -66,15 +67,15 @@ function getPhaseBadgeText(): string {
 function getPhaseBadgeClass(): string {
   switch (currentPhase.value) {
     case GamePhase.HidingPeriod:
-      return 'bg-amber-600'
+      return 'phase-badge-hiding'
     case GamePhase.Seeking:
-      return 'bg-blue-600'
+      return 'phase-badge-seeking'
     case GamePhase.EndGame:
-      return 'bg-red-600'
+      return 'phase-badge-endgame'
     case GamePhase.RoundComplete:
-      return 'bg-green-600'
+      return 'phase-badge-complete'
     default:
-      return 'bg-slate-600'
+      return ''
   }
 }
 
@@ -132,35 +133,51 @@ function handleEndGame() {
 </script>
 
 <template>
-  <main class="flex min-h-screen flex-col bg-slate-900 pb-16 text-white">
+  <main class="gameplay-view page-bg-gradient">
     <!-- Header with game info -->
-    <header class="border-b border-slate-700 bg-slate-800 p-4">
+    <header class="show-header gameplay-header">
       <div class="mx-auto max-w-2xl">
+        <!-- Logo -->
+        <div data-testid="gameplay-logo-container" class="gameplay-logo-container">
+          <JetLagLogo size="sm" />
+        </div>
+
         <!-- Phase Badge and Pause Button -->
-        <div class="mb-3 flex items-center justify-between">
-          <div class="w-24"></div>
-          <span
-            data-testid="phase-badge"
-            :class="['rounded-full px-4 py-1 text-sm font-medium', getPhaseBadgeClass()]"
-          >
+        <div class="gameplay-header-top">
+          <div class="w-20"></div>
+          <span data-testid="phase-badge" class="phase-badge" :class="getPhaseBadgeClass()">
+            <span class="phase-badge-dot"></span>
             {{ getPhaseBadgeText() }}
           </span>
-          <div class="flex w-24 justify-end">
+          <div class="flex w-20 justify-end">
             <GamePauseOverlay :role="currentViewRole" />
           </div>
         </div>
 
         <!-- Player Info -->
-        <div class="flex items-center justify-between text-sm">
-          <div>
-            <span class="text-slate-400">Hider: </span>
-            <span data-testid="hider-name" class="font-medium text-amber-400">
+        <div class="gameplay-players">
+          <div class="gameplay-player">
+            <span class="gameplay-player-icon role-indicator-hider">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="gameplay-role-icon">
+                <path
+                  d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                />
+              </svg>
+            </span>
+            <span data-testid="hider-name" class="gameplay-player-name text-amber-400">
               {{ currentHider?.name ?? 'Unknown' }}
             </span>
           </div>
-          <div>
-            <span class="text-slate-400">Seekers: </span>
-            <span data-testid="seekers-list" class="font-medium text-blue-400">
+          <div class="gameplay-player-separator">vs</div>
+          <div class="gameplay-player">
+            <span class="gameplay-player-icon role-indicator-seeker">
+              <svg viewBox="0 0 24 24" fill="currentColor" class="gameplay-role-icon">
+                <path
+                  d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                />
+              </svg>
+            </span>
+            <span data-testid="seekers-list" class="gameplay-player-name text-blue-400">
               {{ seekers.map((s) => s.name).join(', ') || 'None' }}
             </span>
           </div>
@@ -169,10 +186,7 @@ function handleEndGame() {
     </header>
 
     <!-- Hidden timer to track hiding duration (always present during seeking/end-game) -->
-    <HidingDurationTimer
-      v-show="false"
-      @final-time="handleFinalTime"
-    />
+    <HidingDurationTimer v-show="false" @final-time="handleFinalTime" />
 
     <!-- Round Summary (shown in round-complete phase) -->
     <RoundSummary
@@ -186,57 +200,53 @@ function handleEndGame() {
     <!-- Regular gameplay UI (hidden during round-complete) -->
     <template v-else>
       <!-- Role Toggle -->
-      <div
-        data-testid="role-toggle"
-        class="flex border-b border-slate-700 bg-slate-800/50"
-      >
+      <div data-testid="role-toggle" class="gameplay-role-toggle">
         <button
           type="button"
-          :class="[
-            'flex-1 py-3 text-center font-medium transition-colors',
-            currentViewRole === 'hider'
-              ? 'active bg-amber-600 text-white'
-              : 'text-slate-400 hover:bg-slate-700 hover:text-white',
-          ]"
+          class="gameplay-role-btn"
+          :class="{ 'gameplay-role-btn-hider-active': currentViewRole === 'hider' }"
           @click="switchToHider"
         >
+          <svg viewBox="0 0 24 24" fill="currentColor" class="gameplay-toggle-icon">
+            <path
+              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"
+            />
+          </svg>
           Hider
         </button>
         <button
           type="button"
-          :class="[
-            'flex-1 py-3 text-center font-medium transition-colors',
-            currentViewRole === 'seeker'
-              ? 'active bg-blue-600 text-white'
-              : 'text-slate-400 hover:bg-slate-700 hover:text-white',
-          ]"
+          class="gameplay-role-btn"
+          :class="{ 'gameplay-role-btn-seeker-active': currentViewRole === 'seeker' }"
           @click="switchToSeeker"
         >
+          <svg viewBox="0 0 24 24" fill="currentColor" class="gameplay-toggle-icon">
+            <path
+              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"
+            />
+          </svg>
           Seeker
         </button>
       </div>
 
       <!-- Current Role Display -->
-      <div
-        data-testid="current-role-display"
-        class="bg-slate-800/30 py-2 text-center text-sm text-slate-400"
-      >
-        Viewing as: <span class="font-medium text-white">{{ currentViewRole === 'hider' ? 'Hider' : 'Seeker' }}</span>
+      <div data-testid="current-role-display" class="gameplay-current-role">
+        <span class="gameplay-current-role-label">Viewing as:</span>
+        <span
+          class="gameplay-current-role-value"
+          :class="currentViewRole === 'hider' ? 'text-amber-400' : 'text-blue-400'"
+        >
+          {{ currentViewRole === 'hider' ? 'Hider' : 'Seeker' }}
+        </span>
       </div>
 
       <!-- Main Content Area with tab-based content -->
-      <div
-        data-testid="main-content-area"
-        class="flex-1 overflow-y-auto transition-opacity duration-200"
-      >
+      <div data-testid="main-content-area" class="gameplay-content content-with-nav">
         <!-- Questions Tab - Shows SeekerView with questions -->
         <SeekerView v-if="currentTab === 'questions'" :game-size="props.gameSize" />
 
         <!-- Timers Tab - Shows timer display -->
-        <div
-          v-else-if="currentTab === 'timers'"
-          class="flex flex-col items-center gap-4 p-4"
-        >
+        <div v-else-if="currentTab === 'timers'" class="gameplay-timers-tab">
           <!-- Show HidingPeriodTimer during hiding period -->
           <HidingPeriodTimer v-if="isHidingPeriod" :role="currentViewRole" />
           <!-- Show HidingDurationTimer during seeking/end-game -->
@@ -255,3 +265,165 @@ function handleEndGame() {
     </template>
   </main>
 </template>
+
+<style scoped>
+.gameplay-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.gameplay-header {
+  padding: 0.75rem 1rem 1rem;
+}
+
+.gameplay-logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.gameplay-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.phase-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.gameplay-players {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.gameplay-player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gameplay-player-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 6px;
+}
+
+.gameplay-role-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.gameplay-player-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.gameplay-player-separator {
+  color: var(--color-ui-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Role toggle */
+.gameplay-role-toggle {
+  display: flex;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gameplay-role-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-ui-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gameplay-role-btn:hover {
+  color: var(--color-ui-text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.gameplay-toggle-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.gameplay-role-btn-hider-active {
+  color: var(--color-role-hider);
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.2) 0%, transparent 100%);
+  border-bottom: 2px solid var(--color-role-hider);
+}
+
+.gameplay-role-btn-seeker-active {
+  color: var(--color-role-seeker);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.2) 0%, transparent 100%);
+  border-bottom: 2px solid var(--color-role-seeker);
+}
+
+/* Current role display */
+.gameplay-current-role {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.75rem;
+}
+
+.gameplay-current-role-label {
+  color: var(--color-ui-text-muted);
+}
+
+.gameplay-current-role-value {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Content area */
+.gameplay-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.gameplay-timers-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+</style>

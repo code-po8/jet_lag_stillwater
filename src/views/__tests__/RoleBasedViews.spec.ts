@@ -467,6 +467,28 @@ describe('GamePlayView (role toggle)', () => {
     })
   })
 
+  describe('logo display (BRAND-002)', () => {
+    it('should render JetLagLogo component', () => {
+      renderGamePlayView()
+      expect(screen.getByTestId('jet-lag-logo')).toBeInTheDocument()
+    })
+
+    it('should position logo without obstructing controls', () => {
+      renderGamePlayView()
+      const logo = screen.getByTestId('jet-lag-logo')
+      // Logo should be within the header area
+      const container = logo.closest('[data-testid="gameplay-logo-container"]')
+      expect(container).toBeInTheDocument()
+    })
+
+    it('should use appropriate size for context', () => {
+      renderGamePlayView()
+      const logo = screen.getByTestId('jet-lag-logo')
+      // Small size logo has width of 120 for gameplay view
+      expect(logo).toHaveAttribute('width', '120')
+    })
+  })
+
   describe('hiding period timer integration', () => {
     beforeEach(() => {
       vi.useFakeTimers()

@@ -3607,19 +3607,19 @@ describe('JetLagLogo component (BRAND-001)', () => {
 
 ### BRAND-002: Display Logo on Game and Setup Pages
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** BRAND-001
 
 **Story:** As a player, I see the Jet Lag Stillwater Edition logo prominently on the game and setup screens, reinforcing the game's identity.
 
 **Acceptance Criteria:**
 
-- [ ] Logo displayed on `/setup` page (GameSetupView.vue) in header area
-- [ ] Logo displayed on `/game` page (GamePlayView.vue) in appropriate location
-- [ ] Logo is responsive and scales appropriately on mobile (320px+)
-- [ ] Logo placement follows mobile-first design principles
-- [ ] Logo does not obstruct game controls or important information
-- [ ] Logo uses appropriate size variant for each context
+- [x] Logo displayed on `/setup` page (GameSetupView.vue) in header area
+- [x] Logo displayed on `/game` page (GamePlayView.vue) in appropriate location
+- [x] Logo is responsive and scales appropriately on mobile (320px+)
+- [x] Logo placement follows mobile-first design principles
+- [x] Logo does not obstruct game controls or important information
+- [x] Logo uses appropriate size variant for each context
 
 **Size:** S
 
@@ -3633,7 +3633,7 @@ describe('logo display (BRAND-002)', () => {
   it('should use appropriate size for mobile viewport')
 })
 
-// GamePlayView.spec.ts - additional tests
+// RoleBasedViews.spec.ts - additional tests for GamePlayView
 describe('logo display (BRAND-002)', () => {
   it('should render JetLagLogo component')
   it('should position logo without obstructing controls')
@@ -3643,9 +3643,11 @@ describe('logo display (BRAND-002)', () => {
 
 **Implementation Notes:**
 
-- Import and use JetLagLogo component from BRAND-001
-- Consider replacing or augmenting existing header text with logo
-- Test on 320px, 375px, and 768px+ viewports
+- Imported JetLagLogo component in GameSetupView.vue and GamePlayView.vue
+- Logo placed in header area above page title on setup page
+- Logo placed above phase badge on gameplay page
+- Uses size="sm" (120px width) for mobile-first design
+- Logo container uses flex centering with margin-bottom for spacing
 
 ---
 
@@ -3731,9 +3733,9 @@ describe('hand limit warning display (BUG-001)', () => {
 | 8: Physical Play & Standalone  | 3       | 3        | 0         |
 | 9: User Guides                 | 2       | 2        | 0         |
 | 10: Multiplayer Sync           | 4       | 0        | 4         |
-| 11: Branding & Visual Identity | 2       | 1        | 1         |
+| 11: Branding & Visual Identity | 2       | 2        | 0         |
 | 12: Bug Fixes                  | 1       | 1        | 0         |
-| **Total**                      | **63**  | **57**   | **6**     |
+| **Total**                      | **63**  | **58**   | **5**     |
 
 ---
 
@@ -3800,8 +3802,8 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 11: Branding & Visual Identity**
 
-- **BRAND-001**: Create Jet Lag Stillwater Edition Logo Component (no dependencies) - READY
-- **BRAND-002**: Display Logo on Game and Setup Pages (depends on BRAND-001) ⏳
+- ~~**BRAND-001**: Create Jet Lag Stillwater Edition Logo Component~~ ✅ COMPLETE
+- ~~**BRAND-002**: Display Logo on Game and Setup Pages~~ ✅ COMPLETE
 
 **Epic 12: Bug Fixes**
 
@@ -3826,4 +3828,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 17, 2026 - Completed BUG-001_
+_Last updated: January 17, 2026 - Completed BRAND-002_

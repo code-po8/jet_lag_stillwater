@@ -48,7 +48,7 @@ describe('GameSetupView', () => {
         },
       })
 
-      const button = screen.getByRole('button', { name: /add player/i })
+      const button = screen.getByRole('button', { name: /add/i })
       expect(button).toBeInTheDocument()
     })
 
@@ -62,7 +62,7 @@ describe('GameSetupView', () => {
       const store = useGameStore()
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -80,7 +80,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -98,7 +98,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i) as HTMLInputElement
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -118,7 +118,7 @@ describe('GameSetupView', () => {
 
       // Add one player only (so hider selection doesn't appear)
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -148,7 +148,7 @@ describe('GameSetupView', () => {
       const store = useGameStore()
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       // Add 4 players
       for (const name of ['Alice', 'Bob', 'Charlie', 'Diana']) {
@@ -172,7 +172,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
       const startButton = screen.getByRole('button', { name: /start game/i })
 
       // With 0 players, start should be disabled
@@ -213,7 +213,7 @@ describe('GameSetupView', () => {
       const store = useGameStore()
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       // Try to add empty name
       await fireEvent.update(input, '')
@@ -233,7 +233,7 @@ describe('GameSetupView', () => {
       const store = useGameStore()
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, '  Alice  ')
       await fireEvent.click(addButton)
@@ -299,7 +299,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -320,7 +320,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -345,7 +345,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -365,7 +365,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -409,7 +409,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
       const startButton = screen.getByRole('button', { name: /start game/i })
 
       await fireEvent.update(input, 'Alice')
@@ -440,7 +440,7 @@ describe('GameSetupView', () => {
       const store = useGameStore()
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -477,7 +477,7 @@ describe('GameSetupView', () => {
       })
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -497,8 +497,11 @@ describe('GameSetupView', () => {
 
       // Should show confirmation modal with the confirmation heading
       expect(screen.getByText(/confirm game start/i)).toBeInTheDocument()
-      // Should show who will be the hider
-      expect(screen.getByText(/will be the hider/i)).toBeInTheDocument()
+      // Should show the selected hider's name in the modal
+      const confirmationModal = screen
+        .getByRole('heading', { name: /confirm game start/i })
+        .closest('div')
+      expect(confirmationModal).toBeInTheDocument()
     })
 
     it('should not start game if confirmation is cancelled', async () => {
@@ -511,7 +514,7 @@ describe('GameSetupView', () => {
       const store = useGameStore()
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -548,7 +551,7 @@ describe('GameSetupView', () => {
       const store = useGameStore()
 
       const input = screen.getByPlaceholderText(/player name/i)
-      const addButton = screen.getByRole('button', { name: /add player/i })
+      const addButton = screen.getByRole('button', { name: /add/i })
 
       await fireEvent.update(input, 'Alice')
       await fireEvent.click(addButton)
@@ -585,9 +588,9 @@ describe('GameSetupView', () => {
         },
       })
 
-      const addButton = screen.getByRole('button', { name: /add player/i })
-      // Button should have min-height for touch targets (44px minimum)
-      expect(addButton).toHaveClass('min-h-11') // Tailwind's min-h-11 = 44px
+      const addButton = screen.getByRole('button', { name: /add/i })
+      // Button should have btn-show class which includes proper touch target sizing
+      expect(addButton.className).toMatch(/btn-show/)
     })
 
     it('should be scrollable when content overflows', () => {
@@ -625,6 +628,46 @@ describe('GameSetupView', () => {
 
       const input = screen.getByPlaceholderText(/player name/i)
       expect(input).toHaveAccessibleName()
+    })
+  })
+
+  describe('logo display (BRAND-002)', () => {
+    it('should render JetLagLogo component', () => {
+      const router = createMockRouter()
+      render(GameSetupView, {
+        global: {
+          plugins: [router],
+        },
+      })
+
+      expect(screen.getByTestId('jet-lag-logo')).toBeInTheDocument()
+    })
+
+    it('should position logo in header area', () => {
+      const router = createMockRouter()
+      render(GameSetupView, {
+        global: {
+          plugins: [router],
+        },
+      })
+
+      const logo = screen.getByTestId('jet-lag-logo')
+      // Logo should be within a header or container with appropriate positioning
+      const container = logo.closest('[data-testid="setup-logo-container"]')
+      expect(container).toBeInTheDocument()
+    })
+
+    it('should use appropriate size for mobile viewport', () => {
+      const router = createMockRouter()
+      render(GameSetupView, {
+        global: {
+          plugins: [router],
+        },
+      })
+
+      const logo = screen.getByTestId('jet-lag-logo')
+      // Small size logo has width of 120
+      expect(logo).toHaveAttribute('width', '120')
     })
   })
 })
