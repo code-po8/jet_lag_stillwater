@@ -2911,17 +2911,17 @@ describe('Design System Colors', () => {
 
 ### UX-005: Auto-focus Player Name Input After Adding Player
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** None
 
 **Story:** As a user setting up a game, after I add a player, the cursor should automatically return to the name input field so I can quickly add multiple players without clicking into the text box each time.
 
 **Acceptance Criteria:**
 
-- [ ] After clicking "Add" button, focus returns to player name input
-- [ ] After pressing Enter to add a player, focus remains in player name input
-- [ ] Focus behavior works on both desktop and mobile
-- [ ] Screen reader announces focus change appropriately
+- [x] After clicking "Add" button, focus returns to player name input
+- [x] After pressing Enter to add a player, focus remains in player name input
+- [x] Focus behavior works on both desktop and mobile
+- [x] Screen reader announces focus change appropriately
 
 **Size:** S
 
@@ -2939,9 +2939,10 @@ describe('player name input focus behavior (UX-005)', () => {
 
 **Implementation Notes:**
 
-- Add `ref` to player name input element in GameSetupView.vue
-- Call `inputRef.value?.focus()` at end of `addPlayer()` function
-- Use `nextTick()` if needed to ensure DOM update completes before focus
+- Added `playerNameInputRef` template ref to player name input element in GameSetupView.vue
+- Added `nextTick()` import and `await nextTick()` before focus call
+- Called `playerNameInputRef.value?.focus()` at end of `addPlayer()` function
+- Focus behavior works via the `@keyup.enter` handler which calls the same `addPlayer()` function
 
 ---
 
@@ -3727,7 +3728,7 @@ describe('hand limit warning display (BUG-001)', () => {
 | 2: Timers                      | 4       | 4        | 0         |
 | 3: Card Management             | 12      | 12       | 0         |
 | 4: Game State                  | 7       | 7        | 0         |
-| 5: Mobile UX Polish            | 5       | 4        | 1         |
+| 5: Mobile UX Polish            | 5       | 5        | 0         |
 | 6: Developer Tools             | 1       | 1        | 0         |
 | 7: Question UX Improvements    | 2       | 2        | 0         |
 | 8: Physical Play & Standalone  | 3       | 3        | 0         |
@@ -3735,7 +3736,7 @@ describe('hand limit warning display (BUG-001)', () => {
 | 10: Multiplayer Sync           | 4       | 0        | 4         |
 | 11: Branding & Visual Identity | 2       | 2        | 0         |
 | 12: Bug Fixes                  | 1       | 1        | 0         |
-| **Total**                      | **63**  | **58**   | **5**     |
+| **Total**                      | **63**  | **59**   | **4**     |
 
 ---
 
@@ -3791,7 +3792,7 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 5: Mobile UX Polish**
 
-- **UX-005**: Auto-focus Player Name Input After Adding Player (no dependencies) - READY
+- ~~**UX-005**: Auto-focus Player Name Input After Adding Player~~ ✅ COMPLETE
 
 **Epic 10: Multiplayer Sync**
 
@@ -3828,4 +3829,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 17, 2026 - Completed BRAND-002_
+_Last updated: January 17, 2026 - Completed UX-005_

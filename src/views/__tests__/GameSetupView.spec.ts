@@ -631,6 +631,105 @@ describe('GameSetupView', () => {
     })
   })
 
+  describe('player name input focus behavior (UX-005)', () => {
+    it('should focus player name input after clicking Add button', async () => {
+      const router = createMockRouter()
+      render(GameSetupView, {
+        global: {
+          plugins: [router],
+        },
+      })
+
+      const input = screen.getByPlaceholderText(/player name/i) as HTMLInputElement
+      const addButton = screen.getByRole('button', { name: /add/i })
+
+      await fireEvent.update(input, 'Alice')
+      await fireEvent.click(addButton)
+      await nextTick()
+
+      // Input should be focused after adding player
+      expect(document.activeElement).toBe(input)
+    })
+
+    it('should keep focus in player name input after pressing Enter to add', async () => {
+      const router = createMockRouter()
+      render(GameSetupView, {
+        global: {
+          plugins: [router],
+        },
+      })
+
+      const input = screen.getByPlaceholderText(/player name/i) as HTMLInputElement
+
+      // Focus input and type name
+      input.focus()
+      await fireEvent.update(input, 'Bob')
+      await fireEvent.keyUp(input, { key: 'Enter' })
+      await nextTick()
+
+      // Input should still be focused after adding player via Enter
+      expect(document.activeElement).toBe(input)
+    })
+
+    it('should have input focused and ready for next entry', async () => {
+      const router = createMockRouter()
+      render(GameSetupView, {
+        global: {
+          plugins: [router],
+        },
+      })
+      const store = useGameStore()
+
+      const input = screen.getByPlaceholderText(/player name/i) as HTMLInputElement
+      const addButton = screen.getByRole('button', { name: /add/i })
+
+      await fireEvent.update(input, 'Alice')
+      await fireEvent.click(addButton)
+      await nextTick()
+
+      // Verify player was added and input is cleared
+      expect(store.players).toHaveLength(1)
+      expect(input.value).toBe('')
+
+      // Input should be focused for the next entry
+      expect(document.activeElement).toBe(input)
+    })
+
+    it('should work correctly when adding multiple players in sequence', async () => {
+      const router = createMockRouter()
+      render(GameSetupView, {
+        global: {
+          plugins: [router],
+        },
+      })
+      const store = useGameStore()
+
+      const input = screen.getByPlaceholderText(/player name/i) as HTMLInputElement
+      const addButton = screen.getByRole('button', { name: /add/i })
+
+      // Add first player
+      await fireEvent.update(input, 'Alice')
+      await fireEvent.click(addButton)
+      await nextTick()
+      expect(document.activeElement).toBe(input)
+
+      // Add second player
+      await fireEvent.update(input, 'Bob')
+      await fireEvent.click(addButton)
+      await nextTick()
+      expect(document.activeElement).toBe(input)
+
+      // Add third player
+      await fireEvent.update(input, 'Charlie')
+      await fireEvent.click(addButton)
+      await nextTick()
+      expect(document.activeElement).toBe(input)
+
+      // Verify all players were added
+      expect(store.players).toHaveLength(3)
+    })
+  })
+
   describe('logo display (BRAND-002)', () => {
     it('should render JetLagLogo component', () => {
       const router = createMockRouter()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
 import { GameSize } from '@/types/question'
@@ -7,6 +7,9 @@ import JetLagLogo from '@/components/JetLagLogo.vue'
 
 const router = useRouter()
 const gameStore = useGameStore()
+
+// Template refs
+const playerNameInputRef = ref<HTMLInputElement | null>(null)
 
 // Form state
 const newPlayerName = ref('')
@@ -41,13 +44,17 @@ const canStartGame = computed(() => {
 })
 
 // Actions
-function addPlayer() {
+async function addPlayer() {
   const trimmedName = newPlayerName.value.trim()
   if (trimmedName === '' || gameStore.players.length >= MAX_PLAYERS) {
     return
   }
   gameStore.addPlayer(trimmedName)
   newPlayerName.value = ''
+
+  // Focus the input for the next entry (UX-005)
+  await nextTick()
+  playerNameInputRef.value?.focus()
 }
 
 function removePlayer(playerId: string) {
@@ -128,6 +135,7 @@ function confirmStart() {
           <label class="sr-only" for="player-name-input">Player Name</label>
           <input
             id="player-name-input"
+            ref="playerNameInputRef"
             v-model="newPlayerName"
             type="text"
             placeholder="Enter player name..."
