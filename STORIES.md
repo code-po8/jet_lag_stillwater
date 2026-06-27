@@ -3938,19 +3938,26 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### INFRA-005: Room Code & Rejoin-Token Services
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** INFRA-004
 
 **Story:** As a developer, I need code generation and token services so that rooms are joinable and rejoinable securely.
 
 **Acceptance Criteria:**
 
-- [ ] Crockford-style code generator (excludes `0/O/1/I/L`, len 4, `ON CONFLICT` retry, length bump on repeated collision)
-- [ ] Rejoin token: 32-byte random, raw returned once, **only SHA-256 hash stored**, room-scoped
-- [ ] TTL logic: create now+2 days, slide on activity, drop to now+1h on round end
-- [ ] REST endpoints: `POST /rooms`, `POST /rooms/:code/join`, `POST /rooms/:code/rejoin`, `GET /rooms/:code`
+- [x] Crockford-style code generator (excludes `0/O/1/I/L`, len 4, `ON CONFLICT` retry, length bump on repeated collision)
+- [x] Rejoin token: 32-byte random, raw returned once, **only SHA-256 hash stored**, room-scoped
+- [x] TTL logic: create now+2 days, slide on activity, drop to now+1h on round end
+- [x] REST endpoints: `POST /rooms`, `POST /rooms/:code/join`, `POST /rooms/:code/rejoin`, `GET /rooms/:code`
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `server/src/rooms/`: `code.ts` (Crockford alphabet, `crypto.randomInt` generator, validator), `token.ts` (32-byte raw → SHA-256 hash, constant-time `verifyToken`), `ttl.ts` (now+2d / slide / now+1h), `repository.ts` (create with code-collision retry + length bump, join, rejoin, get/roster), `routes.ts` (Fastify plugin).
+- Routes register in `buildApp({ db })`; `server.ts` passes the pool when `DATABASE_URL` is set. Responses never expose the token hash; raw rejoin token returned once.
+- Tests: 26 unit tests (code/token/ttl) run offline in `test-server`; 9 integration tests (`routes.itest.ts`) run against real Postgres in the new `itest-server` compose service (separate `vitest.integration.config.ts`, runs migrations first).
+- Verified in-container: 37 unit + 9 integration tests pass; all four REST endpoints exercised end-to-end (create/get/join/rejoin, incl. 400/404/401 paths).
 
 ---
 

@@ -121,6 +121,8 @@ services:
       - postgres
 
   # Backend type-check + unit tests. Network-isolated like the frontend `test`.
+  # (Integration tests that need Postgres live in *.itest.ts and run in
+  # `itest-server` instead — this offline run never touches the DB.)
   test-server:
     <<: *frontend-base
     working_dir: /app/server
@@ -130,6 +132,25 @@ services:
       - server_node_modules:/app/server/node_modules
       - npm_cache:/home/node/.npm
     command: sh -c "npm run type-check && npm run test -- --run"
+
+  # Backend INTEGRATION tests against a real Postgres (*.itest.ts). Needs the
+  # network + DATABASE_URL, so it is NOT network-isolated. Runs migrations first.
+  itest-server:
+    <<: *frontend-base
+    working_dir: /app/server
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: "postgres://jetlag:jetlag_local_dev@postgres:5432/jetlag"
+    volumes:
+      - ./:/app:cached
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/home/node/.npm
+    command: >
+      sh -c "until node -e \"require('net').connect(5432,'postgres').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))\" 2>/dev/null; do sleep 1; done
+      && npm run migrate:up
+      && npm run test:integration -- --run"
+    depends_on:
+      - postgres
 
   # Postgres for room/session records (used from INFRA-004 onward).
   # The backend reaches it over the compose network (host: postgres), so the

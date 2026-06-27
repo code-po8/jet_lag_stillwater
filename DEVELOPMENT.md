@@ -165,8 +165,11 @@ docker compose run --rm install-server
 # If host port 5432 is taken: POSTGRES_HOST_PORT=5433 docker compose up backend
 docker compose up backend
 
-# Run backend type-check + tests (network-isolated)
+# Run backend type-check + unit tests (network-isolated, no DB)
 docker compose run --rm test-server
+
+# Run backend integration tests against a real Postgres (room REST endpoints)
+POSTGRES_HOST_PORT=5433 docker compose run --rm itest-server
 
 # Run / roll back DB migrations manually (against the compose Postgres)
 docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:up"
