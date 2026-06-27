@@ -4373,18 +4373,26 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-006: End-Game Breach Indicator
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MAP-004, MAP-003
 
 **Story:** As a hider, I need a clear visual alert when seekers enter my zone so that I know the end game has begun.
 
 **Acceptance Criteria:**
 
-- [ ] When a seeker enters the zone (server `zone.breach`), the zone turns red and pulses + an alert banner appears
-- [ ] Ties into the existing `enterHidingZone()` transition in `gameStore`
-- [ ] Indicator is announced for screen readers (not color-only)
+- [x] When a seeker enters the zone (server `zone.breach`), the zone turns red and pulses + an alert banner appears
+- [x] Ties into the existing `enterHidingZone()` transition in `gameStore`
+- [x] Indicator is announced for screen readers (not color-only)
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `MapPanel.vue`: `isBreached` derives from `useSync().breachedSeekers` (populated by the server `zone.breach` from INFRA-006). Renders a red pulsing **alert banner** (`role="alert"`, `aria-live="assertive"`, text — not color-only) and passes `breached` to `BaseMap`, whose zone circle switches to a heavier red with a global `.zone-breached` pulse animation.
+- A watcher calls `gameStore.enterHidingZone()` on the first breach during the Seeking phase (Seeking → EndGame).
+- TDD: `MapPanel.spec.ts` breach tests (4: banner present/absent, end-game transition, `breached` prop). Verified in-container: 1381 frontend tests pass; build OK.
+
+> **Epic 14 (Live Shared Map) complete** — MAP-000…006 all done.
 
 ---
 

@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import MapPanel from '../MapPanel.vue'
 import { useSync, __resetSyncSession } from '@/composables/useSync'
+import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { QUARTER_MILE_M } from '@/services/sync/protocol'
 
 // Stub the heavy Leaflet-based BaseMap; expose the markers count for assertions.
@@ -11,7 +12,8 @@ vi.mock('../BaseMap.vue', () => ({
   default: {
     name: 'BaseMap',
     props: ['zone', 'breached', 'markers'],
-    template: '<div data-testid="base-map-stub" :data-marker-count="(markers || []).length" />',
+    template:
+      '<div data-testid="base-map-stub" :data-marker-count="(markers || []).length" :data-breached="String(!!breached)" />',
   },
 }))
 
@@ -77,6 +79,40 @@ describe('MapPanel (MAP-004)', () => {
     const stub = screen.getByTestId('base-map-stub')
     // One marker for the other seeker (self has no geolocation in this stub).
     expect(stub.getAttribute('data-marker-count')).toBe('1')
+  })
+
+  it('shows no breach banner when no seeker has breached', () => {
+    render(MapPanel)
+    expect(screen.queryByTestId('breach-banner')).not.toBeInTheDocument()
+  })
+
+  it('shows the breach banner (alert) when a seeker enters the zone (MAP-006)', async () => {
+    const sync = useSync()
+    sync.breachedSeekers.value = ['s2']
+    render(MapPanel)
+    await nextTick()
+    const banner = screen.getByTestId('breach-banner')
+    expect(banner).toBeInTheDocument()
+    expect(banner).toHaveAttribute('role', 'alert')
+  })
+
+  it('advances the game to end-game on first breach during seeking', async () => {
+    const game = useGameStore()
+    game.currentPhase = GamePhase.Seeking
+    const sync = useSync()
+    render(MapPanel)
+    await nextTick()
+    sync.breachedSeekers.value = ['s2'] // breach arrives
+    await nextTick()
+    expect(game.currentPhase).toBe(GamePhase.EndGame)
+  })
+
+  it('passes breached=true to the map so the zone pulses red', async () => {
+    const sync = useSync()
+    sync.breachedSeekers.value = ['s2']
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('base-map-stub').getAttribute('data-breached')).toBe('true')
   })
 
   it('sends a zone.set when the hider picks a bus stop', async () => {
