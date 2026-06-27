@@ -3860,19 +3860,26 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### INFRA-002: npm Hardening (Defense-in-Depth)
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** None
 
 **Story:** As a developer, I need npm configured to block the most common supply-chain vector so that Docker isn't my only line of defense.
 
 **Acceptance Criteria:**
 
-- [ ] `.npmrc` sets `ignore-scripts=true`, `save-exact=true`, `engine-strict=true`
-- [ ] Lockfiles committed; `npm ci` used everywhere (CI, Docker)
-- [ ] Native deps that need build scripts (e.g. existing `sharp`) are allowlisted via explicit `npm rebuild` in the Dockerfile
-- [ ] DEVELOPMENT.md documents the hardening and the rebuild allowlist
+- [x] `.npmrc` sets `ignore-scripts=true`, `save-exact=true`, `engine-strict=true`
+- [x] Lockfiles committed; `npm ci` used everywhere (CI, Docker)
+- [x] Native deps that need build scripts (e.g. existing `sharp`) are allowlisted via explicit `npm rebuild` in the Dockerfile
+- [x] DEVELOPMENT.md documents the hardening and the rebuild allowlist
 
 **Size:** S
+
+**Implementation Notes:**
+
+- `.npmrc` added with `ignore-scripts=true`, `save-exact=true`, `engine-strict=true`.
+- `sharp` (used by `scripts/generate-pwa-icons.mjs`) allow-listed: the `install` compose service runs `npm rebuild sharp` after `npm ci`; CI gained a matching "Rebuild allow-listed native deps" step. Allowlist documented in `Dockerfile.dev`.
+- Husky's `prepare` lifecycle script no longer auto-runs; documented `npm run prepare` one-time setup in DEVELOPMENT.md.
+- Verified in-container: hardened `npm ci` + `npm rebuild sharp` succeeds, `sharp` loads (v0.34.5), type-check + 1254 tests pass.
 
 ---
 
