@@ -104,7 +104,7 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
           t: 'welcome',
           you: resolved.player,
           players: hub.publicMembers(),
-          phase: 'setup',
+          phase: hub.getPhase(),
           zone: hub.getZone(),
         })
         broadcast(code, { t: 'player.joined', player: resolved.player }, resolved.player.id)
@@ -191,7 +191,10 @@ function handleMessage(
       break
     }
     case 'host.action': {
-      // Phase handling lands in MULTI-003b; acknowledge structurally for now.
+      // Host-authoritative phase transition (MULTI-003b-1). Non-host actions
+      // and unknown actions are ignored by the hub.
+      const phase = hub.applyHostAction(playerId, msg.action)
+      if (phase) broadcast(code, { t: 'phase', phase })
       break
     }
     case 'hello':

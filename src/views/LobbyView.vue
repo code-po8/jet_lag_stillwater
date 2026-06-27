@@ -8,11 +8,14 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSync } from '@/composables/useSync'
+import { useGameSync } from '@/composables/useGameSync'
 import { getWsUrl } from '@/services/sync/roomApi'
+import { GamePhase } from '@/stores/gameStore'
 
 const router = useRouter()
 const room = useRoomStore()
 const sync = useSync()
+const { hostAction } = useGameSync()
 
 /** Open the realtime connection once we have a room code + rejoin token. */
 async function connectSync() {
@@ -66,7 +69,8 @@ async function joinRoom() {
 }
 
 function startGame() {
-  // Phase/start wiring lands with the sync stories; for now enter the game view.
+  // Host starts the round: broadcast the phase transition, then enter the game.
+  hostAction('start-hiding', GamePhase.HidingPeriod)
   router.push('/game')
 }
 

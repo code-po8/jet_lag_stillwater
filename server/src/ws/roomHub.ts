@@ -1,4 +1,11 @@
-import type { Position, PublicPlayer, Role, Zone } from '@shared'
+import type { GamePhase, Position, PublicPlayer, Role, Zone } from '@shared'
+
+/** Host action → resulting phase (host-authoritative transitions). */
+const ACTION_TO_PHASE: Record<string, GamePhase> = {
+  'start-hiding': 'hiding-period',
+  'start-seeking': 'seeking',
+  'end-round': 'round-complete',
+}
 
 interface Member {
   id: string
@@ -43,9 +50,27 @@ export class RoomHub {
   private zone: Zone | null = null
   private ruledOut = new Set<string>()
   private breached = new Set<string>()
+  private phase: GamePhase = 'setup'
 
   constructor(code: string) {
     this.code = code
+  }
+
+  getPhase(): GamePhase {
+    return this.phase
+  }
+
+  /**
+   * Apply a host phase action. Host-authoritative: returns the new phase if the
+   * actor is the host and the action maps to a transition, else null (ignored).
+   */
+  applyHostAction(actorId: string, action: string): GamePhase | null {
+    const actor = this.membersById.get(actorId)
+    if (!actor || !actor.isHost) return null
+    const next = ACTION_TO_PHASE[action]
+    if (!next) return null
+    this.phase = next
+    return next
   }
 
   addMember(input: MemberInput): void {
