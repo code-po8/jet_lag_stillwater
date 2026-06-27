@@ -54,6 +54,8 @@ d('room routes (integration)', () => {
       const res = await app.inject({ method: 'GET', url: `/rooms/${body.code}` })
       expect(res.statusCode).toBe(200)
       expect(res.json().players).toHaveLength(1)
+      // The roster conforms to the PublicPlayer DTO, incl. `connected`.
+      expect(res.json().players[0]).toHaveProperty('connected')
     })
 
     it('is case-insensitive on the code', async () => {

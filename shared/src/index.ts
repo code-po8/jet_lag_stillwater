@@ -237,6 +237,22 @@ export function computeClockOffset(t1: number, t2: number, t3: number): number {
   return t2 - (t1 + t3) / 2
 }
 
+/**
+ * Great-circle distance in meters between two lat/lng points (haversine).
+ * The single source of truth for distance — client (throttle, shading) and
+ * server (zone-breach) all use this so the breach boundary can never drift.
+ */
+export function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6_371_000 // Earth radius (m)
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(bLat - aLat)
+  const dLng = toRad(bLng - aLng)
+  const lat1 = toRad(aLat)
+  const lat2 = toRad(bLat)
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
 export function isClientMessageType(t: string): t is ClientMessage['t'] {
   return (
     t === 'hello' ||

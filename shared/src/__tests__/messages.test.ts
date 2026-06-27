@@ -3,6 +3,7 @@ import {
   isClientMessageType,
   isServerMessageType,
   computeClockOffset,
+  distanceMeters,
   QUARTER_MILE_M,
   type ClientMessage,
   type ServerMessage,
@@ -65,6 +66,24 @@ describe('computeClockOffset', () => {
   it('time.sync / time.reply are recognized message types', () => {
     expect(isClientMessageType('time.sync')).toBe(true)
     expect(isServerMessageType('time.reply')).toBe(true)
+  })
+})
+
+describe('distanceMeters', () => {
+  it('is zero for identical points', () => {
+    expect(distanceMeters(36.12, -97.07, 36.12, -97.07)).toBe(0)
+  })
+
+  it('approximates a known short distance (~111m per 0.001 deg lat)', () => {
+    const d = distanceMeters(36.12, -97.07, 36.121, -97.07)
+    expect(d).toBeGreaterThan(100)
+    expect(d).toBeLessThan(120)
+  })
+
+  it('is symmetric', () => {
+    const ab = distanceMeters(36.12, -97.07, 36.13, -97.08)
+    const ba = distanceMeters(36.13, -97.08, 36.12, -97.07)
+    expect(ab).toBeCloseTo(ba, 6)
   })
 })
 

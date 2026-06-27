@@ -14,8 +14,17 @@ export interface RoomRoutesOptions extends FastifyPluginOptions {
 }
 
 /** Shape returned for a player to the client (never includes the token hash). */
-function publicPlayer(p: { id: string; name: string; role: string; is_host: boolean }) {
-  return { id: p.id, name: p.name, role: p.role, isHost: p.is_host }
+function publicPlayer(p: {
+  id: string
+  name: string
+  role: string
+  is_host: boolean
+  connected: boolean
+}) {
+  // `connected` is part of the PublicPlayer DTO; omitting it left REST-sourced
+  // rosters with connected===undefined (rendered as disconnected) until a WS
+  // presence event arrived.
+  return { id: p.id, name: p.name, role: p.role, isHost: p.is_host, connected: p.connected }
 }
 
 /**

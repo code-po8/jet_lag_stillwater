@@ -7,7 +7,8 @@
  */
 import { computed } from 'vue'
 import { useSync } from './useSync'
-import { encodeGeohash, cellsInBBox, type Bounds } from '@/utils/geohash'
+import { encodeGeohash, geohashBounds, cellsInBBox, type Bounds } from '@/utils/geohash'
+import { distanceMeters } from '@shared'
 
 const SHADE_PRECISION = 6 // ~1.2km cells — coarse enough to sync cheaply
 
@@ -99,49 +100,13 @@ export function useShading() {
 
 /** Is a geohash cell's approx center within `radiusMiles` of the seeker? */
 function withinRadius(cell: string, seeker: LatLng, radiusMiles: number): boolean {
-  // Re-derive the cell center from its hash via the bbox midpoint.
-  // (Avoids importing geohashBounds twice — recompute cheaply.)
-  // Distance via equirectangular approximation (fine at city scale).
   const { lat, lng } = cellCenter(cell)
-  const meters = haversineMeters(seeker.lat, seeker.lng, lat, lng)
+  const meters = distanceMeters(seeker.lat, seeker.lng, lat, lng)
   return meters <= radiusMiles * 1609.34
 }
 
+/** Center of a geohash cell — the midpoint of its bounds. */
 function cellCenter(cell: string): LatLng {
-  // Lightweight reuse of the decode logic via geohashBounds-equivalent.
-  // Import lazily to avoid a circular concern — inline a tiny decode here.
-  const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz'
-  let latMin = -90,
-    latMax = 90,
-    lngMin = -180,
-    lngMax = 180,
-    even = true
-  for (const c of cell) {
-    const idx = BASE32.indexOf(c)
-    for (let z = 4; z >= 0; z--) {
-      const bit = (idx >> z) & 1
-      if (even) {
-        const mid = (lngMin + lngMax) / 2
-        if (bit) lngMin = mid
-        else lngMax = mid
-      } else {
-        const mid = (latMin + latMax) / 2
-        if (bit) latMin = mid
-        else latMax = mid
-      }
-      even = !even
-    }
-  }
-  return { lat: (latMin + latMax) / 2, lng: (lngMin + lngMax) / 2 }
-}
-
-function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const R = 6_371_000
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const dLat = toRad(bLat - aLat)
-  const dLng = toRad(bLng - aLng)
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
+  const b = geohashBounds(cell)
+  return { lat: (b.south + b.north) / 2, lng: (b.west + b.east) / 2 }
 }

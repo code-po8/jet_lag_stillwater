@@ -8,21 +8,15 @@
  * Pure function so it is trivially unit-testable.
  */
 import type { Position } from '@/services/sync/protocol'
+import { distanceMeters as distanceMetersLL } from '@shared'
 
 export const MIN_INTERVAL_MS = 2500 // ~2.5s between sends
 export const MIN_MOVE_M = 15 // or whenever moved > 15 m
 export const MAX_ACCURACY_M = 100 // drop fixes worse than this
 
-/** Haversine distance in meters (shared shape with the server's RoomHub). */
+/** Haversine distance in meters between two positions (delegates to @shared). */
 export function distanceMeters(a: Position, b: Position): number {
-  const R = 6_371_000
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const dLat = toRad(b.lat - a.lat)
-  const dLng = toRad(b.lng - a.lng)
-  const lat1 = toRad(a.lat)
-  const lat2 = toRad(b.lat)
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
+  return distanceMetersLL(a.lat, a.lng, b.lat, b.lng)
 }
 
 export function shouldSendPosition(last: Position | null, next: Position): boolean {
