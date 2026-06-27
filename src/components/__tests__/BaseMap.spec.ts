@@ -23,6 +23,7 @@ function fakeLeaflet() {
     circleMarker: vi.fn().mockReturnValue({ bindTooltip: vi.fn().mockReturnThis() }),
     circle: vi.fn().mockReturnValue(circle),
     layerGroup: vi.fn().mockReturnValue(group),
+    rectangle: vi.fn().mockReturnValue({ addTo: vi.fn() }),
   }
   return { L, map, layer, circle, group }
 }
@@ -144,6 +145,23 @@ describe('BaseMap (MAP-001)', () => {
       (c) => (c[1] as { fillColor: string }).fillColor,
     )
     expect(new Set(fills).size).toBe(2) // hider vs seeker color differ
+  })
+
+  it('shades ruled-out geohash cells as rectangles (MAP-005)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        shadedCells: ['9yd8s', '9yd8t', '9yd8w'],
+      },
+    })
+    await nextTick()
+    expect(fake.L.rectangle).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not shade when there are no ruled-out cells', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never } })
+    await nextTick()
+    expect(fake.L.rectangle).not.toHaveBeenCalled()
   })
 
   it('styles city-limits distinctly from roads', async () => {
