@@ -4251,19 +4251,26 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-001: Base Map Component
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MAP-000
 
 **Story:** As a player, I need a map view so that I can see the game area and overlays.
 
 **Acceptance Criteria:**
 
-- [ ] Leaflet displays the pre-baked static base (MAP-000); overlays draw on top
-- [ ] Mobile-first; readable in outdoor sunlight; new "Map" tab in bottom nav
-- [ ] Bundled base asset cached via PWA/workbox so it's available offline after first load
-- [ ] All icon-only controls have textual descriptions (label or tooltip + `aria-label`)
+- [x] Leaflet displays the pre-baked static base (MAP-000); overlays draw on top
+- [x] Mobile-first; readable in outdoor sunlight; new "Map" tab in bottom nav
+- [x] Bundled base asset cached via PWA/workbox so it's available offline after first load
+- [x] All icon-only controls have textual descriptions (label or tooltip + `aria-label`)
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `src/components/BaseMap.vue`: Leaflet (added `leaflet` + `@types/leaflet`) renders the baked base (`stillwater-base.json`, renamed from `.geojson` for native TS/Vite JSON import) — **no tile layer / API key**. City-limits drawn as a dashed cyan brand boundary over a navy canvas; roads as styled lines. Fits to the city-limits bounds; exposes the `map` instance via `ready` + a default slot for later overlays. Injectable `leaflet` prop for tests.
+- "Map" tab added to `BottomNav` (type + tabs + SVG icon) and rendered in `GamePlayView`'s content area (sized container for Leaflet). 40px zoom controls for touch/outdoor; `role="region"` + `aria-label` on the map.
+- Offline: the base asset is imported (bundled into JS) and **precached by workbox** (precache grew to ~1 MB), so the map works offline after first load.
+- TDD: `BaseMap.spec.ts` (6, mock Leaflet) + updated BottomNav tests (5 tabs). Verified in-container: 1358 frontend tests pass; production build + PWA precache OK.
 
 ---
 

@@ -17,7 +17,7 @@ interface Collection {
   features: Feature[]
 }
 
-const assetPath = resolve(process.cwd(), 'src/assets/map/stillwater-base.geojson')
+const assetPath = resolve(process.cwd(), 'src/assets/map/stillwater-base.json')
 const fc = JSON.parse(readFileSync(assetPath, 'utf8')) as Collection
 
 describe('Stillwater base map asset (MAP-000)', () => {

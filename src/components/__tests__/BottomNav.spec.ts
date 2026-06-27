@@ -30,6 +30,7 @@ describe('BottomNav', () => {
       })
 
       expect(wrapper.find('[data-testid="nav-tab-questions"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="nav-tab-map"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="nav-tab-timers"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="nav-tab-cards"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="nav-tab-history"]').exists()).toBe(true)
@@ -43,6 +44,7 @@ describe('BottomNav', () => {
       })
 
       expect(wrapper.text()).toContain('Questions')
+      expect(wrapper.text()).toContain('Map')
       expect(wrapper.text()).toContain('Timers')
       expect(wrapper.text()).toContain('Cards')
       expect(wrapper.text()).toContain('History')
@@ -57,7 +59,7 @@ describe('BottomNav', () => {
 
       // Check only button elements (not their children) for touch-friendly styling
       const tabs = wrapper.findAll('button[data-testid^="nav-tab-"]')
-      expect(tabs.length).toBe(4)
+      expect(tabs.length).toBe(5)
       tabs.forEach((tab) => {
         // Verify tab has bottom-nav-item class for proper touch target styling
         expect(tab.classes()).toContain('bottom-nav-item')
