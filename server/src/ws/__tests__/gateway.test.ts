@@ -139,4 +139,32 @@ describe('WS gateway (integration)', () => {
     if (ruled.t === 'ruledout') expect(ruled.cells.sort()).toEqual(['a', 'b'])
     seeker.close()
   })
+
+  it('broadcasts a phase change when the HOST sends host.action', async () => {
+    const { ws: hider } = await helloAs('tok-hider') // host
+    const { ws: seeker } = await helloAs('tok-seeker')
+
+    const phasePromise = nextMessage(seeker, (m) => m.t === 'phase')
+    hider.send(JSON.stringify({ t: 'host.action', action: 'start-seeking' }))
+
+    const phase = await phasePromise
+    expect(phase.t === 'phase' && phase.phase).toBe('seeking')
+    hider.close()
+    seeker.close()
+  })
+
+  it('ignores host.action from a NON-host (no phase broadcast)', async () => {
+    const { ws: hider } = await helloAs('tok-hider')
+    const { ws: seeker } = await helloAs('tok-seeker')
+
+    let got = false
+    seeker.on('message', (d: Buffer) => {
+      if ((JSON.parse(d.toString()) as ServerMessage).t === 'phase') got = true
+    })
+    seeker.send(JSON.stringify({ t: 'host.action', action: 'end-round' }))
+    await new Promise((r) => setTimeout(r, 200))
+    expect(got).toBe(false)
+    hider.close()
+    seeker.close()
+  })
 })

@@ -134,6 +134,39 @@ describe('RoomHub zone + breach', () => {
   })
 })
 
+describe('RoomHub phase (host-authoritative)', () => {
+  let hub: RoomHub
+  beforeEach(() => {
+    hub = new RoomHub('ABCD')
+    hub.addMember(hiderPlayer) // isHost: true
+    hub.addMember(seekerPlayer) // isHost: false
+  })
+
+  it('starts in setup', () => {
+    expect(hub.getPhase()).toBe('setup')
+  })
+
+  it('lets the host transition the phase', () => {
+    expect(hub.applyHostAction('h1', 'start-seeking')).toBe('seeking')
+    expect(hub.getPhase()).toBe('seeking')
+  })
+
+  it('ignores a non-host actor (conflict resolution)', () => {
+    expect(hub.applyHostAction('s1', 'start-seeking')).toBeNull()
+    expect(hub.getPhase()).toBe('setup')
+  })
+
+  it('ignores an unknown action', () => {
+    expect(hub.applyHostAction('h1', 'nonsense')).toBeNull()
+    expect(hub.getPhase()).toBe('setup')
+  })
+
+  it('maps start-hiding and end-round', () => {
+    expect(hub.applyHostAction('h1', 'start-hiding')).toBe('hiding-period')
+    expect(hub.applyHostAction('h1', 'end-round')).toBe('round-complete')
+  })
+})
+
 describe('RoomHub ruled-out cells (set union)', () => {
   let hub: RoomHub
   beforeEach(() => {

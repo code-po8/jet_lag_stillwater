@@ -3616,37 +3616,96 @@ describe('room creation and join', () => {
 
 ---
 
-### MULTI-003b: Real-Time Game-State Sync
+### MULTI-003b: Real-Time Game-State Sync (umbrella)
 
-**Status:** `pending`
+**Status:** `pending` (tracked via sub-stories below)
 **Depends On:** MULTI-003a
 
 **Story:** As a player in a multiplayer game, I need game-state changes to sync across all devices in real-time so that everyone sees the same game state.
 
-**Acceptance Criteria:**
+**Acceptance Criteria (delivered across the sub-stories):**
 
-- [ ] Game phase changes sync to all players
-- [ ] Question asked/answered events sync immediately
-- [ ] Curse activations appear on all seeker devices
-- [ ] Timer states are synchronized (accounting for network latency via ping/pong clock offset)
-- [ ] Card draws are recorded and synced (hider's perspective shared appropriately; cards withheld from seekers)
-- [ ] Time trap triggers sync to all players
-- [ ] Conflict resolution handles simultaneous actions
-- [ ] Optimistic UI updates with server reconciliation
+- [ ] Game phase changes sync to all players — **MULTI-003b-1**
+- [ ] Question asked/answered events sync immediately — **MULTI-003b-2**
+- [ ] Curse activations appear on all seeker devices — **MULTI-003b-2**
+- [ ] Timer states are synchronized (ping/pong clock offset) — **MULTI-003b-3**
+- [ ] Card draws recorded/synced (cards withheld from seekers) — **MULTI-003b-3**
+- [ ] Time trap triggers sync to all players — **MULTI-003b-3**
+- [ ] Conflict resolution handles simultaneous actions — host-authoritative, **MULTI-003b-1**
+- [ ] Optimistic UI updates with server reconciliation — **MULTI-003b-1**
 
-**Size:** XL (consider breaking down further)
+**Size:** XL → split into 003b-1/2/3.
 
 **Notes:**
 
-- Implement incrementally: questions first, then curses, then timers
-- Latency compensation is critical for timer sync
+- The XL card was split per CLAUDE.md ("split cards if too large"). Foundation
+  first (phase), then questions/curses, then timers/cards/traps.
+
+---
+
+### MULTI-003b-1: Phase Sync (host-authoritative)
+
+**Status:** `complete`
+**Depends On:** MULTI-003a
+
+**Story:** As a player, I need game phase changes to sync so that everyone moves through hiding/seeking/end-game together.
+
+**Acceptance Criteria:**
+
+- [x] Host phase actions broadcast to all devices (`host.action` → server applies → `phase` broadcast)
+- [x] Non-host clients apply the synced phase via `useSync` (no local-only phase drift in a room)
+- [x] Host-authoritative: only the host's phase actions take effect (conflict resolution)
+- [x] Optimistic local update on the host with server confirmation
+- [x] Offline play unaffected (phase still driven locally with no room)
+
+**Size:** M
+
+**Implementation Notes:**
+
+- Server: `RoomHub` gains `phase` + `applyHostAction(actorId, action)` (host-only, maps start-hiding/start-seeking/end-round → phase; non-host/unknown ignored). Gateway `host.action` → `applyHostAction` → broadcast `phase`; `welcome` now uses `hub.getPhase()`.
+- Client: `useSync` adds `sendHostAction`. `src/composables/useGameSync.ts` watches `sync.phase` and mirrors it into `gameStore.currentPhase` **only while in a room**; `hostAction()` does an optimistic local update + broadcast for the host (no-op for non-host). LobbyView "Start Game" now broadcasts `start-hiding`.
+- TDD: roomHub phase (5) + gateway phase (2 over real sockets) + `useGameSync.spec.ts` (4). Verified in-container: server 65 tests, frontend 1330 tests pass; frontend + backend prod builds succeed.
+
+---
+
+### MULTI-003b-2: Question & Curse Sync
+
+**Status:** `pending`
+**Depends On:** MULTI-003b-1
+
+**Story:** As a player, I need asked/answered questions and curse activations to appear on every device.
+
+**Acceptance Criteria:**
+
+- [ ] Question asked/answered events sync immediately to all players
+- [ ] Curse activations appear on all seeker devices
+- [ ] Reuses `questionStore`/`cardStore` shapes (no parallel state)
+
+**Size:** L
+
+---
+
+### MULTI-003b-3: Timer, Card & Time-Trap Sync
+
+**Status:** `pending`
+**Depends On:** MULTI-003b-2
+
+**Story:** As a player, I need timers, card draws, and time traps synchronized so scoring and tension stay consistent.
+
+**Acceptance Criteria:**
+
+- [ ] Timer states synchronized using a ping/pong clock offset
+- [ ] Card draws recorded/synced; cards withheld from seekers (server-side)
+- [ ] Time trap triggers sync to all players
+
+**Size:** L
 
 ---
 
 ### MULTI-004: Offline Handling & Reconnection
 
 **Status:** `pending`
-**Depends On:** MULTI-003b
+**Depends On:** MULTI-003b-3
 
 **Story:** As a player, I need the app to handle disconnections gracefully so that I can rejoin the game without losing progress.
 

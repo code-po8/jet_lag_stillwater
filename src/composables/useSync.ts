@@ -46,7 +46,11 @@ export interface SyncSession {
   sendPosition(pos: Position): void
   setZone(zone: Zone): void
   addRuledOutCells(cells: string[]): void
+  sendHostAction(action: HostAction): void
 }
+
+/** Host-only phase/control actions (MULTI-003b-1). */
+export type HostAction = 'start-hiding' | 'start-seeking' | 'end-round' | 'pause' | 'resume'
 
 export function createSyncSession(options: SyncSessionOptions = {}): SyncSession {
   const service = options.service ?? createSyncService('ws')
@@ -138,6 +142,9 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   function addRuledOutCells(cells: string[]): void {
     service.send({ t: 'ruledout.add', cells })
   }
+  function sendHostAction(action: HostAction): void {
+    service.send({ t: 'host.action', action })
+  }
 
   return {
     status: service.status,
@@ -154,6 +161,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     sendPosition,
     setZone,
     addRuledOutCells,
+    sendHostAction,
   }
 }
 
