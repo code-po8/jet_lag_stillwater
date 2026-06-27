@@ -145,15 +145,27 @@ execute dependency code are moved into containers.
 ### Everyday commands
 
 ```bash
-# Install dependencies into the container's node_modules volume
+# Frontend ------------------------------------------------------------------
+# Install frontend deps into the container's node_modules volume
 # (run once, and any time package.json / package-lock.json changes)
 docker compose run --rm install
 
-# Run the dev server (http://localhost:5173)
+# Run the frontend dev server (http://localhost:5173)
 docker compose up frontend
 
-# Run type-check + the full unit suite (network-isolated)
+# Run frontend type-check + the full unit suite (network-isolated)
 docker compose run --rm test
+
+# Backend (server/) ---------------------------------------------------------
+# Install backend deps (separate package + lockfile, own volume)
+docker compose run --rm install-server
+
+# Run the backend dev server + Postgres (http://localhost:3000/health)
+# If host port 5432 is taken: POSTGRES_HOST_PORT=5433 docker compose up backend
+docker compose up backend
+
+# Run backend type-check + tests (network-isolated)
+docker compose run --rm test-server
 ```
 
 ### How the isolation works

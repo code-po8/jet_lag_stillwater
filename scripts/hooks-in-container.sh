@@ -17,17 +17,28 @@ npm run secrets:scan:staged
 echo "-- lint-staged (eslint + prettier) --"
 npx lint-staged
 
-# 3. Whole-project type check.
-echo "-- type-check --"
+# 3. Frontend type check (vue-tsc). Server type-check/tests run in their own
+#    container (docker compose run --rm test-server) and in CI.
+echo "-- type-check (frontend) --"
 npm run type-check
 
-# 4. Unit tests related to staged .ts/.vue files.
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|vue)$' | tr '\n' ' ' || true)
+# 4. Frontend unit tests related to staged frontend files only.
+#    Server files (server/**) are excluded — this container has the frontend's
+#    deps + vite config, not the server's, so it cannot transform them.
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR \
+  | grep -E '\.(ts|vue)$' \
+  | grep -vE '^server/' \
+  | tr '\n' ' ' || true)
 if [ -n "$STAGED_FILES" ]; then
-  echo "-- vitest related --"
+  echo "-- vitest related (frontend) --"
   npx vitest related --run $STAGED_FILES
 else
-  echo "-- vitest related: no .ts/.vue staged, skipping --"
+  echo "-- vitest related: no frontend .ts/.vue staged, skipping --"
+fi
+
+# 5. If backend sources changed, remind that they're verified separately.
+if git diff --cached --name-only --diff-filter=ACMR | grep -qE '^server/.*\.ts$'; then
+  echo "-- note: server/ changed — verify with: docker compose run --rm test-server --"
 fi
 
 echo "== pre-commit checks passed =="

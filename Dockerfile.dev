@@ -37,9 +37,10 @@ WORKDIR /app
 
 # Pre-create the volume mountpoints owned by the non-root `node` user. Docker
 # named volumes inherit the ownership of their mountpoint in the image, so this
-# makes both the node_modules volume and the npm cache writable by `node`
-# (npm runs as non-root).
-RUN mkdir -p /app/node_modules /home/node/.npm \
+# makes the node_modules volumes (frontend + server) and the npm cache writable
+# by `node` (npm runs as non-root). Without this, a fresh named volume mounts
+# root-owned and `npm ci` fails with EACCES.
+RUN mkdir -p /app/node_modules /app/server/node_modules /home/node/.npm \
   && chown -R node:node /app /home/node/.npm
 
 # Drop to the unprivileged user for everything that follows.

@@ -3885,19 +3885,28 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### INFRA-003: Backend Skeleton
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** INFRA-001, INFRA-002
 
 **Story:** As a developer, I need a Fastify backend skeleton so that room and sync features have a home.
 
 **Acceptance Criteria:**
 
-- [ ] `server/` package with **its own `package.json` + lockfile** (independent from frontend)
-- [ ] Fastify app boots, listens on `process.env.PORT` / `0.0.0.0`, has a health-check endpoint
-- [ ] Dockerfile for the backend service
-- [ ] Runs via `docker compose up` alongside Postgres
+- [x] `server/` package with **its own `package.json` + lockfile** (independent from frontend)
+- [x] Fastify app boots, listens on `process.env.PORT` / `0.0.0.0`, has a health-check endpoint
+- [x] Dockerfile for the backend service
+- [x] Runs via `docker compose up` alongside Postgres
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `server/` package (Fastify 5, TypeScript, vitest) with its own `package.json` + `package-lock.json`, independent from the frontend.
+- `server/src/app.ts` (`buildApp()` factory, testable via `inject()`) + `server/src/server.ts` (listens on `process.env.PORT`/`0.0.0.0`, graceful SIGINT/SIGTERM shutdown). `GET /health` returns `{ status, uptime, timestamp }`.
+- `server/Dockerfile` — multi-stage production image (build TS → run compiled JS, non-root, tini). Verified: builds, boots, `/health` → 200.
+- docker-compose services added: `install-server`, `backend` (with `postgres`), `test-server` (network-isolated). Postgres host port overridable via `POSTGRES_HOST_PORT` to avoid clashes.
+- TDD: `server/src/__tests__/app.test.ts` (6 tests) — health 200/JSON/uptime/timestamp, 404 unknown route, logger flag. Verified in-container: type-check + 6 tests pass; `docker compose up backend` + postgres healthy.
+- Backend deps install into a dedicated `server_node_modules` volume; Dockerfile.dev pre-creates the mountpoint node-owned.
 
 ---
 
