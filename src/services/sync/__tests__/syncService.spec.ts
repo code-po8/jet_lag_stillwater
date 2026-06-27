@@ -134,6 +134,25 @@ describe('WsSyncService', () => {
     expect(() => ws.onmessage?.({ data: 'not json' })).not.toThrow()
   })
 
+  it('rejects connect() when the socket closes before opening (no error event)', async () => {
+    const svc = new WsSyncService({ autoReconnect: false })
+    const p = svc.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    // Some environments fire only `close` (server refuses upgrade / abrupt RST);
+    // the connect promise must reject rather than hang forever.
+    MockWebSocket.last!._drop()
+    await expect(p).rejects.toBeInstanceOf(Error)
+    expect(svc.status.value).toBe('disconnected')
+  })
+
+  it('does not reject connect() for an error AFTER it succeeded', async () => {
+    const { svc, ws, connected } = makeConnected()
+    await connected // resolved
+    // A late error on an already-connected socket must not surface as an
+    // unhandled rejection of the (already-settled) connect promise.
+    expect(() => ws.onerror?.(new Error('late'))).not.toThrow()
+    expect(svc.status.value).toBe('connected')
+  })
+
   it('disconnect() closes the socket and sets disconnected', async () => {
     const { svc, connected } = makeConnected()
     await connected

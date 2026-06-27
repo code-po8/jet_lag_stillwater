@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useQuestionCurseSync } from '../useQuestionCurseSync'
 import { useRoomStore } from '@/stores/roomStore'
@@ -85,6 +85,23 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     const bridge = useQuestionCurseSync()
     // Should be a no-op and not throw.
     expect(() => bridge.applyRemoteEvent('card.drawn', { cardId: 'x' })).not.toThrow()
+  })
+
+  it('warns when a remote event fails to apply locally (silent divergence)', () => {
+    enterRoom()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const bridge = useQuestionCurseSync()
+
+    // First ask succeeds and leaves a pending question; a second remote ask
+    // (different id) fails its precondition ("a question is already pending").
+    // The relay replays an action, so the failure would otherwise be silent —
+    // assert it is surfaced so divergence is diagnosable.
+    bridge.applyRemoteEvent('question.asked', { questionId: RADAR_Q })
+    bridge.applyRemoteEvent('question.asked', { questionId: 'radar-1-mile' })
+
+    expect(warn).toHaveBeenCalled()
+    expect(warn.mock.calls.some((c) => String(c[0]).includes('question.asked'))).toBe(true)
+    warn.mockRestore()
   })
 
   it('round-trips ask then answer through the bridge', () => {

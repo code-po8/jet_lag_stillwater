@@ -44,4 +44,28 @@ describe('cellsInBBox', () => {
     const large = cellsInBBox({ south: 36.0, west: -97.15, north: 36.2, east: -97.0 }, 6)
     expect(large.length).toBeGreaterThan(small.length)
   })
+
+  it('fully covers the bbox with no skipped cells (precision 6)', () => {
+    // Regression: the cell-step must not exceed the true cell size, or whole
+    // rows/columns of cells between sample points get skipped, leaving
+    // un-shaded stripes in the seeker shading. Verify coverage by checking that
+    // the cell of every point on a fine grid across the bbox is returned.
+    const b = { south: 36.1, west: -97.1, north: 36.16, east: -97.04 }
+    const cells = new Set(cellsInBBox(b, 6))
+    for (let lat = b.south; lat <= b.north; lat += 0.001) {
+      for (let lng = b.west; lng <= b.east; lng += 0.001) {
+        expect(cells.has(encodeGeohash(lat, lng, 6))).toBe(true)
+      }
+    }
+  })
+
+  it('fully covers the bbox with no skipped cells (precision 7)', () => {
+    const b = { south: 36.12, west: -97.07, north: 36.13, east: -97.06 }
+    const cells = new Set(cellsInBBox(b, 7))
+    for (let lat = b.south; lat <= b.north; lat += 0.0003) {
+      for (let lng = b.west; lng <= b.east; lng += 0.0003) {
+        expect(cells.has(encodeGeohash(lat, lng, 7))).toBe(true)
+      }
+    }
+  })
 })

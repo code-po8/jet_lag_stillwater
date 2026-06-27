@@ -103,19 +103,37 @@ export class WsSyncService implements SyncService {
     return new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(options.url)
       this.socket = socket
+      // Settle exactly once: a socket can close without ever firing `error`
+      // (server refuses the upgrade, abrupt RST, browsers that emit only
+      // `close`). Without this guard the initial-connect promise would hang
+      // forever in that case. After it settles, reconnects run on their own.
+      let settled = false
+      const settleResolve = () => {
+        if (settled) return
+        settled = true
+        resolve()
+      }
+      const settleReject = (err: unknown) => {
+        if (settled) return
+        settled = true
+        reject(err)
+      }
 
       socket.onopen = () => {
         // Re-attach + reconcile: the server replies with a fresh `welcome`.
         this.send({ t: 'hello', code: options.code, rejoinToken: options.rejoinToken })
         this.status.value = 'connected'
         this.reconnectAttempt = 0
-        resolve()
+        settleResolve()
       }
       socket.onerror = (err) => {
-        if (this.status.value === 'connecting') reject(err)
+        settleReject(err)
       }
       socket.onclose = () => {
         this.socket = null
+        // A close before the promise settled means the initial connect failed
+        // (e.g. no prior `error` event) — reject so the caller doesn't hang.
+        settleReject(new Error('WebSocket closed before connecting'))
         if (this.manualClose || !this.autoReconnect || !this.pending) {
           this.status.value = 'disconnected'
           return

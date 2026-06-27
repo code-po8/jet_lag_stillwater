@@ -84,20 +84,30 @@ export function geohashBounds(hash: string): Bounds {
   return { south: latMin, west: lngMin, north: latMax, east: lngMax }
 }
 
-/** Approximate cell size (deg) by precision — used to step across a bbox. */
-const CELL_DEG: Record<number, { lat: number; lng: number }> = {
-  5: { lat: 0.04, lng: 0.04 },
-  6: { lat: 0.012, lng: 0.012 },
-  7: { lat: 0.0015, lng: 0.003 },
+/**
+ * Exact geohash cell size (deg) at a given precision. Each base32 char adds 5
+ * bits, alternating lng/lat starting with lng, so a `precision`-char hash uses
+ * `ceil(5p/2)` lng bits and `floor(5p/2)` lat bits. The cell is the global range
+ * (360 lng / 180 lat) divided by 2^bits — exact, not approximate.
+ */
+export function cellSizeDeg(precision: number): { lat: number; lng: number } {
+  const totalBits = precision * 5
+  const lngBits = Math.ceil(totalBits / 2)
+  const latBits = Math.floor(totalBits / 2)
+  return { lat: 180 / 2 ** latBits, lng: 360 / 2 ** lngBits }
 }
 
 /** Enumerate the distinct geohash cells covering a bounding box. */
 export function cellsInBBox(b: Bounds, precision = 6): string[] {
-  const step = CELL_DEG[precision] ?? { lat: 0.01, lng: 0.01 }
+  const cell = cellSizeDeg(precision)
+  // Step by half a cell so no whole cell can fall between adjacent sample
+  // points (a full-cell step risks skipping a row/column near cell edges).
+  const latStep = cell.lat / 2
+  const lngStep = cell.lng / 2
   const cells = new Set<string>()
-  for (let lat = b.south; lat <= b.north; lat += step.lat / 2) {
-    for (let lng = b.west; lng <= b.east; lng += step.lng / 2) {
-      cells.add(encodeGeohash(lat, lng, precision))
+  for (let lat = b.south; lat <= b.north + latStep; lat += latStep) {
+    for (let lng = b.west; lng <= b.east + lngStep; lng += lngStep) {
+      cells.add(encodeGeohash(Math.min(lat, b.north), Math.min(lng, b.east), precision))
     }
   }
   return [...cells]
