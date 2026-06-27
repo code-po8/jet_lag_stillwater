@@ -4037,19 +4037,26 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### SYNC-001: SyncService Abstraction
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** INFRA-008
 
 **Story:** As a developer, I need a swappable sync transport so that the app stays offline-first when no room is joined.
 
 **Acceptance Criteria:**
 
-- [ ] `src/services/sync/` transport interface mirroring `PersistenceService`
-- [ ] `NoopSyncService` (default) — app behaves exactly as today with no room
-- [ ] `WsSyncService` — connects to the backend WS gateway
-- [ ] localStorage persistence keeps running in parallel; stores remain the local source of truth
+- [x] `src/services/sync/` transport interface mirroring `PersistenceService`
+- [x] `NoopSyncService` (default) — app behaves exactly as today with no room
+- [x] `WsSyncService` — connects to the backend WS gateway
+- [x] localStorage persistence keeps running in parallel; stores remain the local source of truth
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `src/services/sync/syncService.ts`: `SyncService` interface (reactive `status` ref, `connect/disconnect/send/onMessage`) mirroring the `PersistenceService` interface+factory pattern. Types come from `@shared` via `protocol.ts` (INFRA-008).
+- `NoopSyncService` (default) — all no-ops, stays `disconnected`, so single-device/offline play is unchanged. `WsSyncService` — opens a WebSocket, sends the `hello` handshake on open (rejoin token in the first message, not the URL), fans inbound frames to subscribers, ignores malformed JSON. `createSyncService(kind)` factory defaults to noop.
+- Purely additive: localStorage persistence and the stores are untouched (store↔sync wiring is SYNC-002).
+- TDD: `syncService.spec.ts` (14 tests, WsSyncService exercised against a mock WebSocket). Verified in-container: 1275 frontend tests pass.
 
 ---
 
