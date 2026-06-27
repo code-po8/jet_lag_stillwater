@@ -6,13 +6,23 @@ import MapPanel from '../MapPanel.vue'
 import { useSync, __resetSyncSession } from '@/composables/useSync'
 import { QUARTER_MILE_M } from '@/services/sync/protocol'
 
-// Stub the heavy Leaflet-based BaseMap.
+// Stub the heavy Leaflet-based BaseMap; expose the markers count for assertions.
 vi.mock('../BaseMap.vue', () => ({
   default: {
     name: 'BaseMap',
-    props: ['zone', 'breached'],
-    template: '<div data-testid="base-map-stub" />',
+    props: ['zone', 'breached', 'markers'],
+    template: '<div data-testid="base-map-stub" :data-marker-count="(markers || []).length" />',
   },
+}))
+
+// Geolocation is started by MapPanel; stub it so tests don't touch the browser API.
+vi.mock('@/composables/useGeolocation', () => ({
+  useGeolocation: () => ({
+    ownPosition: { value: null },
+    error: { value: null },
+    start: vi.fn(),
+    stop: vi.fn(),
+  }),
 }))
 
 describe('MapPanel (MAP-004)', () => {
@@ -54,6 +64,19 @@ describe('MapPanel (MAP-004)', () => {
     render(MapPanel)
     await nextTick()
     expect(screen.queryByTestId('zone-stop-select')).not.toBeInTheDocument()
+  })
+
+  it('passes synced position markers to the map', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    sync.players.value = [{ id: 's2', name: 'Sam', role: 'seeker', isHost: false, connected: true }]
+    sync.positions.value = new Map([['s2', { lat: 36.1, lng: -97.0, ts: 1 }]])
+
+    render(MapPanel)
+    await nextTick()
+    const stub = screen.getByTestId('base-map-stub')
+    // One marker for the other seeker (self has no geolocation in this stub).
+    expect(stub.getAttribute('data-marker-count')).toBe('1')
   })
 
   it('sends a zone.set when the hider picks a bus stop', async () => {

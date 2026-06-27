@@ -16,13 +16,15 @@ function fakeLeaflet() {
     getBounds: vi.fn().mockReturnValue({ isValid: () => true }),
   }
   const circle = { addTo: vi.fn().mockReturnThis(), remove: vi.fn() }
+  const group = { addLayer: vi.fn(), addTo: vi.fn().mockReturnThis(), remove: vi.fn() }
   const L = {
     map: vi.fn().mockReturnValue(map),
     geoJSON: vi.fn().mockReturnValue(layer),
-    circleMarker: vi.fn().mockReturnValue({ bindTooltip: vi.fn() }),
+    circleMarker: vi.fn().mockReturnValue({ bindTooltip: vi.fn().mockReturnThis() }),
     circle: vi.fn().mockReturnValue(circle),
+    layerGroup: vi.fn().mockReturnValue(group),
   }
-  return { L, map, layer, circle }
+  return { L, map, layer, circle, group }
 }
 
 describe('BaseMap (MAP-001)', () => {
@@ -103,6 +105,45 @@ describe('BaseMap (MAP-001)', () => {
     render(BaseMap, { props: { leaflet: fake.L as never } })
     await nextTick()
     expect(fake.L.circle).not.toHaveBeenCalled()
+  })
+
+  it('draws live position markers (MAP-003)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        markers: [
+          { id: 's1', name: 'Sue', role: 'seeker', pos: { lat: 36.1, lng: -97.0, ts: 1 } },
+          {
+            id: 'me',
+            name: 'Me',
+            role: 'seeker',
+            pos: { lat: 36.11, lng: -97.01, ts: 1 },
+            isSelf: true,
+          },
+        ],
+      },
+    })
+    await nextTick()
+    expect(fake.L.layerGroup).toHaveBeenCalled()
+    // one circleMarker per marker
+    expect(fake.L.circleMarker).toHaveBeenCalledTimes(2)
+  })
+
+  it('colors hider and seeker markers differently', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        markers: [
+          { id: 'h', name: 'H', role: 'hider', pos: { lat: 1, lng: 2, ts: 1 } },
+          { id: 's', name: 'S', role: 'seeker', pos: { lat: 1, lng: 2, ts: 1 } },
+        ],
+      },
+    })
+    await nextTick()
+    const fills = fake.L.circleMarker.mock.calls.map(
+      (c) => (c[1] as { fillColor: string }).fillColor,
+    )
+    expect(new Set(fills).size).toBe(2) // hider vs seeker color differ
   })
 
   it('styles city-limits distinctly from roads', async () => {

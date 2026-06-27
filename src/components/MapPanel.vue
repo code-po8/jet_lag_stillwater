@@ -4,16 +4,51 @@
  * bus stop to declare a ¼-mile zone (synced via zone.set); everyone sees the
  * declared zone drawn on the map and described in a labeled sheet.
  */
-import { computed } from 'vue'
-import BaseMap from './BaseMap.vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
+import BaseMap, { type PlayerMarker } from './BaseMap.vue'
 import { useZone, type BusStopLike } from '@/composables/useZone'
 import { useSync } from '@/composables/useSync'
+import { useGeolocation } from '@/composables/useGeolocation'
 import poiGeo from '../assets/map/stillwater-poi.json'
 
 const { zone, hasZone, setFromBusStop } = useZone()
 const sync = useSync()
+const geo = useGeolocation()
 
 const isHider = computed(() => sync.role.value === 'hider')
+
+// Build position markers from the synced positions + roster. The server already
+// withholds the hider's position from seekers (SYNC-003), so a seeker's
+// `positions` map simply won't contain the hider.
+const markers = computed<PlayerMarker[]>(() => {
+  const out: PlayerMarker[] = []
+  const players = sync.players.value
+  for (const [playerId, pos] of sync.positions.value) {
+    const p = players.find((pl) => pl.id === playerId)
+    out.push({
+      id: playerId,
+      name: p?.name ?? 'Player',
+      role: p?.role ?? 'seeker',
+      pos,
+      isSelf: false,
+    })
+  }
+  // Add own position (from geolocation) if we have it.
+  const self = sync.self.value
+  if (self && geo.ownPosition.value) {
+    out.push({
+      id: self.id,
+      name: self.name,
+      role: self.role,
+      pos: geo.ownPosition.value,
+      isSelf: true,
+    })
+  }
+  return out
+})
+
+onMounted(() => geo.start())
+onBeforeUnmount(() => geo.stop())
 
 // Bus stops the hider can choose as the zone center.
 const busStops = computed<BusStopLike[]>(() =>
@@ -42,7 +77,7 @@ function pickStop(event: Event) {
 
 <template>
   <div class="map-panel">
-    <BaseMap :zone="zone" />
+    <BaseMap :zone="zone" :markers="markers" />
 
     <!-- Hiding-zone sheet (labeled) -->
     <section class="zone-sheet" data-testid="zone-sheet" aria-label="Hiding zone">

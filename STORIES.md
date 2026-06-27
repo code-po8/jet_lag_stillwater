@@ -4306,19 +4306,25 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-003: Live Position Markers
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MAP-002, MULTI-003a
 
 **Story:** As a player, I need live position markers so that the hider can track seekers and seekers can see each other.
 
 **Acceptance Criteria:**
 
-- [ ] Uses browser Geolocation API to report own position
-- [ ] Renders self + others from `pos.batch`
-- [ ] **Hider sees seekers; seekers never see the hider's exact position** (enforced server-side per SYNC-003)
-- [ ] Markers distinguish roles via the brand palette and have text labels
+- [x] Uses browser Geolocation API to report own position
+- [x] Renders self + others from `pos.batch`
+- [x] **Hider sees seekers; seekers never see the hider's exact position** (enforced server-side per SYNC-003)
+- [x] Markers distinguish roles via the brand palette and have text labels
 
 **Size:** L
+
+**Implementation Notes:**
+
+- `BaseMap.vue` gains a `markers: PlayerMarker[]` prop and renders each as a Leaflet `circleMarker` in a `layerGroup` (redrawn reactively): hider = brand orange, seeker = brand cyan, self drawn larger; each with a name tooltip ("… (you)" for self) for accessibility.
+- `MapPanel.vue` starts `useGeolocation()` (own position → throttled `pos` send from MULTI-003a) and builds `markers` from `useSync().positions` + the roster, appending self from `geo.ownPosition`. Because the server withholds the hider's position from seekers (INFRA-006/SYNC-003), a seeker's `positions` simply never contains the hider — withholding is enforced server-side, not in this rendering.
+- TDD: BaseMap marker tests (2) + MapPanel markers test (1). Verified in-container: 1377 frontend tests pass; build OK.
 
 ---
 
