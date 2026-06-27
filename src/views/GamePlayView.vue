@@ -44,7 +44,10 @@ const currentViewRole = ref<ViewRole>('seeker')
  * client cannot see what it shouldn't.)
  */
 const isInRoom = computed(() => roomStore.inRoom)
-const serverRole = computed<ViewRole | null>(() => sync.role.value)
+// Prefer the live WS role, but fall back to the persisted role so a refresh
+// mid-game shows the correct role-locked view immediately, before (or without)
+// a `welcome` — otherwise a hider is stranded on the default seeker content.
+const serverRole = computed<ViewRole | null>(() => sync.role.value ?? roomStore.role)
 
 // While in a room, force the viewed role to the server-assigned role.
 watch(

@@ -18,6 +18,13 @@ interface PersistedRoom {
   code: string
   rejoinToken: string
   selfId: string
+  /**
+   * The server-assigned role, persisted so a refresh knows it IMMEDIATELY —
+   * before the WS `welcome` re-establishes `self`. Without this the role-locked
+   * gameplay UI strands the player on the wrong (default) role until/unless a
+   * welcome arrives (and forever if offline).
+   */
+  selfRole: PublicPlayer['role']
 }
 
 export const useRoomStore = defineStore('room', () => {
@@ -30,9 +37,13 @@ export const useRoomStore = defineStore('room', () => {
   const rejoinToken = ref<string | null>(null)
   const self = ref<PublicPlayer | null>(null)
   const players = ref<PublicPlayer[]>([])
+  // Persisted role, available across a refresh before `self` is re-fetched.
+  const persistedRole = ref<PublicPlayer['role'] | null>(null)
 
   const inRoom = computed(() => code.value !== null)
   const isHost = computed(() => self.value?.isHost ?? false)
+  /** Server-assigned role: live `self` if present, else the persisted value. */
+  const role = computed<PublicPlayer['role'] | null>(() => self.value?.role ?? persistedRole.value)
 
   function persist(): void {
     if (code.value && rejoinToken.value && self.value) {
@@ -40,6 +51,7 @@ export const useRoomStore = defineStore('room', () => {
         code: code.value,
         rejoinToken: rejoinToken.value,
         selfId: self.value.id,
+        selfRole: self.value.role,
       })
     }
   }
@@ -49,8 +61,9 @@ export const useRoomStore = defineStore('room', () => {
     if (saved) {
       code.value = saved.code
       rejoinToken.value = saved.rejoinToken
-      // self/roster are re-fetched on rejoin; keep a minimal placeholder id.
-      self.value = self.value ?? null
+      // self/roster are re-fetched on rejoin, but the role is restored now so
+      // role-locked UI is correct immediately (older sessions may lack it).
+      persistedRole.value = saved.selfRole ?? null
     }
   }
 
@@ -104,6 +117,7 @@ export const useRoomStore = defineStore('room', () => {
     players,
     inRoom,
     isHost,
+    role,
     createRoom,
     joinRoom,
     rejoin,

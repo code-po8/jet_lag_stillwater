@@ -67,6 +67,29 @@ describe('GamePlayView role lock (SYNC-003)', () => {
     expect(display).toHaveTextContent(/seeker/i)
   })
 
+  it('uses the persisted role when welcome has not arrived yet (refresh)', async () => {
+    enterSeekingOffline()
+    // Simulate a refresh mid-game: a persisted session restores code/token (so
+    // inRoom is true) and the server-assigned role, but `self` is null until the
+    // WS `welcome` lands.
+    localStorage.setItem(
+      'jet-lag-stillwater:room-session',
+      JSON.stringify({ code: 'ABCD', rejoinToken: 'tok', selfId: 'h1', selfRole: 'hider' }),
+    )
+    const room = useRoomStore() // hydrate() runs on construction
+    expect(room.inRoom).toBe(true)
+    expect(room.self).toBeNull()
+    expect(room.role).toBe('hider')
+
+    // welcome has NOT arrived, so the live sync role is still null.
+    const sync = useSync()
+    expect(sync.role.value).toBeNull()
+
+    render(GamePlayView)
+    // The hider must NOT be stranded on the default seeker view.
+    expect(screen.getByTestId('current-role-display')).toHaveTextContent(/hider/i)
+  })
+
   it('a seeker cannot switch to the hider view via the cards tab', async () => {
     enterSeekingOffline()
     const room = useRoomStore()

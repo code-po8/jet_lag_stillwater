@@ -65,6 +65,19 @@ describe('roomStore', () => {
       expect(store2.code).toBe('ABCD')
       expect(store2.rejoinToken).toBe('host-tok')
     })
+
+    it('rehydrates the server-assigned role across reloads (before welcome)', async () => {
+      const store = useRoomStore()
+      store.api = stubApi() as never
+      await store.createRoom('Host') // host is a hider
+      expect(store.role).toBe('hider')
+
+      // After a refresh, the role must be known immediately — without waiting
+      // for a WS `welcome` — so the role-locked UI never strands the player.
+      setActivePinia(createPinia())
+      const store2 = useRoomStore()
+      expect(store2.role).toBe('hider')
+    })
   })
 
   describe('joinRoom', () => {
