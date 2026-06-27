@@ -114,7 +114,9 @@ services:
       DATABASE_URL: "postgres://jetlag:jetlag_local_dev@postgres:5432/jetlag"
     ports:
       - "3000:3000"
-    command: npm run dev
+    # Apply pending migrations, then start the dev server. (Waits briefly for
+    # Postgres to accept connections.)
+    command: sh -c "until node -e \"require('net').connect(5432,'postgres').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))\" 2>/dev/null; do echo 'waiting for postgres...'; sleep 1; done; npm run migrate:up && npm run dev"
     depends_on:
       - postgres
 

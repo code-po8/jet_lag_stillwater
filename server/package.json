@@ -12,13 +12,19 @@
     "build": "tsc --build",
     "start": "node dist/server.js",
     "type-check": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "migrate": "node-pg-migrate -j sql -m migrations",
+    "migrate:up": "node-pg-migrate up -j sql -m migrations",
+    "migrate:down": "node-pg-migrate down -j sql -m migrations"
   },
   "dependencies": {
-    "fastify": "5.2.1"
+    "fastify": "5.2.1",
+    "pg": "8.13.1"
   },
   "devDependencies": {
     "@types/node": "22.10.5",
+    "@types/pg": "8.11.10",
+    "node-pg-migrate": "7.9.0",
     "tsx": "4.19.2",
     "typescript": "5.9.3",
     "vitest": "4.0.16"

@@ -3912,19 +3912,27 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### INFRA-004: DB Schema & Migrations
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** INFRA-003
 
 **Story:** As a developer, I need session/player tables so that rooms and rejoin tokens can be stored.
 
 **Acceptance Criteria:**
 
-- [ ] `sessions` table: id, code, phase, status, state (JSONB), state_version, created_at, expires_at
-- [ ] `players` table: id, session_id, name, role, is_host, rejoin_token_hash, connected, joined_at
-- [ ] Partial unique index on `code` for non-ended rooms (codes recycle)
-- [ ] Migration tooling set up; expiry sweeper evicts expired rooms
+- [x] `sessions` table: id, code, phase, status, state (JSONB), state_version, created_at, expires_at
+- [x] `players` table: id, session_id, name, role, is_host, rejoin_token_hash, connected, joined_at
+- [x] Partial unique index on `code` for non-ended rooms (codes recycle)
+- [x] Migration tooling set up; expiry sweeper evicts expired rooms
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `node-pg-migrate` (SQL migrations) + `pg`; migration `server/migrations/1700000000000_initial-schema.sql` creates both tables.
+- `sessions` partial unique index `sessions_active_code_unique` = `UNIQUE (code) WHERE status <> 'ended'` so codes recycle once a room ends; `players` has a one-host-per-session partial unique index and `ON DELETE CASCADE`.
+- `server/src/db/pool.ts` (lazy pg pool from `DATABASE_URL`) + `server/src/db/sweeper.ts` (`sweepExpiredSessions` + `startExpirySweeper`); sweeper wired into `server.ts` startup (runs only when `DATABASE_URL` is set).
+- `npm run migrate:up|down`; backend compose service waits for Postgres then auto-migrates on boot.
+- TDD: `sweeper.test.ts` (5 tests). Verified against real Postgres in-container: up/down migrations apply, schema + partial index present, **code-recycling proven** (duplicate active code rejected; reusable after the first is ended). type-check + 11 server tests pass; full stack boots and `/health` 200.
 
 ---
 
