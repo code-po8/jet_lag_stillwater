@@ -1,0 +1,115 @@
+<script setup lang="ts">
+/**
+ * Base map (MAP-001): renders the pre-baked, offline Stillwater base
+ * (MAP-000 GeoJSON) with Leaflet. No tile server / API key — the city-limits
+ * polygon and roads are drawn as styled vector layers on a brand-navy canvas.
+ * Game overlays (markers, zone, shading) draw on top in later MAP stories via
+ * the exposed `map` instance.
+ */
+import { onMounted, onBeforeUnmount, ref, shallowRef } from 'vue'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import baseGeo from '../assets/map/stillwater-base.json'
+import { BRAND_COLORS } from '@/design/colors'
+
+const props = withDefaults(
+  defineProps<{
+    /** Inject a Leaflet-like factory for tests. Defaults to real Leaflet. */
+    leaflet?: typeof L
+  }>(),
+  {},
+)
+
+const emit = defineEmits<{ ready: [map: L.Map] }>()
+
+const container = ref<HTMLElement | null>(null)
+const mapInstance = shallowRef<L.Map | null>(null)
+
+// Stillwater, OK center + sane zoom for a single small town.
+const STILLWATER_CENTER: [number, number] = [36.1156, -97.0584]
+const DEFAULT_ZOOM = 13
+
+function styleFor(feature?: GeoJSON.Feature) {
+  const kind = feature?.properties?.kind
+  if (kind === 'city-limits') {
+    return {
+      color: BRAND_COLORS.cyan,
+      weight: 2,
+      dashArray: '6 5',
+      fill: true,
+      fillColor: BRAND_COLORS.navy,
+      fillOpacity: 0.15,
+    }
+  }
+  // roads
+  return { color: '#3a4a63', weight: 2, opacity: 0.9 }
+}
+
+onMounted(() => {
+  if (!container.value) return
+  const leaflet = props.leaflet ?? L
+
+  const map = leaflet.map(container.value, {
+    center: STILLWATER_CENTER,
+    zoom: DEFAULT_ZOOM,
+    // Offline base — no tile layer. Disable attribution control clutter.
+    attributionControl: false,
+    zoomControl: true,
+  })
+
+  const layer = leaflet.geoJSON(baseGeo as unknown as GeoJSON.GeoJsonObject, {
+    style: styleFor,
+  })
+  layer.addTo(map)
+
+  // Fit to the city limits so the whole town is in view.
+  try {
+    map.fitBounds(layer.getBounds(), { padding: [16, 16] })
+  } catch {
+    // getBounds can throw if empty; keep the default center/zoom.
+  }
+
+  mapInstance.value = map
+  emit('ready', map)
+})
+
+onBeforeUnmount(() => {
+  mapInstance.value?.remove()
+  mapInstance.value = null
+})
+
+defineExpose({ map: mapInstance })
+</script>
+
+<template>
+  <div class="base-map" role="region" aria-label="Stillwater game map">
+    <div ref="container" class="base-map-canvas" data-testid="base-map-canvas"></div>
+    <!-- Overlay controls / children draw on top (later MAP stories) -->
+    <slot :map="mapInstance" />
+  </div>
+</template>
+
+<style scoped>
+.base-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  background: var(--color-brand-navy, #1a1a2e);
+}
+.base-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+/* Brand-tint the Leaflet container background (shows around the GeoJSON). */
+.base-map :deep(.leaflet-container) {
+  background: var(--color-brand-navy, #1a1a2e);
+}
+/* Larger, readable zoom controls for outdoor / touch use. */
+.base-map :deep(.leaflet-control-zoom a) {
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  font-size: 1.2rem;
+}
+</style>

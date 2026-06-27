@@ -4,7 +4,7 @@
  *
  * Pulls Stillwater city limits + major roads from the OpenStreetMap Overpass
  * API and writes a single GeoJSON FeatureCollection to
- * `src/assets/map/stillwater-base.geojson`. That asset is bundled into the PWA
+ * `src/assets/map/stillwater-base.json`. That asset is bundled into the PWA
  * so the map renders fully offline — no live tile server, no API key.
  *
  * Re-run to regenerate:  node scripts/bake-stillwater-map.mjs
@@ -17,7 +17,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const OUT = resolve(__dirname, '../src/assets/map/stillwater-base.geojson')
+const OUT = resolve(__dirname, '../src/assets/map/stillwater-base.json')
 const OVERPASS = 'https://overpass-api.de/api/interpreter'
 
 // Stillwater, OK — admin boundary relation (OSM) + major roads inside it.
