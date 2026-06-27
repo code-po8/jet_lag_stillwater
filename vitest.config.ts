@@ -7,7 +7,9 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'jsdom',
-      exclude: [...configDefaults.exclude, 'e2e/**', 'tests/e2e/**'],
+      // server/ has its own vitest (Node env, own deps) — don't let the
+      // frontend runner pick up its tests. shared/ tests run here fine.
+      exclude: [...configDefaults.exclude, 'e2e/**', 'tests/e2e/**', 'server/**'],
       root: fileURLToPath(new URL('./', import.meta.url)),
       setupFiles: ['./src/test-setup.ts'],
       coverage: {

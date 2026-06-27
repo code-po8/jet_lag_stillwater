@@ -1,0 +1,74 @@
+import { describe, it, expect } from 'vitest'
+import {
+  isClientMessageType,
+  isServerMessageType,
+  QUARTER_MILE_M,
+  type ClientMessage,
+  type ServerMessage,
+  type SyncedState,
+} from '../index.js'
+
+describe('message type guards', () => {
+  it('recognizes all client message types', () => {
+    for (const t of ['hello', 'pos', 'zone.set', 'ruledout.add', 'host.action']) {
+      expect(isClientMessageType(t)).toBe(true)
+    }
+  })
+
+  it('recognizes all server message types', () => {
+    for (const t of [
+      'welcome',
+      'player.joined',
+      'player.left',
+      'player.presence',
+      'pos.batch',
+      'zone',
+      'ruledout',
+      'zone.breach',
+      'phase',
+      'error',
+    ]) {
+      expect(isServerMessageType(t)).toBe(true)
+    }
+  })
+
+  it('rejects unknown / cross types', () => {
+    expect(isClientMessageType('welcome')).toBe(false)
+    expect(isServerMessageType('hello')).toBe(false)
+    expect(isClientMessageType('nope')).toBe(false)
+  })
+})
+
+describe('constants', () => {
+  it('quarter mile is 402 meters', () => {
+    expect(QUARTER_MILE_M).toBe(402)
+  })
+})
+
+describe('DTO shapes (compile-time, asserted structurally)', () => {
+  it('a hello message conforms to ClientMessage', () => {
+    const msg: ClientMessage = { t: 'hello', code: 'ABCD', rejoinToken: 'x' }
+    expect(msg.t).toBe('hello')
+  })
+
+  it('a welcome message conforms to ServerMessage', () => {
+    const msg: ServerMessage = {
+      t: 'welcome',
+      you: { id: 'p1', name: 'A', role: 'hider', isHost: true, connected: true },
+      players: [],
+      phase: 'setup',
+      zone: null,
+    }
+    expect(msg.t).toBe('welcome')
+  })
+
+  it('synced state has the expected fields', () => {
+    const state: SyncedState = {
+      phase: 'seeking',
+      zone: null,
+      ruledOutCells: [],
+      currentHiderId: null,
+    }
+    expect(state.ruledOutCells).toEqual([])
+  })
+})

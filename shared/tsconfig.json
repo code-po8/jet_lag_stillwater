@@ -4,23 +4,18 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "lib": ["ES2022"],
-    "types": ["node"],
-    "outDir": "dist",
-    "rootDir": "src",
-    "composite": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true,
-    "paths": {
-      "@shared": ["../shared/dist/index.d.ts"]
-    }
+    "composite": true,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src"
   },
-  "references": [{ "path": "../shared" }],
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/__tests__/**"]
 }
