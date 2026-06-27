@@ -95,6 +95,80 @@ npm run dev
 
 ---
 
+## Sandboxed Development & Testing (Docker)
+
+> **Why:** installing or running npm dependencies executes untrusted third‑party
+> code (pre/post‑install scripts, the dev server, the test runner). Running that
+> directly on your host user exposes `~/.ssh`, `~/.npmrc` tokens, cloud
+> credentials, and your entire home directory to a compromised package. The
+> Docker sandbox runs all of that **inside containers that bind‑mount only the
+> repo source** — never `$HOME`, never `~/.ssh`, with no git credentials and as
+> a non‑root user. (INFRA‑001)
+
+**You still edit files and run `git` on the host as usual.** Only commands that
+execute dependency code are moved into containers.
+
+### Prerequisites
+
+- Docker Engine + Docker Compose v2 (`docker compose version`)
+
+### Everyday commands
+
+```bash
+# Install dependencies into the container's node_modules volume
+# (run once, and any time package.json / package-lock.json changes)
+docker compose run --rm install
+
+# Run the dev server (http://localhost:5173)
+docker compose up frontend
+
+# Run type-check + the full unit suite (network-isolated)
+docker compose run --rm test
+```
+
+### How the isolation works
+
+- **No home/SSH mount.** `docker-compose.yml` bind-mounts only `./:/app`. There
+  is no `$HOME` or `~/.ssh` mount anywhere, so package scripts cannot read your
+  credentials.
+- **Non-root.** Containers run as the unprivileged `node` user.
+- **node_modules in a named volume.** Dependencies install into the
+  `frontend_node_modules` volume, never the host's `node_modules`, so
+  host-incompatible native builds and install-script side effects stay contained.
+- **No network for tests.** The `test` and `sentinel` services use
+  `network_mode: "none"`, which kills the common postinstall exfiltration /
+  second-stage download path.
+
+### Verifying the sandbox (sentinel)
+
+A sentinel proves the two guarantees — host home unreadable, no network:
+
+```bash
+./scripts/run-sandbox-sentinel.sh
+```
+
+It writes a marker file into your real `$HOME`, runs the network-isolated
+`sentinel` container, and asserts the container **cannot** read the marker and
+**cannot** reach the network. Exit code `0` means the sandbox is sound.
+
+> The `backend` and `postgres` services in `docker-compose.yml` are scaffolded
+> here but only become active from INFRA‑003/004 onward (they live behind the
+> `backend` compose profile).
+
+### Pre-commit hooks run in the sandbox too
+
+The Husky `pre-commit` hook does **not** run eslint / prettier / type-check /
+vitest / gitleaks on your host. It calls `scripts/run-hooks.sh`, which runs the
+`hooks` compose service — the same isolated container (no `$HOME`/`~/.ssh`,
+non-root, no network; the gitleaks binary is baked into the image at build
+time). Auto-fixes from `lint-staged` land on your working tree and are
+re-staged automatically.
+
+- First commit after changing `Dockerfile.dev` rebuilds the image (cached after).
+- Emergency bypass (accepts the supply-chain risk): `git commit --no-verify`.
+
+---
+
 ## NPM Scripts Reference
 
 All commands are run from the project root directory.

@@ -3830,21 +3830,31 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### INFRA-001: Docker Sandbox for Dev & Test
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** None
 
 **Story:** As a developer, I need all untrusted dependency code to execute inside containers so that a malicious npm install/postinstall script cannot reach my host home directory or SSH keys.
 
 **Acceptance Criteria:**
 
-- [ ] `docker-compose.yml` with services: frontend (Vite dev), backend (Fastify), postgres, one-shot test-runner
-- [ ] Source bind-mounted into containers; **host `$HOME` / `~/.ssh` never mounted**; no git credentials in containers; containers run as non-root
-- [ ] `node_modules` are container-managed named volumes; `npm install`/`npm ci` runs **inside** the container, never on the host
-- [ ] test-runner uses `network_mode: "none"` (kills postinstall exfil / second-stage)
-- [ ] Editing and `git commit` continue to happen on the host user session (unchanged workflow)
-- [ ] A benign sentinel test confirms an install script cannot read a file placed in host `$HOME`
+- [x] `docker-compose.yml` with services: frontend (Vite dev), backend (Fastify), postgres, one-shot test-runner
+- [x] Source bind-mounted into containers; **host `$HOME` / `~/.ssh` never mounted**; no git credentials in containers; containers run as non-root
+- [x] `node_modules` are container-managed named volumes; `npm install`/`npm ci` runs **inside** the container, never on the host
+- [x] test-runner uses `network_mode: "none"` (kills postinstall exfil / second-stage)
+- [x] Editing and `git commit` continue to happen on the host user session (unchanged workflow)
+- [x] A benign sentinel test confirms an install script cannot read a file placed in host `$HOME`
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `Dockerfile.dev` (Node 22, non-root `node` user, tini) + `docker-compose.yml` services: `install`, `frontend`, `test`, `sentinel`, and stubbed `backend`/`postgres` (behind a `backend` profile until INFRA-003/004).
+- `node_modules` and the npm cache live in named volumes (`frontend_node_modules`, `npm_cache`); the host `node_modules` is never written by the sandbox.
+- `test` and `sentinel` run with `network_mode: "none"`.
+- `scripts/sandbox-sentinel.sh` (in-container checks) + `scripts/run-sandbox-sentinel.sh` (host driver) prove host `$HOME`/`~/.ssh` are unreadable and no network is reachable.
+- Verified: `docker compose run --rm test` → type-check + 1254 unit tests pass in-container; sentinel exits 0.
+- Backend (Fastify) service is a documented placeholder; INFRA-003 fills it in.
+- Docs: "Sandboxed Development & Testing (Docker)" section added to DEVELOPMENT.md.
 
 ---
 
