@@ -18,6 +18,7 @@ function fakeLeaflet() {
   const L = {
     map: vi.fn().mockReturnValue(map),
     geoJSON: vi.fn().mockReturnValue(layer),
+    circleMarker: vi.fn().mockReturnValue({ bindTooltip: vi.fn() }),
   }
   return { L, map, layer }
 }
@@ -45,14 +46,29 @@ describe('BaseMap (MAP-001)', () => {
     expect(opts.center[1]).toBeCloseTo(-97.05, 1)
   })
 
-  it('renders the baked GeoJSON base as a layer', async () => {
+  it('renders the baked GeoJSON base + POI overlay as layers', async () => {
     render(BaseMap, { props: { leaflet: fake.L as never } })
     await nextTick()
-    expect(fake.L.geoJSON).toHaveBeenCalledTimes(1)
-    // The styled base data is a FeatureCollection with features.
-    const data = fake.L.geoJSON.mock.calls[0]![0] as { type: string; features: unknown[] }
-    expect(data.type).toBe('FeatureCollection')
-    expect(data.features.length).toBeGreaterThan(100)
+    // base layer + POI overlay
+    expect(fake.L.geoJSON).toHaveBeenCalledTimes(2)
+    const baseData = fake.L.geoJSON.mock.calls[0]![0] as { type: string; features: unknown[] }
+    expect(baseData.type).toBe('FeatureCollection')
+    expect(baseData.features.length).toBeGreaterThan(100)
+    const poiData = fake.L.geoJSON.mock.calls[1]![0] as {
+      features: { properties: { kind: string } }[]
+    }
+    const kinds = new Set(poiData.features.map((f) => f.properties.kind))
+    expect(kinds.has('bus-stop')).toBe(true)
+  })
+
+  it('shows a legend with text labels for overlay categories', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never } })
+    await nextTick()
+    const legend = screen.getByTestId('map-legend')
+    expect(legend).toHaveTextContent(/bus stop/i)
+    expect(legend).toHaveTextContent(/restaurant/i)
+    expect(legend).toHaveTextContent(/school/i)
+    expect(legend).toHaveTextContent(/park/i)
   })
 
   it('fits the view to the base layer bounds', async () => {

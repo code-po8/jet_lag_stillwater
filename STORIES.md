@@ -4276,23 +4276,31 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-002: Static Stillwater Geo Data
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MAP-001
 
 **Story:** As a player, I need bus stops, city limits, and POIs on the map so that I can reason about hiding spots.
 
 **Acceptance Criteria:**
 
-- [ ] City limits, OSU bus stops, and POIs (restaurants/schools/parks) rendered as overlay GeoJSON
-- [ ] Data sourced from the user's exported Google My Maps (KML/GeoJSON) or OSM fallback
-- [ ] Distinct from MAP-000 base cartography — this is the interactive game data layer
-- [ ] Layer legend with text labels
+- [x] City limits, OSU bus stops, and POIs (restaurants/schools/parks) rendered as overlay GeoJSON
+- [x] Data sourced from the user's exported Google My Maps (KML/GeoJSON) or OSM fallback
+- [x] Distinct from MAP-000 base cartography — this is the interactive game data layer
+- [x] Layer legend with text labels
 
 **Size:** M
 
 **Notes:**
 
 - Sourcing subtask: user to export their custom Google My Maps layers as KML/GeoJSON.
+
+**Implementation Notes:**
+
+- Built with the **OSM fallback** (AC-permitted): `scripts/bake-stillwater-poi.mjs` (`npm run bake:poi`) fetches bus stops + POIs from Overpass → `src/assets/map/stillwater-poi.json`. Baked: **138 bus stops, 27 parks, 19 schools, 10 restaurants** (194 pts, all in Stillwater bounds).
+- `BaseMap.vue` renders the overlay as category-colored circle markers (distinct from the MAP-000 base lines/polygon) with name/category tooltips, plus a text **legend** (`map-legend`, `aria-label`).
+- TDD: `stillwaterPoi.spec.ts` (4) + BaseMap POI/legend tests. Verified in-container: 1363 frontend tests pass; build + precache OK.
+
+> **⚠️ FLAG FOR USER:** this is the OSM fallback. To use your curated set, export your custom Google My Maps layers as GeoJSON and replace `src/assets/map/stillwater-poi.json` (keep the `kind` values: `bus-stop`/`restaurant`/`school`/`park`). OSU bus stops in particular may be better from your map than OSM's generic `highway=bus_stop` nodes.
 
 ---
 

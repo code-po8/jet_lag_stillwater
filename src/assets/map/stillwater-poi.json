@@ -1,0 +1,983 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "source": "OpenStreetMap via Overpass API (fallback; replace with curated Google My Maps export)",
+    "bakedFor": "Stillwater, OK",
+    "generatedBy": "scripts/bake-stillwater-poi.mjs"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Oklahoma State University Experimental Farm" },
+      "geometry": { "type": "Point", "coordinates": [-97.0461422, 35.9922774] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Student Union Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0677964, 36.1219326] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Myers Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0843158, 36.1121466] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Lakeside Apts" },
+      "geometry": { "type": "Point", "coordinates": [-97.0728324, 36.1450647] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Pizza Hut" },
+      "geometry": { "type": "Point", "coordinates": [-97.0513292, 36.1308923] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Pioneer Square" },
+      "geometry": { "type": "Point", "coordinates": [-97.0512819, 36.1290346] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "DPS/ Social Security" },
+      "geometry": { "type": "Point", "coordinates": [-97.0517553, 36.1453052] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Monticello Apartments Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0505349, 36.1360829] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Fair Manor" },
+      "geometry": { "type": "Point", "coordinates": [-97.0496543, 36.1380495] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "The Rancher's Club" },
+      "geometry": { "type": "Point", "coordinates": [-97.068796, 36.1204065] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "The West End" },
+      "geometry": { "type": "Point", "coordinates": [-97.1224117, 36.1137189] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "DHS Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.048916, 36.1406036] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Montichello Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.0498041, 36.1378242] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Aspen Coffee" },
+      "geometry": { "type": "Point", "coordinates": [-97.0537286, 36.1407305] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Gundersen" },
+      "geometry": { "type": "Point", "coordinates": [-97.0675811, 36.1216938] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Farm Road and Cleveland" },
+      "geometry": { "type": "Point", "coordinates": [-97.0759477, 36.1245979] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0607627, 36.1326967] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Wes Watkins" },
+      "geometry": { "type": "Point", "coordinates": [-97.0692369, 36.126902] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Circle D Motel" },
+      "geometry": { "type": "Point", "coordinates": [-97.0598522, 36.1318076] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Shops at Boomer Creek Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0589094, 36.1275228] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "OSU Library Annex Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0637227, 36.1350444] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Bradford Plaza" },
+      "geometry": { "type": "Point", "coordinates": [-97.0586043, 36.12779] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Country Commons Apts" },
+      "geometry": { "type": "Point", "coordinates": [-97.0715048, 36.1594336] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Washington/ Frontier Lanes" },
+      "geometry": { "type": "Point", "coordinates": [-97.0697561, 36.1582434] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Bennett Hall" },
+      "geometry": { "type": "Point", "coordinates": [-97.0648059, 36.1270189] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Panera Bread" },
+      "geometry": { "type": "Point", "coordinates": [-97.0601725, 36.1266469] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Cimarron Plaza" },
+      "geometry": { "type": "Point", "coordinates": [-97.066029, 36.1386734] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Stonegate Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.0669598, 36.139887] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Lakeview Cottage" },
+      "geometry": { "type": "Point", "coordinates": [-97.0697748, 36.1532939] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Cowboy Book Trader" },
+      "geometry": { "type": "Point", "coordinates": [-97.0601564, 36.1268396] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "McDonalds/ Redrock Bakery" },
+      "geometry": { "type": "Point", "coordinates": [-97.0596736, 36.1311205] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.067013, 36.1394887] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Stillwater High School" },
+      "geometry": { "type": "Point", "coordinates": [-97.0627191, 36.1344061] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Progress 405" },
+      "geometry": { "type": "Point", "coordinates": [-97.0655154, 36.137448] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Lot 4/ Gallagher-Iba Arena" },
+      "geometry": { "type": "Point", "coordinates": [-97.0645022, 36.1266975] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Lakeview/ Western" },
+      "geometry": { "type": "Point", "coordinates": [-97.0874129, 36.1451202] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0613715, 36.1100074] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Westwood Elementary" },
+      "geometry": { "type": "Point", "coordinates": [-97.0813837, 36.1158007] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0468178, 36.1159225] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Squires Landing Stop" },
+      "geometry": { "type": "Point", "coordinates": [-97.1198416, 36.1175925] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "McElroy and Willis" },
+      "geometry": { "type": "Point", "coordinates": [-97.0831539, 36.1303319] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Garfield Road Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.075736, 36.1307403] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "West University Apartments Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0807128, 36.1302873] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0745245, 36.1303828] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Monroe/ McElroy South" },
+      "geometry": { "type": "Point", "coordinates": [-97.0719549, 36.1301685] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Monroe/ McElroy" },
+      "geometry": { "type": "Point", "coordinates": [-97.0718411, 36.1303509] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Silver Springs Trailer Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0688991, 36.1724707] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Links Apartments Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0696006, 36.1696661] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Walnut Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0779445, 36.1306173] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Physical Plant" },
+      "geometry": { "type": "Point", "coordinates": [-97.0831172, 36.1289591] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0892374, 36.1157342] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "The Reserve on Perkins" },
+      "geometry": { "type": "Point", "coordinates": [-97.0551241, 36.1406898] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Kamm / Peterson Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0815316, 36.1256301] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Alumni Center" },
+      "geometry": { "type": "Point", "coordinates": [-97.0675727, 36.1207599] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Art Annex" },
+      "geometry": { "type": "Point", "coordinates": [-97.0850051, 36.1303008] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Athletic Avenue" },
+      "geometry": { "type": "Point", "coordinates": [-97.0673683, 36.1235384] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Bennett Chapel" },
+      "geometry": { "type": "Point", "coordinates": [-97.0671501, 36.1199481] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Brumley Apartments Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0794828, 36.1246583] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Cowboy Mall Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0728003, 36.1268885] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Journalism/ Broadcasting" },
+      "geometry": { "type": "Point", "coordinates": [-97.0677805, 36.1206382] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Kerr/ Drummond" },
+      "geometry": { "type": "Point", "coordinates": [-97.0741377, 36.1245582] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Lamda Chi" },
+      "geometry": { "type": "Point", "coordinates": [-97.0704821, 36.1195983] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Lot 74 East Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0756541, 36.127017] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Lot 74 Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0772438, 36.1272492] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Physical Plant Admin" },
+      "geometry": { "type": "Point", "coordinates": [-97.083101, 36.1272094] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Stevens Apartments Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0798174, 36.128232] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Theta Pond" },
+      "geometry": { "type": "Point", "coordinates": [-97.070706, 36.1197386] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "USDA/ OSUPD" },
+      "geometry": { "type": "Point", "coordinates": [-97.081192, 36.1246874] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "University Mailing" },
+      "geometry": { "type": "Point", "coordinates": [-97.0717716, 36.1257495] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Wesley Foundation" },
+      "geometry": { "type": "Point", "coordinates": [-97.0683531, 36.1196119] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Agricultural Hall (Ag Hall)" },
+      "geometry": { "type": "Point", "coordinates": [-97.0719167, 36.1239994] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Animal Science" },
+      "geometry": { "type": "Point", "coordinates": [-97.0719341, 36.1254598] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Athletics Center" },
+      "geometry": { "type": "Point", "coordinates": [-97.064991, 36.1252748] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Casa Mia Apartments South" },
+      "geometry": { "type": "Point", "coordinates": [-97.063631, 36.1236771] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Henry Bellmon Research Center Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0717331, 36.1236962] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Math Science Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0717602, 36.1224011] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Morrison Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.0744875, 36.1305044] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Murray Hall" },
+      "geometry": { "type": "Point", "coordinates": [-97.0719479, 36.1202918] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Willham Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0769388, 36.1317809] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Public Information Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0719038, 36.1216855] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Theta Pond West" },
+      "geometry": { "type": "Point", "coordinates": [-97.071759, 36.1203024] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "University Laundry" },
+      "geometry": { "type": "Point", "coordinates": [-97.0774814, 36.1303401] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Airport Road/ Perkins Road" },
+      "geometry": { "type": "Point", "coordinates": [-97.0695168, 36.1595846] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Apple Creek Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.0516539, 36.1349594] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Chapel Ridge" },
+      "geometry": { "type": "Point", "coordinates": [-97.0485208, 36.1405447] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Cowboy Town Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.0514489, 36.1426595] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Food Pyramid" },
+      "geometry": { "type": "Point", "coordinates": [-97.0579339, 36.1269465] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Jack in the Box" },
+      "geometry": { "type": "Point", "coordinates": [-97.0524999, 36.1270153] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Joseppi's" },
+      "geometry": { "type": "Point", "coordinates": [-97.0560675, 36.126797] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "National Standard" },
+      "geometry": { "type": "Point", "coordinates": [-97.0519014, 36.1612614] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Boomer Lake" },
+      "geometry": { "type": "Point", "coordinates": [-97.0657359, 36.1595485] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "North Slope Duplex" },
+      "geometry": { "type": "Point", "coordinates": [-97.0587614, 36.1738769] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Oak Park Village Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.05157, 36.1509866] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Parkview Estates" },
+      "geometry": { "type": "Point", "coordinates": [-97.0518927, 36.1690135] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Perkins Road/ Park Drive" },
+      "geometry": { "type": "Point", "coordinates": [-97.0518321, 36.1509861] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Perkins/ Lakeview Road" },
+      "geometry": { "type": "Point", "coordinates": [-97.0515021, 36.1453163] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Redbud/ Perkins Road" },
+      "geometry": { "type": "Point", "coordinates": [-97.0505964, 36.1359619] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "bus-stop",
+        "name": "Renaissance School/ Richmond Elementary School"
+      },
+      "geometry": { "type": "Point", "coordinates": [-97.0619198, 36.1737887] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Richmond Road/ Perkins Road" },
+      "geometry": { "type": "Point", "coordinates": [-97.0522494, 36.1738954] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Texas Roadhouse Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0517187, 36.1425547] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Total Rehab" },
+      "geometry": { "type": "Point", "coordinates": [-97.0534655, 36.1406388] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "World Color Press" },
+      "geometry": { "type": "Point", "coordinates": [-97.0575686, 36.1596101] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0533451, 36.1268331] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Stillwater Airport Terminal" },
+      "geometry": { "type": "Point", "coordinates": [-97.083796, 36.1576215] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Seretean Center" },
+      "geometry": { "type": "Point", "coordinates": [-97.06548, 36.1216817] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Boomer/ Washington" },
+      "geometry": { "type": "Point", "coordinates": [-97.0690032, 36.1424346] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "University Estates" },
+      "geometry": { "type": "Point", "coordinates": [-97.0803607, 36.1450611] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Babcock Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0873806, 36.1024927] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Business Accelerator Building" },
+      "geometry": { "type": "Point", "coordinates": [-97.1082592, 36.1100177] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Casa Mia Apartments North" },
+      "geometry": { "type": "Point", "coordinates": [-97.0635314, 36.123814] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Consumers IGA" },
+      "geometry": { "type": "Point", "coordinates": [-97.0694775, 36.1148471] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Countyside" },
+      "geometry": { "type": "Point", "coordinates": [-97.0921208, 36.1012593] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Fifty One Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.1181083, 36.1102777] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Fountain Square" },
+      "geometry": { "type": "Point", "coordinates": [-97.0870848, 36.1065906] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Meridian Technology Center Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.1089298, 36.1078637] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Nomadics" },
+      "geometry": { "type": "Point", "coordinates": [-97.1124212, 36.1103461] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Payne County Health Department" },
+      "geometry": { "type": "Point", "coordinates": [-97.0741509, 36.1144933] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Shalamar and 16th" },
+      "geometry": { "type": "Point", "coordinates": [-97.1102085, 36.1018252] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Shalamar and 16th" },
+      "geometry": { "type": "Point", "coordinates": [-97.1089023, 36.103521] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Stillwater Medical Center Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0741502, 36.1145919] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "West Walmart Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.1179522, 36.1154238] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Westbrook Place Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.106833, 36.1014633] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "15th and Sangre" },
+      "geometry": { "type": "Point", "coordinates": [-97.1052142, 36.1046955] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "19th Street Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.1061604, 36.1013328] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "19th and August" },
+      "geometry": { "type": "Point", "coordinates": [-97.0919964, 36.1014727] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "4th and Washington North" },
+      "geometry": { "type": "Point", "coordinates": [-97.0693065, 36.1179217] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "4th and Washington South" },
+      "geometry": { "type": "Point", "coordinates": [-97.0694761, 36.1179168] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "7th and Walnut North" },
+      "geometry": { "type": "Point", "coordinates": [-97.0782627, 36.1141011] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "7th and Walnut South" },
+      "geometry": { "type": "Point", "coordinates": [-97.0784081, 36.1141034] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "7th and Washington" },
+      "geometry": { "type": "Point", "coordinates": [-97.0693639, 36.1148452] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "9th and Willis" },
+      "geometry": { "type": "Point", "coordinates": [-97.0843212, 36.1122507] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Downtown Parking Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0576026, 36.1146369] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Farm House" },
+      "geometry": { "type": "Point", "coordinates": [-97.0717724, 36.1183454] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Lakeview Road/ Husband" },
+      "geometry": { "type": "Point", "coordinates": [-97.0601745, 36.1449597] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Car Wash" },
+      "geometry": { "type": "Point", "coordinates": [-97.0583674, 36.123813] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Century 21" },
+      "geometry": { "type": "Point", "coordinates": [-97.0582467, 36.1237097] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Hobby Lobby Shelter" },
+      "geometry": { "type": "Point", "coordinates": [-97.0495104, 36.1270203] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Legacy Park Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.0537989, 36.1233838] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Miller/ Husband" },
+      "geometry": { "type": "Point", "coordinates": [-97.0606158, 36.1236776] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Stillwater Flats Apartments" },
+      "geometry": { "type": "Point", "coordinates": [-97.0607937, 36.123828] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "bus-stop", "name": "Virginia/ Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0536125, 36.1232541] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "Bad Brad's" },
+      "geometry": { "type": "Point", "coordinates": [-97.1312691, 36.1167817] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "Nooki" },
+      "geometry": { "type": "Point", "coordinates": [-97.0692151, 36.1173546] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "Union Chophouse Taqueria" },
+      "geometry": { "type": "Point", "coordinates": [-97.0687841, 36.1209433] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "Country Barbeque Co." },
+      "geometry": { "type": "Point", "coordinates": [-97.073674, 36.1241193] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "Linquetti's" },
+      "geometry": { "type": "Point", "coordinates": [-97.073614, 36.1237015] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "La Carreta Bar & Grill" },
+      "geometry": { "type": "Point", "coordinates": [-97.0508561, 36.1402711] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "Cafe Mona" },
+      "geometry": { "type": "Point", "coordinates": [-97.0494984, 36.125819] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0629574, 36.1231691] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "The Botanic Garden at Oklahoma State University" },
+      "geometry": { "type": "Point", "coordinates": [-97.1022351, 36.1197236] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Strickland Park And Sports Complex" },
+      "geometry": { "type": "Point", "coordinates": [-97.0565026, 36.1253365] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Berry Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0451378, 36.1219586] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Stillwater High School" },
+      "geometry": { "type": "Point", "coordinates": [-97.0630464, 36.1363607] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Stillwater Junior High School" },
+      "geometry": { "type": "Point", "coordinates": [-97.039699, 36.1401698] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Skyline Elementary" },
+      "geometry": { "type": "Point", "coordinates": [-97.0412094, 36.1386228] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0389865, 36.1383846] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Chris Salmon Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0582695, 36.1125276] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Couch Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0464298, 36.1063366] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Hoyt Grove Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0470992, 36.1108115] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Arrington Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0440691, 36.1189524] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Babcock Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0902229, 36.1043023] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Tower Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0775693, 36.119115] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Arrowhead Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0800006, 36.1218109] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Southern Woods Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0674025, 36.1101644] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Myers Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0845861, 36.1104049] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Ingham Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0858372, 36.1181325] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Sunset Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0691176, 36.1139826] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Whittenberg Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.0718126, 36.1776828] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Centennial Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.052245, 36.1175499] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Sangre Ridge Elementary" },
+      "geometry": { "type": "Point", "coordinates": [-97.1059196, 36.0945811] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Stillwater Middle School" },
+      "geometry": { "type": "Point", "coordinates": [-97.1061931, 36.0967036] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Will Rogers Elementary" },
+      "geometry": { "type": "Point", "coordinates": [-97.0675081, 36.1350413] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Richmond Elementary" },
+      "geometry": { "type": "Point", "coordinates": [-97.0603808, 36.1730754] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Boomer Lake Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.063569, 36.1513981] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Stillwater 500" },
+      "geometry": { "type": "Point", "coordinates": [-97.144617, 36.0506398] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.057606, 36.1045063] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Payne County Expo Center" },
+      "geometry": { "type": "Point", "coordinates": [-97.0022684, 36.1198739] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Highland Park Elementary" },
+      "geometry": { "type": "Point", "coordinates": [-97.0262887, 36.1179316] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Teal Ridge Wetland" },
+      "geometry": { "type": "Point", "coordinates": [-97.0805564, 36.1001055] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "West Park" },
+      "geometry": { "type": "Point", "coordinates": [-97.1276715, 36.1186655] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Sanborn Lake Park and Sports Complex" },
+      "geometry": { "type": "Point", "coordinates": [-97.078433, 36.1544552] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "CareerTech" },
+      "geometry": { "type": "Point", "coordinates": [-97.0773422, 36.1151955] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Stillwater Christian School" },
+      "geometry": { "type": "Point", "coordinates": [-97.0575104, 36.1746774] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Lincoln Academy" },
+      "geometry": { "type": "Point", "coordinates": [-97.0565262, 36.1085349] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Pleasant Valley School" },
+      "geometry": { "type": "Point", "coordinates": [-97.1044661, 36.1009478] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Covenant Community School" },
+      "geometry": { "type": "Point", "coordinates": [-97.1219992, 36.1381438] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Encore Dance" },
+      "geometry": { "type": "Point", "coordinates": [-97.0913491, 36.1140787] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Covenant Community School" },
+      "geometry": { "type": "Point", "coordinates": [-97.0677565, 36.1137985] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Stillwater High School" },
+      "geometry": { "type": "Point", "coordinates": [-97.0630464, 36.1363607] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "school", "name": "Westwood Elementary" },
+      "geometry": { "type": "Point", "coordinates": [-97.0822723, 36.1167914] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.070915, 36.1204076] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0678871, 36.1205998] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": "Block 34" },
+      "geometry": { "type": "Point", "coordinates": [-97.0606369, 36.1129147] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "kind": "park", "name": null },
+      "geometry": { "type": "Point", "coordinates": [-97.0592311, 36.1270573] }
+    }
+  ]
+}
