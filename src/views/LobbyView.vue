@@ -85,6 +85,21 @@ function leave() {
   <main class="lobby">
     <h1 class="lobby-title">Multiplayer Lobby</h1>
 
+    <!-- Connection status (MULTI-004): shown when in a room and not connected. -->
+    <p
+      v-if="room.inRoom && sync.status.value !== 'connected'"
+      data-testid="connection-indicator"
+      class="lobby-offline"
+      role="status"
+    >
+      <span class="lobby-offline-dot" aria-hidden="true"></span>
+      {{
+        sync.status.value === 'reconnecting'
+          ? 'Reconnecting…'
+          : 'Offline — changes will sync when reconnected'
+      }}
+    </p>
+
     <p v-if="error" data-testid="lobby-error" class="lobby-error" role="alert">{{ error }}</p>
 
     <!-- Pre-room: create or join -->
@@ -194,6 +209,34 @@ function leave() {
   padding: 0.6rem 0.9rem;
   margin-bottom: 1rem;
   font-size: 0.9rem;
+}
+.lobby-offline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(245, 184, 48, 0.15);
+  border: 1px solid var(--color-brand-gold, #f5b830);
+  color: #f5d68a;
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+.lobby-offline-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-brand-gold, #f5b830);
+  animation: lobby-pulse 1.2s ease-in-out infinite;
+}
+@keyframes lobby-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 .lobby-actions {
   display: flex;

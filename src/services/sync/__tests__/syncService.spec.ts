@@ -59,6 +59,11 @@ class MockWebSocket {
   _emit(msg: ServerMessage) {
     this.onmessage?.({ data: JSON.stringify(msg) })
   }
+  /** Simulate an unexpected drop (network loss), firing onclose. */
+  _drop() {
+    this.readyState = MockWebSocket.CLOSED
+    this.onclose?.()
+  }
 }
 
 describe('WsSyncService', () => {
@@ -133,6 +138,69 @@ describe('WsSyncService', () => {
     const { svc, connected } = makeConnected()
     await connected
     svc.disconnect()
+    expect(svc.status.value).toBe('disconnected')
+  })
+})
+
+describe('WsSyncService reconnection (MULTI-004)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('WebSocket', MockWebSocket as unknown as typeof WebSocket)
+    vi.useFakeTimers()
+    MockWebSocket.last = null
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('goes to "reconnecting" on an unexpected drop', async () => {
+    const svc = new WsSyncService({ reconnectDelaysMs: [10] })
+    const p = svc.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    MockWebSocket.last!._open()
+    await p
+    expect(svc.status.value).toBe('connected')
+
+    MockWebSocket.last!._drop()
+    expect(svc.status.value).toBe('reconnecting')
+  })
+
+  it('opens a new socket after the backoff delay and re-sends hello', async () => {
+    const svc = new WsSyncService({ reconnectDelaysMs: [10] })
+    const p = svc.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    const first = MockWebSocket.last!
+    first._open()
+    await p
+
+    first._drop()
+    vi.advanceTimersByTime(20)
+    const second = MockWebSocket.last!
+    expect(second).not.toBe(first)
+    second._open()
+    // The reconnected socket re-sends the hello handshake (state reconciliation).
+    const hello = JSON.parse(second.sent[0]!)
+    expect(hello).toMatchObject({ t: 'hello', code: 'ABCD' })
+    expect(svc.status.value).toBe('connected')
+  })
+
+  it('does NOT reconnect after a manual disconnect', async () => {
+    const svc = new WsSyncService({ reconnectDelaysMs: [10] })
+    const p = svc.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    MockWebSocket.last!._open()
+    await p
+
+    svc.disconnect()
+    const afterDisconnect = MockWebSocket.last
+    vi.advanceTimersByTime(100)
+    expect(MockWebSocket.last).toBe(afterDisconnect) // no new socket
+    expect(svc.status.value).toBe('disconnected')
+  })
+
+  it('respects autoReconnect: false', async () => {
+    const svc = new WsSyncService({ autoReconnect: false })
+    const p = svc.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    MockWebSocket.last!._open()
+    await p
+    MockWebSocket.last!._drop()
     expect(svc.status.value).toBe('disconnected')
   })
 })

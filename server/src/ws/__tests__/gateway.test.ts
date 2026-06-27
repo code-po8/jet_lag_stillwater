@@ -195,6 +195,26 @@ describe('WS gateway (integration)', () => {
     seeker.close()
   })
 
+  it('broadcasts presence(connected:false) when a player drops, not player.left', async () => {
+    const { ws: hider } = await helloAs('tok-hider')
+    const { ws: seeker } = await helloAs('tok-seeker')
+
+    let gotLeft = false
+    const presencePromise = nextMessage(hider, (m) => m.t === 'player.presence')
+    hider.on('message', (d: Buffer) => {
+      if ((JSON.parse(d.toString()) as ServerMessage).t === 'player.left') gotLeft = true
+    })
+    seeker.close() // drop
+
+    const presence = await presencePromise
+    if (presence.t === 'player.presence') {
+      expect(presence.playerId).toBe('s1')
+      expect(presence.connected).toBe(false)
+    }
+    expect(gotLeft).toBe(false) // not immediately dropped (grace period)
+    hider.close()
+  })
+
   it('replies to a time.sync probe with the server time', async () => {
     const { ws: seeker } = await helloAs('tok-seeker')
     const t1 = 123456

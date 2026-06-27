@@ -3,6 +3,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/vu
 import { createPinia, setActivePinia } from 'pinia'
 import LobbyView from '../LobbyView.vue'
 import { useRoomStore } from '@/stores/roomStore'
+import { useSync, __resetSyncSession } from '@/composables/useSync'
 
 const routerPush = vi.fn()
 vi.mock('vue-router', () => ({
@@ -37,8 +38,12 @@ describe('LobbyView', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     routerPush.mockClear()
+    __resetSyncSession()
   })
-  afterEach(() => cleanup())
+  afterEach(() => {
+    cleanup()
+    __resetSyncSession()
+  })
 
   it('shows create and join options when not in a room', () => {
     render(LobbyView)
@@ -113,6 +118,19 @@ describe('LobbyView', () => {
     await waitFor(() => {
       expect(screen.getByTestId('lobby-error')).toBeInTheDocument()
     })
+  })
+
+  it('shows an offline/reconnecting indicator when in a room and not connected', async () => {
+    const room = useRoomStore()
+    room.code = 'ABCD'
+    room.rejoinToken = 'tok'
+    room.self = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    const sync = useSync()
+    sync.status.value = 'reconnecting'
+
+    render(LobbyView)
+    expect(screen.getByTestId('connection-indicator')).toBeInTheDocument()
+    __resetSyncSession()
   })
 
   it('non-host does not see the start button', async () => {

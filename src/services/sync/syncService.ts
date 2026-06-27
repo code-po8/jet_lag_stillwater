@@ -10,7 +10,7 @@
 import { ref, type Ref } from 'vue'
 import type { ClientMessage, ServerMessage } from './protocol'
 
-export type SyncStatus = 'disconnected' | 'connecting' | 'connected'
+export type SyncStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
 
 export interface ConnectOptions {
   /** WebSocket URL, e.g. wss://api.example.com/ws */
@@ -62,32 +62,65 @@ export class NoopSyncService implements SyncService {
  * (rejoin token in the first message, not the URL) and fans inbound frames out
  * to subscribers.
  */
+/** Reconnect backoff steps (ms). Caps at the last value. */
+const RECONNECT_DELAYS_MS = [500, 1000, 2000, 5000, 10000]
+
+export interface WsSyncOptions {
+  /** Override reconnect backoff (tests use [0]). */
+  reconnectDelaysMs?: number[]
+  /** Auto-reconnect on unexpected close. Default true. */
+  autoReconnect?: boolean
+}
+
 export class WsSyncService implements SyncService {
   readonly status = ref<SyncStatus>('disconnected')
   private socket: WebSocket | null = null
   private handlers = new Set<MessageHandler>()
   private pending: ConnectOptions | null = null
+  private manualClose = false
+  private reconnectAttempt = 0
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private readonly delays: number[]
+  private readonly autoReconnect: boolean
+
+  constructor(options: WsSyncOptions = {}) {
+    this.delays = options.reconnectDelaysMs ?? RECONNECT_DELAYS_MS
+    this.autoReconnect = options.autoReconnect ?? true
+  }
 
   connect(options: ConnectOptions): Promise<void> {
     this.disconnect()
+    this.manualClose = false
     this.pending = options
-    this.status.value = 'connecting'
+    this.reconnectAttempt = 0
+    return this.open(options)
+  }
+
+  /** Open a socket for the given options (used by connect + reconnect). */
+  private open(options: ConnectOptions): Promise<void> {
+    this.status.value = this.reconnectAttempt > 0 ? 'reconnecting' : 'connecting'
 
     return new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(options.url)
       this.socket = socket
 
       socket.onopen = () => {
-        // Authenticate via the first message rather than the URL.
+        // Re-attach + reconcile: the server replies with a fresh `welcome`.
         this.send({ t: 'hello', code: options.code, rejoinToken: options.rejoinToken })
         this.status.value = 'connected'
+        this.reconnectAttempt = 0
         resolve()
       }
       socket.onerror = (err) => {
         if (this.status.value === 'connecting') reject(err)
       }
       socket.onclose = () => {
-        this.status.value = 'disconnected'
+        this.socket = null
+        if (this.manualClose || !this.autoReconnect || !this.pending) {
+          this.status.value = 'disconnected'
+          return
+        }
+        this.scheduleReconnect()
       }
       socket.onmessage = (ev: MessageEvent) => {
         let msg: ServerMessage
@@ -101,7 +134,27 @@ export class WsSyncService implements SyncService {
     })
   }
 
+  /** Schedule the next reconnect attempt with capped backoff. */
+  private scheduleReconnect(): void {
+    this.status.value = 'reconnecting'
+    const delay = this.delays[Math.min(this.reconnectAttempt, this.delays.length - 1)]!
+    this.reconnectAttempt++
+    this.reconnectTimer = setTimeout(() => {
+      if (this.pending && !this.manualClose) {
+        this.open(this.pending).catch(() => {
+          // open() rejects only on the initial-connect path; the onclose handler
+          // schedules the next retry.
+        })
+      }
+    }, delay)
+  }
+
   disconnect(): void {
+    this.manualClose = true
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     if (this.socket) {
       this.socket.onclose = null
       try {
@@ -112,6 +165,7 @@ export class WsSyncService implements SyncService {
       this.socket = null
     }
     this.pending = null
+    this.reconnectAttempt = 0
     this.status.value = 'disconnected'
   }
 
@@ -128,6 +182,9 @@ export class WsSyncService implements SyncService {
 }
 
 /** Factory mirroring createPersistenceService(). Defaults to offline (noop). */
-export function createSyncService(kind: 'noop' | 'ws' = 'noop'): SyncService {
-  return kind === 'ws' ? new WsSyncService() : new NoopSyncService()
+export function createSyncService(
+  kind: 'noop' | 'ws' = 'noop',
+  options?: WsSyncOptions,
+): SyncService {
+  return kind === 'ws' ? new WsSyncService(options) : new NoopSyncService()
 }
