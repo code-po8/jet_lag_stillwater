@@ -3503,21 +3503,21 @@ Real-time synchronization of game state across multiple player devices, similar 
 
 ### MULTI-001: Multiplayer Architecture Planning
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** None
 
 **Story:** As a developer, I need to design the multiplayer architecture before implementation so that we make good technical decisions.
 
 **Acceptance Criteria:**
 
-- [ ] Document backend technology choice (Supabase Realtime, Firebase, custom WebSocket, etc.)
-- [ ] Define room/game creation flow
-- [ ] Define player join flow (room codes like Jackbox)
-- [ ] Define state synchronization strategy
-- [ ] Define conflict resolution approach
-- [ ] Define host vs participant permissions
-- [ ] Consider offline/reconnection handling
-- [ ] Estimate infrastructure costs
+- [x] Document backend technology choice (Supabase Realtime, Firebase, custom WebSocket, etc.)
+- [x] Define room/game creation flow
+- [x] Define player join flow (room codes like Jackbox)
+- [x] Define state synchronization strategy
+- [x] Define conflict resolution approach
+- [x] Define host vs participant permissions
+- [x] Consider offline/reconnection handling
+- [x] Estimate infrastructure costs
 
 **Size:** M
 
@@ -3526,6 +3526,16 @@ Real-time synchronization of game state across multiple player devices, similar 
 - This is a planning/design story, not implementation
 - Output is a technical design document
 - Should be reviewed before starting implementation stories
+
+**Design Outcome (decisions locked):**
+
+- **Backend:** self-hosted **Fastify + WebSocket** (data plane) + **REST** (control plane: create/join/rejoin/lobby), **Postgres** for room/session records. No third-party realtime vendor. Goal is **live sync only** (positions + shared game state); durable history/accounts deferred.
+- **Hosting:** **Railway**, one project — `web` (static PWA), `api` (Node), Postgres plugin. WebSockets over standard HTTPS port; `api` runs **single-instance** for v1 because the `RoomHub` is in-memory (Redis fan-out is future scope). Cost realistically ~$5–20/mo.
+- **Sessions (Jackbox-style):** host creates room → short **Crockford-style code** (no `0/O/1/I/L`, len 4, collision retry) → others join with code + name. Each device gets a **rejoin token** (32-byte random, only SHA-256 hash stored) so a dropped phone reclaims its spot. TTL: created at now+2 days, slid forward on activity (persist-while-paused), dropped to now+1h on round end.
+- **Sync layer:** new client `SyncService` mirroring the existing `PersistenceService` pattern (`NoopSyncService` default, `WsSyncService` real); stores stay the local source of truth and the app is **offline-first** when no room is joined. Server-authoritative for sequencing/visibility, host-authoritative for game decisions.
+- **Anti-cheat:** server owns each device's role and **withholds hider-only data (GPS, cards, pre-reveal zone) from seeker connections at the protocol layer**; the free role toggle is disabled in-room (see SYNC-003).
+- **Sandbox:** all untrusted code execution (install/dev/test/runtime) runs in Docker via `docker-compose`; host home/SSH never mounted; `.npmrc ignore-scripts` + lockfiles as defense-in-depth (see INFRA-001/002).
+- Full design doc: `~/.claude/plans/cached-coalescing-squid.md`.
 
 ---
 
@@ -3538,16 +3548,20 @@ Real-time synchronization of game state across multiple player devices, similar 
 
 **Acceptance Criteria:**
 
-- [ ] Host can create a new game room
-- [ ] Room generates a short, memorable code (e.g., 4-6 characters like "ABCD")
+- [ ] Host can create a new game room (`POST /rooms` → returns code + host rejoin token)
+- [ ] Room generates a short, memorable **Crockford-style** code (len 4, alphabet excludes `0/O/1/I/L`, collision retry, recyclable across ended rooms)
 - [ ] Room code is displayed prominently for sharing
-- [ ] Other players can enter room code to join
+- [ ] Other players can enter room code + name to join (`POST /rooms/:code/join` → returns player id + rejoin token)
 - [ ] Joined players appear in a lobby/waiting area
 - [ ] Host can see all joined players
 - [ ] Host can start the game when ready
-- [ ] Players can leave/rejoin room
+- [ ] Players can leave and **rejoin** with their rejoin token after a drop (`POST /rooms/:code/rejoin`)
+- [ ] Session persists a few days while paused/ongoing (TTL slides on activity) and expires shortly after the round ends
+- [ ] Invalid/expired room codes and room-full scenarios are handled gracefully
 
 **Size:** L
+
+**Depends On:** MULTI-001, INFRA-003, INFRA-004, INFRA-005
 
 **Tests to Write:**
 
@@ -3564,20 +3578,43 @@ describe('room creation and join', () => {
 
 ---
 
-### MULTI-003: Real-Time State Synchronization
+### MULTI-003a: Real-Time Position Sync
 
 **Status:** `pending`
-**Depends On:** MULTI-002
+**Depends On:** MULTI-002, INFRA-006, SYNC-002
 
-**Story:** As a player in a multiplayer game, I need game state changes to sync across all devices in real-time so that everyone sees the same game state.
+**Story:** As a player, I need everyone's live GPS position to sync across devices so that the hider can track seekers and seekers can see each other on the shared map.
+
+**Acceptance Criteria:**
+
+- [ ] Client sends throttled position updates (≤ every 2–3 s OR moved > ~15 m; low-accuracy fixes dropped)
+- [ ] Server coalesces latest-per-player and broadcasts batched `pos.batch` on a 1–2 s tick
+- [ ] Positions live in-memory only (never persisted)
+- [ ] **Hider position is withheld from seekers server-side** — seekers only receive the declared zone (see SYNC-003)
+- [ ] Server computes `zone.breach` when a seeker enters the hiding zone (drives MAP-006)
+
+**Size:** L
+
+**Notes:**
+
+- This is the user's primary motivation for the backend (live position tracking)
+
+---
+
+### MULTI-003b: Real-Time Game-State Sync
+
+**Status:** `pending`
+**Depends On:** MULTI-003a
+
+**Story:** As a player in a multiplayer game, I need game-state changes to sync across all devices in real-time so that everyone sees the same game state.
 
 **Acceptance Criteria:**
 
 - [ ] Game phase changes sync to all players
 - [ ] Question asked/answered events sync immediately
 - [ ] Curse activations appear on all seeker devices
-- [ ] Timer states are synchronized (accounting for network latency)
-- [ ] Card draws are recorded and synced (hider's perspective shared appropriately)
+- [ ] Timer states are synchronized (accounting for network latency via ping/pong clock offset)
+- [ ] Card draws are recorded and synced (hider's perspective shared appropriately; cards withheld from seekers)
 - [ ] Time trap triggers sync to all players
 - [ ] Conflict resolution handles simultaneous actions
 - [ ] Optimistic UI updates with server reconciliation
@@ -3586,8 +3623,7 @@ describe('room creation and join', () => {
 
 **Notes:**
 
-- This is a large story that may need to be split
-- Consider implementing incrementally: questions first, then curses, then timers
+- Implement incrementally: questions first, then curses, then timers
 - Latency compensation is critical for timer sync
 
 ---
@@ -3595,7 +3631,7 @@ describe('room creation and join', () => {
 ### MULTI-004: Offline Handling & Reconnection
 
 **Status:** `pending`
-**Depends On:** MULTI-003
+**Depends On:** MULTI-003b
 
 **Story:** As a player, I need the app to handle disconnections gracefully so that I can rejoin the game without losing progress.
 
@@ -3786,6 +3822,353 @@ describe('hand limit warning display (BUG-001)', () => {
 
 ---
 
+## Epic 13: Backend & Infrastructure
+
+Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested inside a Docker sandbox. Foundation for all multiplayer sync. See MULTI-001 design outcome and `~/.claude/plans/cached-coalescing-squid.md`.
+
+---
+
+### INFRA-001: Docker Sandbox for Dev & Test
+
+**Status:** `pending`
+**Depends On:** None
+
+**Story:** As a developer, I need all untrusted dependency code to execute inside containers so that a malicious npm install/postinstall script cannot reach my host home directory or SSH keys.
+
+**Acceptance Criteria:**
+
+- [ ] `docker-compose.yml` with services: frontend (Vite dev), backend (Fastify), postgres, one-shot test-runner
+- [ ] Source bind-mounted into containers; **host `$HOME` / `~/.ssh` never mounted**; no git credentials in containers; containers run as non-root
+- [ ] `node_modules` are container-managed named volumes; `npm install`/`npm ci` runs **inside** the container, never on the host
+- [ ] test-runner uses `network_mode: "none"` (kills postinstall exfil / second-stage)
+- [ ] Editing and `git commit` continue to happen on the host user session (unchanged workflow)
+- [ ] A benign sentinel test confirms an install script cannot read a file placed in host `$HOME`
+
+**Size:** M
+
+---
+
+### INFRA-002: npm Hardening (Defense-in-Depth)
+
+**Status:** `pending`
+**Depends On:** None
+
+**Story:** As a developer, I need npm configured to block the most common supply-chain vector so that Docker isn't my only line of defense.
+
+**Acceptance Criteria:**
+
+- [ ] `.npmrc` sets `ignore-scripts=true`, `save-exact=true`, `engine-strict=true`
+- [ ] Lockfiles committed; `npm ci` used everywhere (CI, Docker)
+- [ ] Native deps that need build scripts (e.g. existing `sharp`) are allowlisted via explicit `npm rebuild` in the Dockerfile
+- [ ] DEVELOPMENT.md documents the hardening and the rebuild allowlist
+
+**Size:** S
+
+---
+
+### INFRA-003: Backend Skeleton
+
+**Status:** `pending`
+**Depends On:** INFRA-001, INFRA-002
+
+**Story:** As a developer, I need a Fastify backend skeleton so that room and sync features have a home.
+
+**Acceptance Criteria:**
+
+- [ ] `server/` package with **its own `package.json` + lockfile** (independent from frontend)
+- [ ] Fastify app boots, listens on `process.env.PORT` / `0.0.0.0`, has a health-check endpoint
+- [ ] Dockerfile for the backend service
+- [ ] Runs via `docker compose up` alongside Postgres
+
+**Size:** M
+
+---
+
+### INFRA-004: DB Schema & Migrations
+
+**Status:** `pending`
+**Depends On:** INFRA-003
+
+**Story:** As a developer, I need session/player tables so that rooms and rejoin tokens can be stored.
+
+**Acceptance Criteria:**
+
+- [ ] `sessions` table: id, code, phase, status, state (JSONB), state_version, created_at, expires_at
+- [ ] `players` table: id, session_id, name, role, is_host, rejoin_token_hash, connected, joined_at
+- [ ] Partial unique index on `code` for non-ended rooms (codes recycle)
+- [ ] Migration tooling set up; expiry sweeper evicts expired rooms
+
+**Size:** M
+
+---
+
+### INFRA-005: Room Code & Rejoin-Token Services
+
+**Status:** `pending`
+**Depends On:** INFRA-004
+
+**Story:** As a developer, I need code generation and token services so that rooms are joinable and rejoinable securely.
+
+**Acceptance Criteria:**
+
+- [ ] Crockford-style code generator (excludes `0/O/1/I/L`, len 4, `ON CONFLICT` retry, length bump on repeated collision)
+- [ ] Rejoin token: 32-byte random, raw returned once, **only SHA-256 hash stored**, room-scoped
+- [ ] TTL logic: create now+2 days, slide on activity, drop to now+1h on round end
+- [ ] REST endpoints: `POST /rooms`, `POST /rooms/:code/join`, `POST /rooms/:code/rejoin`, `GET /rooms/:code`
+
+**Size:** M
+
+---
+
+### INFRA-006: WebSocket Gateway & RoomHub
+
+**Status:** `pending`
+**Depends On:** INFRA-005, INFRA-008
+
+**Story:** As a developer, I need a WebSocket gateway so that live position/state messages flow between devices.
+
+**Acceptance Criteria:**
+
+- [ ] WS connection lifecycle: `hello`/`welcome` handshake (rejoin token in first message, not URL), `ping`/`pong` heartbeat (clock offset)
+- [ ] In-memory `RoomHub` tracks connected players and latest positions per room
+- [ ] Presence events: `player.joined` / `player.left` / `player.presence`
+- [ ] Position coalescing + batched `pos.batch` broadcast on a tick
+- [ ] **Server-side withholding of hider-only data from seeker connections** (GPS, cards, pre-reveal zone center)
+- [ ] Server-computed `zone.breach` when a seeker enters the zone
+- [ ] Snapshots written to Postgres only on phase transitions / host actions (never per position frame)
+
+**Size:** XL (consider splitting positions vs game-state handlers)
+
+---
+
+### INFRA-007: Railway Deployment
+
+**Status:** `pending`
+**Depends On:** INFRA-006
+
+**Story:** As a developer, I need the app deployed to Railway so that players can use it from their own phones.
+
+**Acceptance Criteria:**
+
+- [ ] One Railway project with `web` (static `dist/`), `api` (Node, root dir `server/`), Postgres plugin (injects `DATABASE_URL`)
+- [ ] `wss://` connects from the deployed PWA; CORS / WS-origin locked to the `web` URL
+- [ ] `api` documented/configured as **single-instance** (in-memory RoomHub constraint for v1)
+- [ ] Local docker-compose services map 1:1 to Railway services
+- [ ] Build/start commands and env vars documented in DEVELOPMENT.md
+
+**Size:** M
+
+---
+
+### INFRA-008: Shared DTO Package
+
+**Status:** `pending`
+**Depends On:** INFRA-003
+
+**Story:** As a developer, I need shared TypeScript types for WS messages and synced state so that client and server never drift.
+
+**Acceptance Criteria:**
+
+- [ ] `packages/shared` (or `shared/`) with zero-runtime-dep DTOs for all message types and the synced state shape
+- [ ] Imported by both the Vue client and the `server/` backend
+- [ ] Message types defined: handshake, presence, `pos`/`pos.batch`, `zone.set`/`zone`, `ruledout.add`/`ruledout`, `zone.breach`, host actions
+
+**Size:** S
+
+---
+
+### SYNC-001: SyncService Abstraction
+
+**Status:** `pending`
+**Depends On:** INFRA-008
+
+**Story:** As a developer, I need a swappable sync transport so that the app stays offline-first when no room is joined.
+
+**Acceptance Criteria:**
+
+- [ ] `src/services/sync/` transport interface mirroring `PersistenceService`
+- [ ] `NoopSyncService` (default) — app behaves exactly as today with no room
+- [ ] `WsSyncService` — connects to the backend WS gateway
+- [ ] localStorage persistence keeps running in parallel; stores remain the local source of truth
+
+**Size:** M
+
+---
+
+### SYNC-002: Store ↔ Sync Wiring
+
+**Status:** `pending`
+**Depends On:** SYNC-001, MULTI-002
+
+**Story:** As a developer, I need the Pinia stores wired to the sync layer so that remote changes apply locally without loops.
+
+**Acceptance Criteria:**
+
+- [ ] `useSync()` composable owns the active transport
+- [ ] Remote-applied mutations carry `origin:'remote'` to prevent echo loops
+- [ ] In a room, role derives from server `currentHiderId`; manual toggle retained for offline play
+- [ ] Reuses existing `gameStore`/`questionStore` shapes (no parallel state)
+
+**Size:** L
+
+---
+
+### SYNC-003: Server-Enforced Device Role Lock (Anti-Cheat)
+
+**Status:** `pending`
+**Depends On:** INFRA-006, SYNC-002
+
+**Story:** As a player, I need roles enforced by the server so that a seeker cannot switch to the hider view and see the hider's position and cards.
+
+**Acceptance Criteria:**
+
+- [ ] In a room, the device's role comes from the server and is **bound to its rejoin token**
+- [ ] The free `currentViewRole` toggle in `GamePlayView.vue` (`data-testid="role-toggle"`) is **disabled/removed when in a room** (retained only for offline pass-the-phone play)
+- [ ] A device joined as seeker **cannot reach the hider view**
+- [ ] Hider-only data (GPS, cards, pre-reveal zone) is **withheld server-side** — verified by inspecting the seeker's raw WS frames, not just hidden in CSS/markup
+- [ ] Role can only change via server reassignment between rounds
+
+**Size:** M
+
+---
+
+## Epic 14: Live Shared Map
+
+Shared base map of Stillwater with live positions, hider zone, seeker ruled-out shading, and an end-game breach indicator. Base map is **pre-baked from OSM and bundled** for 100% offline use (see MULTI-001 design outcome). Approved mockup: two-view (seeker/hider) layout.
+
+> **All cards with icon-only buttons must satisfy:** every icon-only control exposes a textual description (visible label or tooltip + `aria-label`).
+
+---
+
+### MAP-000: Bake Stylized Stillwater Base Map
+
+**Status:** `pending`
+**Depends On:** None
+
+**Story:** As a developer, I need a pre-baked stylized Stillwater base map so that the map works fully offline without a tile server or API key.
+
+**Acceptance Criteria:**
+
+- [ ] One-time build script pulls Stillwater OSM data (streets + city limits)
+- [ ] Renders an on-brand stylized base (image and/or baked GeoJSON), bundled into the app as a static asset checked into the repo
+- [ ] Re-running the script regenerates the asset
+- [ ] Base renders fully offline (no live tile server, no key)
+
+**Size:** M
+
+---
+
+### MAP-001: Base Map Component
+
+**Status:** `pending`
+**Depends On:** MAP-000
+
+**Story:** As a player, I need a map view so that I can see the game area and overlays.
+
+**Acceptance Criteria:**
+
+- [ ] Leaflet displays the pre-baked static base (MAP-000); overlays draw on top
+- [ ] Mobile-first; readable in outdoor sunlight; new "Map" tab in bottom nav
+- [ ] Bundled base asset cached via PWA/workbox so it's available offline after first load
+- [ ] All icon-only controls have textual descriptions (label or tooltip + `aria-label`)
+
+**Size:** M
+
+---
+
+### MAP-002: Static Stillwater Geo Data
+
+**Status:** `pending`
+**Depends On:** MAP-001
+
+**Story:** As a player, I need bus stops, city limits, and POIs on the map so that I can reason about hiding spots.
+
+**Acceptance Criteria:**
+
+- [ ] City limits, OSU bus stops, and POIs (restaurants/schools/parks) rendered as overlay GeoJSON
+- [ ] Data sourced from the user's exported Google My Maps (KML/GeoJSON) or OSM fallback
+- [ ] Distinct from MAP-000 base cartography — this is the interactive game data layer
+- [ ] Layer legend with text labels
+
+**Size:** M
+
+**Notes:**
+
+- Sourcing subtask: user to export their custom Google My Maps layers as KML/GeoJSON.
+
+---
+
+### MAP-003: Live Position Markers
+
+**Status:** `pending`
+**Depends On:** MAP-002, MULTI-003a
+
+**Story:** As a player, I need live position markers so that the hider can track seekers and seekers can see each other.
+
+**Acceptance Criteria:**
+
+- [ ] Uses browser Geolocation API to report own position
+- [ ] Renders self + others from `pos.batch`
+- [ ] **Hider sees seekers; seekers never see the hider's exact position** (enforced server-side per SYNC-003)
+- [ ] Markers distinguish roles via the brand palette and have text labels
+
+**Size:** L
+
+---
+
+### MAP-004: Hider Zone
+
+**Status:** `pending`
+**Depends On:** MAP-002
+
+**Story:** As a hider, I need to set my hiding zone so that everyone shares the same ¼-mile boundary.
+
+**Acceptance Criteria:**
+
+- [ ] Hider picks a bus stop as the zone center
+- [ ] Draws a ¼-mile (402 m) radius circle
+- [ ] Zone syncs via `zone.set`; seekers see the declared zone
+- [ ] Zone center/radius shown with text in a labeled sheet
+
+**Size:** M
+
+---
+
+### MAP-005: Seeker Ruled-Out Shading
+
+**Status:** `pending`
+**Depends On:** MAP-002, MULTI-003a
+
+**Story:** As a seeker, I need to shade ruled-out regions so that the team can narrow the search.
+
+**Acceptance Criteria:**
+
+- [ ] **Answer-driven auto-shading** for Radar / Measuring / Thermometer answers (geometry relative to seeker position)
+- [ ] **Manual freehand shading** override
+- [ ] Stored/synced as geohash grid cells (sync = set union)
+- [ ] Shading toolbar controls all have textual descriptions/labels (incl. undo)
+
+**Size:** L
+
+---
+
+### MAP-006: End-Game Breach Indicator
+
+**Status:** `pending`
+**Depends On:** MAP-004, MAP-003
+
+**Story:** As a hider, I need a clear visual alert when seekers enter my zone so that I know the end game has begun.
+
+**Acceptance Criteria:**
+
+- [ ] When a seeker enters the zone (server `zone.breach`), the zone turns red and pulses + an alert banner appears
+- [ ] Ties into the existing `enterHidingZone()` transition in `gameStore`
+- [ ] Indicator is announced for screen readers (not color-only)
+
+**Size:** M
+
+---
+
 ## Backlog Summary
 
 | Epic                           | Stories | Complete | Remaining |
@@ -3800,16 +4183,29 @@ describe('hand limit warning display (BUG-001)', () => {
 | 7: Question UX Improvements    | 2       | 2        | 0         |
 | 8: Physical Play & Standalone  | 3       | 3        | 0         |
 | 9: User Guides                 | 2       | 2        | 0         |
-| 10: Multiplayer Sync           | 4       | 0        | 4         |
+| 10: Multiplayer Sync           | 5       | 1        | 4         |
 | 11: Branding & Visual Identity | 2       | 2        | 0         |
 | 12: Bug Fixes                  | 1       | 1        | 0         |
-| **Total**                      | **64**  | **60**   | **4**     |
+| 13: Backend & Infrastructure   | 11      | 0        | 11        |
+| 14: Live Shared Map            | 7       | 0        | 7         |
+| **Total**                      | **83**  | **61**   | **22**    |
 
 ---
 
 ## Dependency Graph
 
-All cards are now complete.
+Epics 0–9, 11, 12 are complete. Remaining work is the multiplayer/backend/map track:
+
+```
+MULTI-001 ✅ (design) ─→ INFRA-001 ─┬─→ INFRA-003 ─┬─→ INFRA-004 ─→ INFRA-005 ─→ INFRA-006 ─→ INFRA-007
+                    INFRA-002 ──────┘              ├─→ INFRA-008 ─→ SYNC-001 ─→ SYNC-002 ─→ SYNC-003
+                                                   └─(INFRA-006 needs INFRA-008)
+MULTI-002 (needs INFRA-003/004/005) ─→ SYNC-002
+INFRA-006 + SYNC-002 ─→ MULTI-003a ─→ MULTI-003b ─→ MULTI-004
+MAP-000 ─→ MAP-001 ─→ MAP-002 ─┬─→ MAP-003 (needs MULTI-003a) ─┐
+                               ├─→ MAP-004 ──────────────────────┴─→ MAP-006
+                               └─→ MAP-005 (needs MULTI-003a)
+```
 
 ```
 FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
@@ -3863,10 +4259,11 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 10: Multiplayer Sync**
 
-- **MULTI-001**: Multiplayer Architecture Planning (no dependencies) - READY
-- **MULTI-002**: Room Creation & Join Flow (depends on MULTI-001) ⏳
-- **MULTI-003**: Real-Time State Synchronization (depends on MULTI-002) ⏳
-- **MULTI-004**: Offline Handling & Reconnection (depends on MULTI-003) ⏳
+- ~~**MULTI-001**: Multiplayer Architecture Planning~~ ✅ COMPLETE (design captured)
+- **MULTI-002**: Room Creation & Join Flow (depends on INFRA-003/004/005) ⏳
+- **MULTI-003a**: Real-Time Position Sync (depends on MULTI-002, INFRA-006, SYNC-002) ⏳
+- **MULTI-003b**: Real-Time Game-State Sync (depends on MULTI-003a) ⏳
+- **MULTI-004**: Offline Handling & Reconnection (depends on MULTI-003b) ⏳
 
 **Epic 11: Branding & Visual Identity**
 
@@ -3877,7 +4274,18 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 - ~~**BUG-001**: Fix Incorrect "Hand Limit Reached" Warning in Card Draw Modal~~ ✅ COMPLETE
 
-✅ = dependency complete | ⏳ = waiting on other new stories
+**Epic 13: Backend & Infrastructure**
+
+- **INFRA-001**: Docker Sandbox for Dev & Test (no dependencies) - READY
+- **INFRA-002**: npm Hardening (no dependencies) - READY
+- **INFRA-003**..**008**, **SYNC-001**..**003**: backend + client sync glue ⏳
+
+**Epic 14: Live Shared Map**
+
+- **MAP-000**: Bake Stylized Stillwater Base Map (no dependencies) - READY
+- **MAP-001**..**006**: base map component, geo data, positions, zone, shading, breach indicator ⏳
+
+✅ = dependency complete | ⏳ = waiting on other new stories | READY = no pending dependencies
 
 ---
 
@@ -3896,4 +4304,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 17, 2026 - Completed UX-005_
+_Last updated: June 26, 2026 - Completed MULTI-001 (multiplayer architecture design); added Epic 13 (Backend & Infrastructure) and Epic 14 (Live Shared Map); split MULTI-003 into 003a/003b_
