@@ -165,6 +165,45 @@ describe('RoomHub phase (host-authoritative)', () => {
     expect(hub.applyHostAction('h1', 'start-hiding')).toBe('hiding-period')
     expect(hub.applyHostAction('h1', 'end-round')).toBe('round-complete')
   })
+
+  it('does not treat pause/resume as a phase transition', () => {
+    // pause/resume are control actions, not phases — applyHostAction must not
+    // map them (the gateway routes them to applyHostPause instead).
+    expect(hub.applyHostAction('h1', 'pause')).toBeNull()
+    expect(hub.applyHostAction('h1', 'resume')).toBeNull()
+    expect(hub.getPhase()).toBe('setup')
+  })
+})
+
+describe('RoomHub pause (host-authoritative)', () => {
+  let hub: RoomHub
+  beforeEach(() => {
+    hub = new RoomHub('ABCD')
+    hub.addMember(hiderPlayer) // isHost: true
+    hub.addMember(seekerPlayer) // isHost: false
+  })
+
+  it('starts unpaused', () => {
+    expect(hub.isPaused()).toBe(false)
+  })
+
+  it('lets the host pause and resume, returning the new state', () => {
+    expect(hub.applyHostPause('h1', true)).toBe(true)
+    expect(hub.isPaused()).toBe(true)
+    expect(hub.applyHostPause('h1', false)).toBe(false)
+    expect(hub.isPaused()).toBe(false)
+  })
+
+  it('ignores a non-host actor', () => {
+    expect(hub.applyHostPause('s1', true)).toBeNull()
+    expect(hub.isPaused()).toBe(false)
+  })
+
+  it('returns null (no broadcast) when the state does not change', () => {
+    expect(hub.applyHostPause('h1', false)).toBeNull() // already unpaused
+    hub.applyHostPause('h1', true)
+    expect(hub.applyHostPause('h1', true)).toBeNull() // already paused
+  })
 })
 
 describe('RoomHub ruled-out cells (set union)', () => {

@@ -126,13 +126,36 @@ describe('createSyncSession', () => {
     expect(f.svc.disconnect).toHaveBeenCalled()
   })
 
-  it('updates clockOffset from a time.reply', async () => {
+  it('updates clockOffset from a time.reply matching an in-flight probe', async () => {
     const session = createSyncSession({ service: f.svc })
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    // A probe must be sent first; the reply echoes its t1.
+    session.syncClock()
+    const probe = f.sent.at(-1) as Extract<ClientMessage, { t: 'time.sync' }>
     // Server claims a large time vs the local clock → positive offset.
-    const t1 = Date.now()
-    f.emit({ t: 'time.reply', t1, t2: t1 + 100000 })
+    f.emit({ t: 'time.reply', t1: probe.t1, t2: probe.t1 + 100000 })
     expect(session.clockOffset.value).toBeGreaterThan(50000)
+  })
+
+  it('ignores a stale time.reply whose t1 does not match the in-flight probe', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    session.syncClock()
+    const probe = f.sent.at(-1) as Extract<ClientMessage, { t: 'time.sync' }>
+    // A reply for a DIFFERENT (older) probe must not corrupt the offset — NTP
+    // offset is only valid for a matched round-trip pair.
+    f.emit({ t: 'time.reply', t1: probe.t1 - 999999, t2: probe.t1 + 100000 })
+    expect(session.clockOffset.value).toBe(0)
+  })
+
+  it('applies a host paused broadcast', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    expect(session.paused.value).toBe(false)
+    f.emit({ t: 'paused', paused: true })
+    expect(session.paused.value).toBe(true)
+    f.emit({ t: 'paused', paused: false })
+    expect(session.paused.value).toBe(false)
   })
 
   it('relays game events to subscribers', async () => {

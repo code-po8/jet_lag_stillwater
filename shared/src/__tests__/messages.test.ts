@@ -27,6 +27,7 @@ describe('message type guards', () => {
       'ruledout',
       'zone.breach',
       'phase',
+      'paused',
       'error',
     ]) {
       expect(isServerMessageType(t)).toBe(true)

@@ -51,6 +51,7 @@ export class RoomHub {
   private ruledOut = new Set<string>()
   private breached = new Set<string>()
   private phase: GamePhase = 'setup'
+  private paused = false
 
   constructor(code: string) {
     this.code = code
@@ -71,6 +72,23 @@ export class RoomHub {
     if (!next) return null
     this.phase = next
     return next
+  }
+
+  isPaused(): boolean {
+    return this.paused
+  }
+
+  /**
+   * Apply a host pause/resume. Pause is orthogonal to the phase machine, so it
+   * is tracked separately. Returns the new paused state if the actor is the host
+   * and the state actually changed, else null (ignored — no broadcast needed).
+   */
+  applyHostPause(actorId: string, paused: boolean): boolean | null {
+    const actor = this.membersById.get(actorId)
+    if (!actor || !actor.isHost) return null
+    if (this.paused === paused) return null
+    this.paused = paused
+    return paused
   }
 
   addMember(input: MemberInput): void {

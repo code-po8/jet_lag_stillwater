@@ -170,6 +170,15 @@ export interface PhaseMessage {
   phase: GamePhase
 }
 
+/**
+ * Host paused/resumed the game. Pause is orthogonal to the phase machine (the
+ * phase is unchanged), so it is its own message rather than a GamePhase value.
+ */
+export interface PausedMessage {
+  t: 'paused'
+  paused: boolean
+}
+
 /** A game event relayed from another device (the server echoes it on). */
 export interface GameEventRelay {
   t: 'game.event'
@@ -203,6 +212,7 @@ export type ServerMessage =
   | RuledOutMessage
   | ZoneBreachMessage
   | PhaseMessage
+  | PausedMessage
   | GameEventRelay
   | TimeSyncReply
   | ErrorMessage
@@ -250,6 +260,7 @@ export function isServerMessageType(t: string): t is ServerMessage['t'] {
     t === 'ruledout' ||
     t === 'zone.breach' ||
     t === 'phase' ||
+    t === 'paused' ||
     t === 'game.event' ||
     t === 'time.reply' ||
     t === 'error'

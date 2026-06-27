@@ -43,6 +43,8 @@ export interface SyncSession {
   breachedSeekers: Ref<string[]>
   ruledOutCells: Ref<string[]>
   role: Ref<Role | null>
+  /** Whether the host has paused the game (synced across devices). */
+  paused: Ref<boolean>
   /** Estimated server−client clock offset (ms). Add to a client clock for server time. */
   clockOffset: Ref<number>
   connect(options: ConnectOptions): Promise<void>
@@ -80,6 +82,10 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
 
   const role = computed<Role | null>(() => self.value?.role ?? null)
   const clockOffset = ref(0)
+  const paused = ref(false)
+  // t1 of the most recent in-flight clock probe; replies must echo it, so a
+  // stale/out-of-order reply can't corrupt the offset (no matched round trip).
+  let pendingProbeT1: number | null = null
 
   const gameEventHandlers = new Set<GameEventHandler>()
   let unsubscribe: (() => void) | null = null
@@ -109,6 +115,9 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
       case 'phase':
         phase.value = msg.phase
         break
+      case 'paused':
+        paused.value = msg.paused
+        break
       case 'zone':
         zone.value = msg.zone
         break
@@ -132,7 +141,12 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
         }
         break
       case 'time.reply':
-        clockOffset.value = computeClockOffset(msg.t1, msg.t2, Date.now())
+        // Only accept the reply for the probe currently in flight — a stale or
+        // out-of-order reply has a mismatched round trip and a wrong offset.
+        if (msg.t1 === pendingProbeT1) {
+          clockOffset.value = computeClockOffset(msg.t1, msg.t2, Date.now())
+          pendingProbeT1 = null
+        }
         break
       case 'error':
         // Surfaced via status/logging later; ignore for state purposes.
@@ -155,6 +169,8 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     positions.value = new Map()
     breachedSeekers.value = []
     ruledOutCells.value = []
+    paused.value = false
+    pendingProbeT1 = null
   }
 
   // Outbound local actions — the ONLY things that emit to the server.
@@ -178,7 +194,9 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     return () => gameEventHandlers.delete(handler)
   }
   function syncClock(): void {
-    service.send({ t: 'time.sync', t1: Date.now() })
+    const t1 = Date.now()
+    pendingProbeT1 = t1
+    service.send({ t: 'time.sync', t1 })
   }
 
   return {
@@ -191,6 +209,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     breachedSeekers,
     ruledOutCells,
     role,
+    paused,
     connect,
     disconnect,
     sendPosition,

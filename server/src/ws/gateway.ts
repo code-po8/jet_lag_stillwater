@@ -237,10 +237,16 @@ function handleMessage(
       break
     }
     case 'host.action': {
-      // Host-authoritative phase transition (MULTI-003b-1). Non-host actions
-      // and unknown actions are ignored by the hub.
-      const phase = hub.applyHostAction(playerId, msg.action)
-      if (phase) broadcast(code, { t: 'phase', phase })
+      // Host-authoritative control (MULTI-003b-1). Non-host and unknown actions
+      // are ignored by the hub. pause/resume are orthogonal to the phase machine,
+      // so they route to applyHostPause and broadcast a `paused` message.
+      if (msg.action === 'pause' || msg.action === 'resume') {
+        const paused = hub.applyHostPause(playerId, msg.action === 'pause')
+        if (paused !== null) broadcast(code, { t: 'paused', paused })
+      } else {
+        const phase = hub.applyHostAction(playerId, msg.action)
+        if (phase) broadcast(code, { t: 'phase', phase })
+      }
       break
     }
     case 'game.event': {

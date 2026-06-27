@@ -153,6 +153,24 @@ describe('WS gateway (integration)', () => {
     seeker.close()
   })
 
+  it('broadcasts a paused message when the HOST pauses/resumes', async () => {
+    const { ws: hider } = await helloAs('tok-hider') // host
+    const { ws: seeker } = await helloAs('tok-seeker')
+
+    const pausedPromise = nextMessage(seeker, (m) => m.t === 'paused')
+    hider.send(JSON.stringify({ t: 'host.action', action: 'pause' }))
+    const paused = await pausedPromise
+    expect(paused.t === 'paused' && paused.paused).toBe(true)
+
+    const resumedPromise = nextMessage(seeker, (m) => m.t === 'paused')
+    hider.send(JSON.stringify({ t: 'host.action', action: 'resume' }))
+    const resumed = await resumedPromise
+    expect(resumed.t === 'paused' && resumed.paused).toBe(false)
+
+    hider.close()
+    seeker.close()
+  })
+
   it('ignores host.action from a NON-host (no phase broadcast)', async () => {
     const { ws: hider } = await helloAs('tok-hider')
     const { ws: seeker } = await helloAs('tok-seeker')
