@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
+import { useRoomStore } from '@/stores/roomStore'
+import { useSync } from '@/composables/useSync'
 import HiderView from './HiderView.vue'
 import SeekerView from './SeekerView.vue'
 import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
@@ -25,10 +27,34 @@ const props = withDefaults(
 
 const router = useRouter()
 const gameStore = useGameStore()
+const roomStore = useRoomStore()
+const sync = useSync()
 
-// Current role being viewed (for single-device play)
+// Current role being viewed (for single-device / offline play)
 type ViewRole = 'hider' | 'seeker'
 const currentViewRole = ref<ViewRole>('seeker')
+
+/**
+ * Anti-cheat (SYNC-003): when in a multiplayer room, the device's role is
+ * SERVER-assigned (bound to its rejoin token) — the player cannot freely switch
+ * to the other role. The free toggle below is hidden in-room; it only exists for
+ * offline single-device "pass the phone" play. (The server additionally
+ * withholds hider-only data from seeker sockets — INFRA-006 — so even a tampered
+ * client cannot see what it shouldn't.)
+ */
+const isInRoom = computed(() => roomStore.inRoom)
+const serverRole = computed<ViewRole | null>(() => sync.role.value)
+
+// While in a room, force the viewed role to the server-assigned role.
+watch(
+  [isInRoom, serverRole],
+  ([inRoom, role]) => {
+    if (inRoom && role) {
+      currentViewRole.value = role
+    }
+  },
+  { immediate: true },
+)
 
 // Current navigation tab
 const currentTab = ref<NavTab>('questions')
@@ -83,6 +109,7 @@ function getPhaseBadgeClass(): string {
  * Switch to hider view
  */
 function switchToHider() {
+  if (isInRoom.value) return // role is server-locked in multiplayer
   currentViewRole.value = 'hider'
   currentTab.value = 'cards'
 }
@@ -91,6 +118,7 @@ function switchToHider() {
  * Switch to seeker view
  */
 function switchToSeeker() {
+  if (isInRoom.value) return // role is server-locked in multiplayer
   currentViewRole.value = 'seeker'
   currentTab.value = 'questions'
 }
@@ -100,7 +128,9 @@ function switchToSeeker() {
  */
 function handleTabChange(tab: NavTab) {
   currentTab.value = tab
-  // Automatically switch role based on tab for better UX
+  // Offline only: auto-switch role based on tab for better UX. In a room the
+  // role is server-locked, so tab changes never change the role.
+  if (isInRoom.value) return
   if (tab === 'cards') {
     currentViewRole.value = 'hider'
   } else if (tab === 'questions') {
@@ -199,8 +229,9 @@ function handleEndGame() {
 
     <!-- Regular gameplay UI (hidden during round-complete) -->
     <template v-else>
-      <!-- Role Toggle -->
-      <div data-testid="role-toggle" class="gameplay-role-toggle">
+      <!-- Role Toggle — offline single-device only. In a multiplayer room the
+           role is server-locked (SYNC-003), so this is hidden. -->
+      <div v-if="!isInRoom" data-testid="role-toggle" class="gameplay-role-toggle">
         <button
           type="button"
           class="gameplay-role-btn"
@@ -231,12 +262,23 @@ function handleEndGame() {
 
       <!-- Current Role Display -->
       <div data-testid="current-role-display" class="gameplay-current-role">
-        <span class="gameplay-current-role-label">Viewing as:</span>
+        <span class="gameplay-current-role-label">
+          {{ isInRoom ? 'Your role:' : 'Viewing as:' }}
+        </span>
         <span
           class="gameplay-current-role-value"
           :class="currentViewRole === 'hider' ? 'text-amber-400' : 'text-blue-400'"
         >
           {{ currentViewRole === 'hider' ? 'Hider' : 'Seeker' }}
+        </span>
+        <span
+          v-if="isInRoom"
+          data-testid="role-locked-indicator"
+          class="gameplay-role-locked"
+          title="Your role is assigned by the host and locked for this round"
+          aria-label="Role locked by the server"
+        >
+          🔒 locked
         </span>
       </div>
 
