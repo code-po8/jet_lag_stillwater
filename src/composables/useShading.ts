@@ -31,16 +31,24 @@ export function useShading() {
 
   const cells = computed<string[]>(() => sync.ruledOutCells.value)
 
-  /** Send a set of geohash cells to be ruled out. */
-  function shadeCells(newCells: string[]): void {
-    if (newCells.length) sync.addRuledOutCells(newCells)
+  /**
+   * Send geohash cells to be ruled out. Returns the cells that were genuinely
+   * new (not already shaded) — callers track these for an order-independent
+   * undo, since the synced `cells` array is a server-unioned set whose order
+   * and length are not an append-only log of what this device just added.
+   */
+  function shadeCells(newCells: string[]): string[] {
+    const already = new Set(sync.ruledOutCells.value)
+    const added = newCells.filter((c) => !already.has(c))
+    if (added.length) sync.addRuledOutCells(added)
+    return added
   }
 
   /** Manual freehand: rule out the cells under a drawn path of points. */
-  function shadeFreehand(points: LatLng[]): void {
+  function shadeFreehand(points: LatLng[]): string[] {
     const set = new Set<string>()
     for (const p of points) set.add(encodeGeohash(p.lat, p.lng, SHADE_PRECISION))
-    shadeCells([...set])
+    return shadeCells([...set])
   }
 
   /**
@@ -49,7 +57,7 @@ export function useShading() {
    *  - answeredYes=true  → hider IS within R → rule out everything OUTSIDE R
    *    (approximated as the ring between R and a generous outer bound).
    */
-  function autoShadeRadar(seeker: LatLng, radiusMiles: number, answeredYes: boolean): void {
+  function autoShadeRadar(seeker: LatLng, radiusMiles: number, answeredYes: boolean): string[] {
     const { dLat, dLng } = milesToDeg(radiusMiles, seeker.lat)
     const inside: Bounds = {
       south: seeker.lat - dLat,
@@ -61,8 +69,7 @@ export function useShading() {
     if (!answeredYes) {
       // Rule out the cells inside the radius disc.
       const candidate = cellsInBBox(inside, SHADE_PRECISION)
-      shadeCells(candidate.filter((c) => withinRadius(c, seeker, radiusMiles)))
-      return
+      return shadeCells(candidate.filter((c) => withinRadius(c, seeker, radiusMiles)))
     }
 
     // answeredYes: rule out cells in a wider box but OUTSIDE the disc.
@@ -74,7 +81,7 @@ export function useShading() {
       east: seeker.lng + outer.dLng,
     }
     const candidate = cellsInBBox(wide, SHADE_PRECISION)
-    shadeCells(candidate.filter((c) => !withinRadius(c, seeker, radiusMiles)))
+    return shadeCells(candidate.filter((c) => !withinRadius(c, seeker, radiusMiles)))
   }
 
   /**

@@ -42,6 +42,31 @@ describe('useShading (MAP-005)', () => {
     expect(sent[0]!.every((c) => typeof c === 'string')).toBe(true)
   })
 
+  it('shadeCells returns only the cells that were newly added (excludes already-shaded)', () => {
+    const sync = useSync()
+    sync.ruledOutCells.value = ['x']
+    sync.addRuledOutCells = (c) => {
+      sync.ruledOutCells.value = [...sync.ruledOutCells.value, ...c]
+    }
+    const { shadeCells } = useShading()
+    // 'x' is already shaded; only 'y' is genuinely new.
+    const added = shadeCells(['x', 'y'])
+    expect(added).toEqual(['y'])
+  })
+
+  it('shadeFreehand returns the cells it actually added', () => {
+    const sync = useSync()
+    sync.addRuledOutCells = (c) => {
+      sync.ruledOutCells.value = [...sync.ruledOutCells.value, ...c]
+    }
+    const { shadeFreehand } = useShading()
+    const added = shadeFreehand([{ lat: 36.12, lng: -97.07 }])
+    expect(added.length).toBeGreaterThan(0)
+    // Re-shading the same point adds nothing new.
+    const again = shadeFreehand([{ lat: 36.12, lng: -97.07 }])
+    expect(again).toEqual([])
+  })
+
   it('unshadeLocal removes cells from the local ruled-out view', () => {
     const sync = useSync()
     sync.ruledOutCells.value = ['a', 'b', 'c']
@@ -57,9 +82,10 @@ describe('useShading (MAP-005)', () => {
       sync.addRuledOutCells = (c) => sent.push(c)
       const { autoShadeRadar } = useShading()
       // 0.5 mi radius, answer no -> hider is NOT within -> shade inside.
-      autoShadeRadar(SEEKER, 0.5, false)
+      const added = autoShadeRadar(SEEKER, 0.5, false)
       expect(sent).toHaveLength(1)
       expect(sent[0]!.length).toBeGreaterThan(0)
+      expect(added).toEqual(sent[0])
     })
 
     it('within X = YES rules out the ring outside the radius', () => {

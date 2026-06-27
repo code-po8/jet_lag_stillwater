@@ -34,17 +34,14 @@ function toggleFreehand() {
 function autoShade() {
   const pos = geo.ownPosition.value
   if (!pos) return
-  const before = shadedCells.value.length
-  // Conservative default: ½ mi radar "no" rules out the disc around us.
-  autoShadeRadar({ lat: pos.lat, lng: pos.lng }, 0.5, false)
-  undoStack.value = shadedCells.value.slice(before)
+  // Track the exact cells added (not a slice of the server-unioned set, whose
+  // order/length aren't an append-only log) so undo removes only these.
+  undoStack.value = autoShadeRadar({ lat: pos.lat, lng: pos.lng }, 0.5, false)
 }
 
 /** Apply a freehand path (called by the map drawing handler). */
 function applyFreehand(points: { lat: number; lng: number }[]) {
-  const before = shadedCells.value.length
-  shadeFreehand(points)
-  undoStack.value = shadedCells.value.slice(before)
+  undoStack.value = shadeFreehand(points)
 }
 
 /** Undo the last shading action (client-local; see STORIES MAP-005). */
