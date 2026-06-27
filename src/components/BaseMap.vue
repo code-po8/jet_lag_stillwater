@@ -12,7 +12,16 @@ import 'leaflet/dist/leaflet.css'
 import baseGeo from '../assets/map/stillwater-base.json'
 import poiGeo from '../assets/map/stillwater-poi.json'
 import { BRAND_COLORS } from '@/design/colors'
-import type { Zone } from '@/services/sync/protocol'
+import type { Position, Role, Zone } from '@/services/sync/protocol'
+
+/** A live position marker to draw (MAP-003). */
+export interface PlayerMarker {
+  id: string
+  name: string
+  role: Role
+  pos: Position
+  isSelf?: boolean
+}
 
 /** Game-data overlay categories (MAP-002) and their legend colors. */
 const POI_STYLE: Record<string, { color: string; label: string }> = {
@@ -31,8 +40,10 @@ const props = withDefaults(
     zone?: Zone | null
     /** When true, the zone circle renders in a breached (red) style (MAP-006). */
     breached?: boolean
+    /** Live player position markers to draw (MAP-003). */
+    markers?: PlayerMarker[]
   }>(),
-  { zone: null, breached: false },
+  { zone: null, breached: false, markers: () => [] },
 )
 
 const emit = defineEmits<{ ready: [map: L.Map] }>()
@@ -107,6 +118,7 @@ onMounted(() => {
 
   mapInstance.value = map
   drawZone()
+  drawMarkers()
   emit('ready', map)
 })
 
@@ -139,6 +151,49 @@ function drawZone() {
 watch(
   () => [props.zone, props.breached],
   () => drawZone(),
+  { deep: true },
+)
+
+// ── Live position markers (MAP-003) ──
+let markerLayer: L.LayerGroup | null = null
+
+function markerColor(m: PlayerMarker): string {
+  return m.role === 'hider' ? BRAND_COLORS.orange : BRAND_COLORS.cyan
+}
+
+function drawMarkers() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+
+  if (markerLayer) {
+    markerLayer.remove()
+    markerLayer = null
+  }
+  if (!props.markers.length) return
+
+  markerLayer = leaflet.layerGroup()
+  for (const m of props.markers) {
+    const marker = leaflet.circleMarker([m.pos.lat, m.pos.lng], {
+      radius: m.isSelf ? 9 : 7,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: markerColor(m),
+      fillOpacity: 0.95,
+    })
+    // Text label so markers are identifiable (accessibility).
+    marker.bindTooltip(m.isSelf ? `${m.name} (you)` : m.name, {
+      permanent: false,
+      direction: 'top',
+    })
+    markerLayer.addLayer(marker)
+  }
+  markerLayer.addTo(map)
+}
+
+watch(
+  () => props.markers,
+  () => drawMarkers(),
   { deep: true },
 )
 
