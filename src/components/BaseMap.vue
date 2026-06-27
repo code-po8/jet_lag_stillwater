@@ -249,6 +249,23 @@ defineExpose({ map: mapInstance })
   line-height: 40px;
   font-size: 1.2rem;
 }
+/* Breached hiding-zone circle pulses (MAP-006). Leaflet renders the SVG path
+   outside the scoped tree, so target it globally. */
+:global(.zone-breached) {
+  animation: zone-breach-pulse 1.2s ease-in-out infinite;
+}
+@keyframes zone-breach-pulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+    fill-opacity: 0.25;
+  }
+  50% {
+    stroke-opacity: 0.4;
+    fill-opacity: 0.4;
+  }
+}
+
 /* Legend with text labels (no icon-only controls). */
 .base-map-legend {
   position: absolute;

@@ -4,18 +4,30 @@
  * bus stop to declare a ¼-mile zone (synced via zone.set); everyone sees the
  * declared zone drawn on the map and described in a labeled sheet.
  */
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import BaseMap, { type PlayerMarker } from './BaseMap.vue'
 import { useZone, type BusStopLike } from '@/composables/useZone'
 import { useSync } from '@/composables/useSync'
 import { useGeolocation } from '@/composables/useGeolocation'
+import { useGameStore, GamePhase } from '@/stores/gameStore'
 import poiGeo from '../assets/map/stillwater-poi.json'
 
 const { zone, hasZone, setFromBusStop } = useZone()
 const sync = useSync()
 const geo = useGeolocation()
+const gameStore = useGameStore()
 
 const isHider = computed(() => sync.role.value === 'hider')
+
+// End-game breach (MAP-006): a seeker entered the hiding zone.
+const isBreached = computed(() => sync.breachedSeekers.value.length > 0)
+
+// When the first breach arrives during seeking, advance to end-game.
+watch(isBreached, (breached) => {
+  if (breached && gameStore.currentPhase === GamePhase.Seeking) {
+    gameStore.enterHidingZone()
+  }
+})
 
 // Build position markers from the synced positions + roster. The server already
 // withholds the hider's position from seekers (SYNC-003), so a seeker's
@@ -77,7 +89,18 @@ function pickStop(event: Event) {
 
 <template>
   <div class="map-panel">
-    <BaseMap :zone="zone" :markers="markers" />
+    <!-- End-game breach alert (MAP-006): announced for screen readers. -->
+    <div
+      v-if="isBreached"
+      data-testid="breach-banner"
+      class="breach-banner"
+      role="alert"
+      aria-live="assertive"
+    >
+      ⚠️ Seekers in your zone — end game triggered!
+    </div>
+
+    <BaseMap :zone="zone" :markers="markers" :breached="isBreached" />
 
     <!-- Hiding-zone sheet (labeled) -->
     <section class="zone-sheet" data-testid="zone-sheet" aria-label="Hiding zone">
@@ -121,6 +144,31 @@ function pickStop(event: Event) {
   position: relative;
   width: 100%;
   height: 100%;
+}
+.breach-banner {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 10px;
+  z-index: 700;
+  background: rgba(199, 62, 62, 0.95);
+  border: 1px solid #ff8a8a;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: center;
+  animation: breach-pulse 1.1s ease-in-out infinite;
+}
+@keyframes breach-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 80, 80, 0);
+  }
 }
 .zone-sheet {
   position: absolute;
