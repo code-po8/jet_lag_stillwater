@@ -95,6 +95,36 @@ npm run dev
 
 ---
 
+## npm Hardening (Supply-Chain Defense)
+
+The repo ships an `.npmrc` (INFRA-002) that hardens installs as defense-in-depth
+alongside the Docker sandbox:
+
+| Setting               | Effect                                                                                                                      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `ignore-scripts=true` | Package lifecycle scripts (pre/post-install, prepare) do **not** run on install — blocks the most common npm attack vector. |
+| `save-exact=true`     | Adding a dep pins an exact version (no `^`/`~`), so a compromised patch release can't slip in on the next install.          |
+| `engine-strict=true`  | Install fails if Node/npm don't satisfy `engines`.                                                                          |
+
+Two consequences to be aware of:
+
+- **Native deps need an explicit rebuild.** Because install scripts are skipped,
+  native modules aren't built automatically. The current allowlist is **`sharp`**
+  (used by `scripts/generate-pwa-icons.mjs`). The `install` compose service runs
+  `npm rebuild sharp` after `npm ci`. If you add a native dependency, add it to
+  that rebuild command.
+- **Husky git hooks don't auto-install.** `prepare: husky` is a lifecycle script,
+  so it's skipped on install. After a fresh clone/install, set up the git hooks
+  once:
+
+  ```bash
+  npm run prepare    # installs the .husky/_ hook wrappers (safe: just husky)
+  ```
+
+  CI does not need this (it invokes lint/type-check/test directly via `npm run`).
+
+---
+
 ## Sandboxed Development & Testing (Docker)
 
 > **Why:** installing or running npm dependencies executes untrusted third‑party

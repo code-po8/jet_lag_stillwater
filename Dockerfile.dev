@@ -26,6 +26,14 @@ WORKDIR /app
 # Source is bind-mounted and dependencies are installed at runtime into a
 # named volume (see docker-compose.yml). This keeps the image generic and
 # ensures node_modules never round-trips through the host filesystem.
+#
+# npm hardening (INFRA-002): .npmrc sets ignore-scripts=true, so NO dependency
+# lifecycle scripts run on install. Native deps that genuinely need a build are
+# ALLOW-LISTED and rebuilt explicitly. Current allowlist:
+#   - sharp  (image processing, used by scripts/generate-pwa-icons.mjs)
+# The rebuild runs in the `install` compose service (`npm rebuild sharp`),
+# where deps are installed into the volume. Add to that command if a new native
+# dependency is introduced.
 
 # Pre-create the volume mountpoints owned by the non-root `node` user. Docker
 # named volumes inherit the ownership of their mountpoint in the image, so this

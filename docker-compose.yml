@@ -39,10 +39,16 @@ x-frontend-base: &frontend-base
 services:
   # One-shot dependency install into the named volume. Run this first, or any
   # time package.json/lockfile changes:  docker compose run --rm install
+  #
+  # With ignore-scripts=true (.npmrc / INFRA-002) no package lifecycle scripts
+  # run during install. We then EXPLICITLY rebuild only the allow-listed native
+  # dependency (sharp), so its native binary is built without opening the door
+  # to arbitrary postinstall scripts from the rest of the tree.
   install:
     <<: *frontend-base
-    # `npm ci` when a lockfile exists is reproducible; fall back to install.
-    command: sh -c "if [ -f package-lock.json ]; then npm ci; else npm install; fi"
+    command: >
+      sh -c "if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      && npm rebuild sharp"
 
   # Vite dev server. Host 0.0.0.0 so it is reachable from the host browser.
   frontend:

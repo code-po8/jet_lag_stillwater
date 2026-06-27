@@ -21,7 +21,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+        # .npmrc sets ignore-scripts=true (INFRA-002), so no dependency
+        # lifecycle scripts run on install.
         run: npm ci
+
+      - name: Rebuild allow-listed native deps
+        # Native modules aren't built when scripts are ignored; rebuild only the
+        # allow-listed ones explicitly (mirrors the `install` compose service).
+        run: npm rebuild sharp
 
       - name: Scan for secrets
         run: npm run secrets:scan
