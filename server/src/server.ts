@@ -1,6 +1,7 @@
 import { buildApp } from './app.js'
 import { getPool, closePool } from './db/pool.js'
 import { startExpirySweeper, type SweeperHandle } from './db/sweeper.js'
+import { dbConnectionAuth } from './ws/auth.js'
 
 /**
  * Entry point: build the app and start listening.
@@ -14,7 +15,10 @@ const host = process.env.HOST ?? '0.0.0.0'
 // Register room routes + start the sweeper when a database is configured.
 // (Both skipped if DATABASE_URL is unset, e.g. a bare HTTP-layer smoke test.)
 const db = process.env.DATABASE_URL ? getPool() : undefined
-const app = buildApp({ db })
+const app = buildApp({
+  db,
+  ws: db ? { auth: dbConnectionAuth(db) } : undefined,
+})
 
 let sweeper: SweeperHandle | undefined
 if (db) {

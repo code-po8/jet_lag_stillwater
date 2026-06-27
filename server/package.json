@@ -19,6 +19,7 @@
     "migrate:down": "node-pg-migrate down -j sql -m migrations"
   },
   "dependencies": {
+    "@fastify/websocket": "11.0.2",
     "fastify": "5.2.1",
     "pg": "8.13.1"
   },

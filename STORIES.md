@@ -3963,19 +3963,29 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### INFRA-006: WebSocket Gateway & RoomHub
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** INFRA-005, INFRA-008
 
 **Story:** As a developer, I need a WebSocket gateway so that live position/state messages flow between devices.
 
 **Acceptance Criteria:**
 
-- [ ] WS connection lifecycle: `hello`/`welcome` handshake (rejoin token in first message, not URL), `ping`/`pong` heartbeat (clock offset)
-- [ ] In-memory `RoomHub` tracks connected players and latest positions per room
-- [ ] Presence events: `player.joined` / `player.left` / `player.presence`
-- [ ] Position coalescing + batched `pos.batch` broadcast on a tick
-- [ ] **Server-side withholding of hider-only data from seeker connections** (GPS, cards, pre-reveal zone center)
-- [ ] Server-computed `zone.breach` when a seeker enters the zone
+- [x] WS connection lifecycle: `hello`/`welcome` handshake (rejoin token in first message, not URL), `ping`/`pong` heartbeat (clock offset)
+- [x] In-memory `RoomHub` tracks connected players and latest positions per room
+- [x] Presence events: `player.joined` / `player.left` / `player.presence`
+- [x] Position coalescing + batched `pos.batch` broadcast on a tick
+- [x] **Server-side withholding of hider-only data from seeker connections** (GPS, cards, pre-reveal zone center)
+- [x] Server-computed `zone.breach` when a seeker enters the zone
+
+**Size:** XL
+
+**Implementation Notes:**
+
+- `server/src/ws/roomHub.ts`: pure in-memory engine per room — membership, latest-position-per-player coalescing, `setZone`/`getZone`, ruled-out cell set-union, haversine `distanceMeters`, **`positionBatchFor(viewerId)` withholds the hider's position from seekers** (data-layer enforcement, not UI), `updatePosition` returns true on a new seeker breach (once-per-seeker).
+- `registry.ts` (code → RoomHub, dispose-when-empty), `gateway.ts` (`/ws` route via `@fastify/websocket`: hello/welcome handshake with token in first message, presence joined/left, `pos`→breach, `zone.set`→`zone` broadcast, `ruledout.add`→union, host.action stub, position-batch tick, ping heartbeat, cleanup on close), `auth.ts` (DB-backed `ConnectionAuth` verifying rejoin token).
+- Registered via `buildApp({ ws })`; `server.ts` wires `dbConnectionAuth(pool)`.
+- TDD: `roomHub.test.ts` (15 unit) + `gateway.test.ts` (6 over real WebSocket on loopback, runs in the network-isolated unit suite). Verified in-container: 58 server tests pass; prod image builds, boots with gateway registered, `/health` ok.
+- Note: in-memory RoomHub ⇒ API is single-instance for v1 (documented in INFRA-007). `host.action` phase handling is stubbed for MULTI-003b.
 - [ ] Snapshots written to Postgres only on phase transitions / host actions (never per position frame)
 
 **Size:** XL (consider splitting positions vs game-state handlers)
