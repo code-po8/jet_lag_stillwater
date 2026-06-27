@@ -3588,24 +3588,31 @@ describe('room creation and join', () => {
 
 ### MULTI-003a: Real-Time Position Sync
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MULTI-002, INFRA-006, SYNC-002
 
 **Story:** As a player, I need everyone's live GPS position to sync across devices so that the hider can track seekers and seekers can see each other on the shared map.
 
 **Acceptance Criteria:**
 
-- [ ] Client sends throttled position updates (≤ every 2–3 s OR moved > ~15 m; low-accuracy fixes dropped)
-- [ ] Server coalesces latest-per-player and broadcasts batched `pos.batch` on a 1–2 s tick
-- [ ] Positions live in-memory only (never persisted)
-- [ ] **Hider position is withheld from seekers server-side** — seekers only receive the declared zone (see SYNC-003)
-- [ ] Server computes `zone.breach` when a seeker enters the hiding zone (drives MAP-006)
+- [x] Client sends throttled position updates (≤ every 2–3 s OR moved > ~15 m; low-accuracy fixes dropped)
+- [x] Server coalesces latest-per-player and broadcasts batched `pos.batch` on a 1–2 s tick
+- [x] Positions live in-memory only (never persisted)
+- [x] **Hider position is withheld from seekers server-side** — seekers only receive the declared zone (see SYNC-003)
+- [x] Server computes `zone.breach` when a seeker enters the hiding zone (drives MAP-006)
 
 **Size:** L
 
 **Notes:**
 
 - This is the user's primary motivation for the backend (live position tracking)
+
+**Implementation Notes:**
+
+- Client send-path (this story): `src/composables/positionThrottle.ts` — pure `shouldSendPosition(last, next)` (send if ≥2.5s elapsed OR moved >15m; drop fixes with accuracy >100m) + `distanceMeters`. `src/composables/useGeolocation.ts` — `createGeolocationTracker({ geolocation, send })` watches `navigator.geolocation`, applies the throttle, exposes `ownPosition`/`error`; `useGeolocation()` binds `send` to `useSync().sendPosition`.
+- Server-side ACs (coalescing latest-per-player, batched `pos.batch` tick, in-memory-only, hider-withholding, `zone.breach`) were implemented + tested in **INFRA-006** (`roomHub.ts`/`gateway.ts`; `gateway.test.ts` asserts withholding and breach over real sockets).
+- TDD: `positionThrottle.spec.ts` (9) + `useGeolocation.spec.ts` (7, mock geolocation). Verified in-container: 1326 frontend tests pass.
+- Rendering the position markers on the map is MAP-003 (depends on MAP-002 geo data); this story delivers the sync plumbing.
 
 ---
 
