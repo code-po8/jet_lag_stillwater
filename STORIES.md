@@ -3722,20 +3722,31 @@ describe('room creation and join', () => {
 
 ### MULTI-004: Offline Handling & Reconnection
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MULTI-003b-3
 
 **Story:** As a player, I need the app to handle disconnections gracefully so that I can rejoin the game without losing progress.
 
 **Acceptance Criteria:**
 
-- [ ] App detects when connection is lost
-- [ ] Offline indicator shown to user
-- [ ] Local state preserved during disconnection
-- [ ] Automatic reconnection attempts
-- [ ] State reconciliation on reconnect
-- [ ] Other players notified of disconnected player
-- [ ] Configurable timeout before player is considered "dropped"
+- [x] App detects when connection is lost
+- [x] Offline indicator shown to user
+- [x] Local state preserved during disconnection
+- [x] Automatic reconnection attempts
+- [x] State reconciliation on reconnect
+- [x] Other players notified of disconnected player
+- [x] Configurable timeout before player is considered "dropped"
+
+**Size:** M
+
+**Implementation Notes:**
+
+- Client: `WsSyncService` gains a `'reconnecting'` status + auto-reconnect with capped backoff (`RECONNECT_DELAYS_MS`, configurable); an unexpected `onclose` schedules a retry that re-opens and re-sends the `hello` handshake, so the server's fresh `welcome` reconciles state. Manual `disconnect()` sets `manualClose` and never reconnects. Local state is untouched (stores/localStorage persist independently).
+- Server gateway: on socket close it now marks the player disconnected and broadcasts `player.presence{connected:false}` (not `player.left`), keeping the slot for a configurable `dropTimeoutMs` grace period; full `player.left` only fires if they never reconnect. On reconnect, the pending drop timer is cancelled and a returning player triggers `player.presence{connected:true}` (vs `player.joined` for new).
+- Offline indicator: LobbyView shows a `connection-indicator` banner (reconnecting/offline) when in a room and not connected.
+- TDD: `syncService.spec.ts` reconnection (4) + gateway presence-on-drop (1) + LobbyView indicator (1). Verified in-container: server 68, frontend 1347 pass; both prod builds OK.
+
+> **Epic 10 (Multiplayer Sync) complete** — MULTI-001…004 all done.
 
 **Size:** M
 

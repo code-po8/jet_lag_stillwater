@@ -20,6 +20,12 @@ export interface GatewayOptions {
   batchIntervalMs?: number
   /** Heartbeat ping interval (ms). Default 15000. */
   heartbeatMs?: number
+  /**
+   * Grace period before a disconnected player is fully dropped (removed from
+   * the roster). Lets a flaky phone reconnect without losing its slot. Default
+   * 60000 (1 min).
+   */
+  dropTimeoutMs?: number
 }
 
 interface SocketCtx {
@@ -44,6 +50,10 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
   const { registry, auth } = opts
   const batchIntervalMs = opts.batchIntervalMs ?? 1000
   const heartbeatMs = opts.heartbeatMs ?? 15_000
+  const dropTimeoutMs = opts.dropTimeoutMs ?? 60_000
+
+  // Pending full-removal timers, keyed by `${code}:${playerId}`.
+  const dropTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   // Track the sockets per room so we can broadcast.
   const socketsByCode = new Map<string, Map<string, WebSocket>>()
@@ -91,6 +101,7 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
         }
         const code = msg.code.toUpperCase()
         const hub = registry.getOrCreate(code)
+        const wasMember = hub.members().some((m) => m.id === resolved.player.id)
         hub.addMember({
           id: resolved.player.id,
           name: resolved.player.name,
@@ -100,6 +111,15 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
         ctx = { playerId: resolved.player.id, code, hub, alive: true }
         roomSockets(code).set(resolved.player.id, socket)
 
+        // Reconnect: cancel any pending drop timer for this player.
+        const dropKey = `${code}:${resolved.player.id}`
+        const pendingDrop = dropTimers.get(dropKey)
+        if (pendingDrop) {
+          clearTimeout(pendingDrop)
+          dropTimers.delete(dropKey)
+        }
+
+        // Fresh welcome reconciles the reconnecting client's state.
         send(socket, {
           t: 'welcome',
           you: resolved.player,
@@ -107,7 +127,16 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
           phase: hub.getPhase(),
           zone: hub.getZone(),
         })
-        broadcast(code, { t: 'player.joined', player: resolved.player }, resolved.player.id)
+        // New player → joined; returning player → presence reconnected.
+        if (wasMember) {
+          broadcast(
+            code,
+            { t: 'player.presence', playerId: resolved.player.id, connected: true },
+            resolved.player.id,
+          )
+        } else {
+          broadcast(code, { t: 'player.joined', player: resolved.player }, resolved.player.id)
+        }
         return
       }
 
@@ -123,10 +152,27 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
       if (!ctx) return
       const { code, playerId, hub } = ctx
       roomSockets(code).delete(playerId)
-      hub.removeMember(playerId)
-      broadcast(code, { t: 'player.left', playerId })
-      registry.disposeIfEmpty(code)
-      if (roomSockets(code).size === 0) socketsByCode.delete(code)
+
+      // Don't drop immediately: mark disconnected (presence) and give the player
+      // a grace period to reconnect with their rejoin token (MULTI-004).
+      hub.setConnected(playerId, false)
+      broadcast(code, { t: 'player.presence', playerId, connected: false })
+
+      const key = `${code}:${playerId}`
+      const existing = dropTimers.get(key)
+      if (existing) clearTimeout(existing)
+      const timer = setTimeout(() => {
+        dropTimers.delete(key)
+        // Only fully drop if they never reconnected (no live socket).
+        if (!roomSockets(code).has(playerId)) {
+          hub.removeMember(playerId)
+          broadcast(code, { t: 'player.left', playerId })
+          registry.disposeIfEmpty(code)
+          if (roomSockets(code).size === 0) socketsByCode.delete(code)
+        }
+      }, dropTimeoutMs)
+      timer.unref?.()
+      dropTimers.set(key, timer)
     })
   })
 
