@@ -84,30 +84,69 @@ services:
     # Invoked by .husky/pre-commit via scripts/run-hooks.sh.
     command: sh -c "/app/scripts/hooks-in-container.sh"
 
-  # Backend (Fastify) — STUB for INFRA-001. INFRA-003 adds the real server/
-  # package, Dockerfile, and command. Kept here so the compose topology
-  # (frontend / backend / postgres / test-runner) is established now.
+  # --- Backend (Fastify) sandbox services (INFRA-003) -----------------------
+  # Same isolation guarantees as the frontend: bind-mount only the source, no
+  # $HOME/~/.ssh, non-root, node_modules in a named volume. The server has its
+  # own package.json + lockfile, so it installs into its own volume.
+
+  # One-shot install of backend deps into server_node_modules.
+  install-server:
+    <<: *frontend-base
+    working_dir: /app/server
+    volumes:
+      - ./:/app:cached
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/home/node/.npm
+    command: sh -c "if [ -f package-lock.json ]; then npm ci; else npm install; fi"
+
+  # Backend dev server. Reachable on the host at :3000.
   backend:
     <<: *frontend-base
-    profiles: ["backend"] # not started by default until INFRA-003 fills it in
-    command: sh -c "echo 'backend service placeholder — implemented in INFRA-003' && sleep infinity"
+    working_dir: /app/server
+    volumes:
+      - ./:/app:cached
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/home/node/.npm
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      DATABASE_URL: "postgres://jetlag:jetlag_local_dev@postgres:5432/jetlag"
+    ports:
+      - "3000:3000"
+    command: npm run dev
     depends_on:
       - postgres
 
+  # Backend type-check + unit tests. Network-isolated like the frontend `test`.
+  test-server:
+    <<: *frontend-base
+    working_dir: /app/server
+    network_mode: "none"
+    volumes:
+      - ./:/app:cached
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/home/node/.npm
+    command: sh -c "npm run type-check && npm run test -- --run"
+
   # Postgres for room/session records (used from INFRA-004 onward).
+  # The backend reaches it over the compose network (host: postgres), so the
+  # host port mapping is only for optional direct access (psql/GUI). It's
+  # overridable to avoid clashing with a Postgres already running on the host:
+  #   POSTGRES_HOST_PORT=5433 docker compose up backend
   postgres:
     image: postgres:16-alpine
-    profiles: ["backend"]
     environment:
       POSTGRES_USER: jetlag
       POSTGRES_PASSWORD: jetlag_local_dev
       POSTGRES_DB: jetlag
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
 volumes:
   frontend_node_modules:
+  server_node_modules:
   npm_cache:
   postgres_data:
