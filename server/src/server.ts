@@ -11,13 +11,14 @@ import { startExpirySweeper, type SweeperHandle } from './db/sweeper.js'
 const port = Number(process.env.PORT ?? 3000)
 const host = process.env.HOST ?? '0.0.0.0'
 
-const app = buildApp()
+// Register room routes + start the sweeper when a database is configured.
+// (Both skipped if DATABASE_URL is unset, e.g. a bare HTTP-layer smoke test.)
+const db = process.env.DATABASE_URL ? getPool() : undefined
+const app = buildApp({ db })
 
-// Start the expired-room sweeper when a database is configured. (Skipped if
-// DATABASE_URL is unset, e.g. a bare smoke test of the HTTP layer.)
 let sweeper: SweeperHandle | undefined
-if (process.env.DATABASE_URL) {
-  sweeper = startExpirySweeper(getPool(), {
+if (db) {
+  sweeper = startExpirySweeper(db, {
     onSweep: (n) => {
       if (n > 0) app.log.info({ deleted: n }, 'expired sessions swept')
     },
