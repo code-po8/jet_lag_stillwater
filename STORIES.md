@@ -4003,18 +4003,25 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### INFRA-008: Shared DTO Package
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** INFRA-003
 
 **Story:** As a developer, I need shared TypeScript types for WS messages and synced state so that client and server never drift.
 
 **Acceptance Criteria:**
 
-- [ ] `packages/shared` (or `shared/`) with zero-runtime-dep DTOs for all message types and the synced state shape
-- [ ] Imported by both the Vue client and the `server/` backend
-- [ ] Message types defined: handshake, presence, `pos`/`pos.batch`, `zone.set`/`zone`, `ruledout.add`/`ruledout`, `zone.breach`, host actions
+- [x] `packages/shared` (or `shared/`) with zero-runtime-dep DTOs for all message types and the synced state shape
+- [x] Imported by both the Vue client and the `server/` backend
+- [x] Message types defined: handshake, presence, `pos`/`pos.batch`, `zone.set`/`zone`, `ruledout.add`/`ruledout`, `zone.breach`, host actions
 
 **Size:** S
+
+**Implementation Notes:**
+
+- `shared/` package (`@jet-lag-stillwater/shared`), zero runtime deps. `shared/src/index.ts` defines core types (Role, GamePhase, Position, PublicPlayer, Zone, SyncedState), `ClientMessage`/`ServerMessage` discriminated unions covering hello/welcome, presence (joined/left/presence), `pos`/`pos.batch`, `zone.set`/`zone`, `ruledout.add`/`ruledout`, `zone.breach`, `phase`, host actions, errors, plus tiny type-guards + `QUARTER_MILE_M`.
+- Imported by **server** (`repository.ts` types `sessions.state` as `SyncedState`) and **frontend** (`src/services/sync/protocol.ts` re-exports for SYNC-001). `@shared` alias wired in Vite, frontend tsconfig, and server tsconfig (TypeScript **project reference**, so clean builds order shared first).
+- Production `server/Dockerfile` updated to include `shared/` and emit `dist/server.js`; frontend vitest excludes `server/**`.
+- TDD: `shared/src/__tests__/messages.test.ts` (7 tests, run via the frontend vitest). Verified in-container: frontend 1261, server unit 37, server integration 9 — all pass; prod backend image builds + `/health` 200.
 
 ---
 

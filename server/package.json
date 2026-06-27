@@ -11,7 +11,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc --build",
     "start": "node dist/server.js",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --build",
     "test": "vitest",
     "test:integration": "vitest --config vitest.integration.config.ts",
     "migrate": "node-pg-migrate -j sql -m migrations",

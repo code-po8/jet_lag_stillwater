@@ -1,3 +1,4 @@
+import type { SyncedState } from '@shared'
 import { DEFAULT_CODE_LENGTH, generateCode } from './code.js'
 import { generateRejoinToken, verifyToken } from './token.js'
 import { initialExpiry } from './ttl.js'
@@ -15,7 +16,7 @@ export interface SessionRow {
   code: string
   phase: string
   status: string
-  state: unknown
+  state: SyncedState | Record<string, never>
   state_version: number
   created_at: string
   expires_at: string
