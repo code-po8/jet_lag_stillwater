@@ -161,12 +161,22 @@ docker compose run --rm test
 docker compose run --rm install-server
 
 # Run the backend dev server + Postgres (http://localhost:3000/health)
+# On startup it waits for Postgres and applies pending migrations automatically.
 # If host port 5432 is taken: POSTGRES_HOST_PORT=5433 docker compose up backend
 docker compose up backend
 
 # Run backend type-check + tests (network-isolated)
 docker compose run --rm test-server
+
+# Run / roll back DB migrations manually (against the compose Postgres)
+docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:up"
+docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:down"
 ```
+
+**Database schema (INFRA-004):** `sessions` (rooms) and `players`, managed by
+`node-pg-migrate` (SQL migrations in `server/migrations/`). Room codes recycle
+via a partial unique index (`UNIQUE (code) WHERE status <> 'ended'`). An expiry
+sweeper (`server/src/db/sweeper.ts`) evicts rooms past their `expires_at`.
 
 ### How the isolation works
 
