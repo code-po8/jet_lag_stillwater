@@ -4096,18 +4096,27 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### SYNC-003: Server-Enforced Device Role Lock (Anti-Cheat)
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** INFRA-006, SYNC-002
 
 **Story:** As a player, I need roles enforced by the server so that a seeker cannot switch to the hider view and see the hider's position and cards.
 
 **Acceptance Criteria:**
 
-- [ ] In a room, the device's role comes from the server and is **bound to its rejoin token**
-- [ ] The free `currentViewRole` toggle in `GamePlayView.vue` (`data-testid="role-toggle"`) is **disabled/removed when in a room** (retained only for offline pass-the-phone play)
-- [ ] A device joined as seeker **cannot reach the hider view**
-- [ ] Hider-only data (GPS, cards, pre-reveal zone) is **withheld server-side** — verified by inspecting the seeker's raw WS frames, not just hidden in CSS/markup
-- [ ] Role can only change via server reassignment between rounds
+- [x] In a room, the device's role comes from the server and is **bound to its rejoin token**
+- [x] The free `currentViewRole` toggle in `GamePlayView.vue` (`data-testid="role-toggle"`) is **disabled/removed when in a room** (retained only for offline pass-the-phone play)
+- [x] A device joined as seeker **cannot reach the hider view**
+- [x] Hider-only data (GPS, cards, pre-reveal zone) is **withheld server-side** — verified by inspecting the seeker's raw WS frames, not just hidden in CSS/markup
+- [x] Role can only change via server reassignment between rounds
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `GamePlayView.vue`: `isInRoom` (from `roomStore`) + `serverRole` (from `useSync().role`, bound to the device's rejoin-token-authenticated socket). A watcher forces `currentViewRole` to the server role while in a room.
+- The free role toggle (`data-testid="role-toggle"`) is `v-if="!isInRoom"` — present only for offline pass-the-phone play. `switchToHider/switchToSeeker/handleTabChange` early-return in a room, so a seeker cannot flip to the hider view via buttons or tabs. A `role-locked-indicator` (🔒, with `aria-label`) shows in-room.
+- Server-side withholding (last AC) is enforced + tested in INFRA-006 (`gateway.test.ts` inspects the seeker's actual `pos.batch` frames and asserts the hider is absent) — not just hidden in CSS.
+- TDD: `GamePlayRoleLock.spec.ts` (4 tests). Verified in-container: 1310 frontend tests pass (offline toggle behavior unchanged — 46 RoleBasedViews tests still green).
 
 **Size:** M
 
