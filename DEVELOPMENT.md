@@ -531,9 +531,36 @@ For secrets your app needs:
 
 ## Deployment
 
-### How It Works
+### Railway (multiplayer build — INFRA-007)
 
-The app is a static site (just HTML/CSS/JS files). No server-side code runs in production.
+The multiplayer build deploys to **Railway** as one project with three services:
+
+| Railway service | Build               | Role                              |
+| --------------- | ------------------- | --------------------------------- |
+| `web`           | `Dockerfile.web`    | static PWA (`serve -s dist`)      |
+| `api`           | `server/Dockerfile` | Fastify + WebSocket gateway       |
+| Postgres        | Railway plugin      | sessions/players (`DATABASE_URL`) |
+
+Key env vars:
+
+- `api`: `DATABASE_URL` (from the Postgres plugin), `WEB_ORIGIN` = the `web`
+  public URL (locks CORS **and** the WS upgrade origin), `PORT`/`HOST` (Railway
+  sets `PORT`; server binds `0.0.0.0`).
+- `web`: `VITE_API_URL` = the `api` public URL (the client derives `wss://`
+  from it).
+
+**Single-instance constraint:** the `RoomHub` is in-memory, so keep `api` at 1
+replica for v1 (Redis fan-out is future work).
+
+Full step-by-step (account-linked actions are yours to run): see
+[`deploy/railway.md`](deploy/railway.md).
+
+These map 1:1 to the local `docker compose` services (`frontend`/`backend`/
+`postgres`), so local and Railway stay in parity.
+
+### Static-only deploy (single-device build)
+
+The single-device build is a static site (just HTML/CSS/JS files). No server-side code runs in production.
 
 ```
 npm run build

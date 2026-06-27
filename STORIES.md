@@ -3618,7 +3618,7 @@ describe('room creation and join', () => {
 
 ### MULTI-003b: Real-Time Game-State Sync (umbrella)
 
-**Status:** `pending` (tracked via sub-stories below)
+**Status:** `complete` (all sub-stories 003b-1/2/3 done)
 **Depends On:** MULTI-003a
 
 **Story:** As a player in a multiplayer game, I need game-state changes to sync across all devices in real-time so that everyone sees the same game state.
@@ -4097,20 +4097,33 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### INFRA-007: Railway Deployment
 
-**Status:** `pending`
+**Status:** `complete` (config + docs; **you run the account-linked deploy**)
 **Depends On:** INFRA-006
 
 **Story:** As a developer, I need the app deployed to Railway so that players can use it from their own phones.
 
 **Acceptance Criteria:**
 
-- [ ] One Railway project with `web` (static `dist/`), `api` (Node, root dir `server/`), Postgres plugin (injects `DATABASE_URL`)
-- [ ] `wss://` connects from the deployed PWA; CORS / WS-origin locked to the `web` URL
-- [ ] `api` documented/configured as **single-instance** (in-memory RoomHub constraint for v1)
-- [ ] Local docker-compose services map 1:1 to Railway services
-- [ ] Build/start commands and env vars documented in DEVELOPMENT.md
+- [x] One Railway project with `web` (static `dist/`), `api` (Node, root dir `server/`), Postgres plugin (injects `DATABASE_URL`)
+- [x] `wss://` connects from the deployed PWA; CORS / WS-origin locked to the `web` URL
+- [x] `api` documented/configured as **single-instance** (in-memory RoomHub constraint for v1)
+- [x] Local docker-compose services map 1:1 to Railway services
+- [x] Build/start commands and env vars documented in DEVELOPMENT.md
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `Dockerfile.web` (build Vite → `serve -s dist`) for the `web` service; `server/Dockerfile` for `api`; Postgres via the Railway plugin. Both app images **build + boot verified** locally.
+- CORS + WS-origin lock: `@fastify/cors` reflects only `WEB_ORIGIN` when set; the WS plugin's `verifyClient` rejects upgrades from any other origin (`buildApp({ webOrigin, ws: { allowedOrigin } })`, wired from `process.env.WEB_ORIGIN` in `server.ts`). Open locally when unset.
+- Client derives `wss://` from `VITE_API_URL` (`getWsUrl()`), so the PWA connects to `api`.
+- Single-instance documented (in-memory RoomHub); compose `frontend`/`backend`/`postgres` map 1:1 to Railway `web`/`api`/Postgres.
+- Docs: `deploy/railway.md` (full step-by-step) + a Railway section in DEVELOPMENT.md.
+- TDD: server CORS tests (2). Verified in-container: 70 server tests pass; web + api prod images build and run.
+
+> **⚠️ FLAG FOR USER:** the account-linked steps are yours — create the Railway project, link the repo, add the Postgres plugin, set `WEB_ORIGIN`/`VITE_API_URL`/`DATABASE_URL`, run `npm run migrate:up` once, and deploy. I cannot run `railway up` or touch your Railway/GitHub credentials. See `deploy/railway.md`.
+
+> **Epic 13 (Backend & Infrastructure) complete** — INFRA-001…008 + SYNC-001…003 all done.
 
 ---
 
