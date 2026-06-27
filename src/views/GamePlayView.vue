@@ -11,7 +11,7 @@ import RoundSummary from '@/components/RoundSummary.vue'
 import HidingDurationTimer from '@/components/HidingDurationTimer.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionHistory from '@/components/QuestionHistory.vue'
-import BaseMap from '@/components/BaseMap.vue'
+import MapPanel from '@/components/MapPanel.vue'
 import GamePauseOverlay from '@/components/GamePauseOverlay.vue'
 import JetLagLogo from '@/components/JetLagLogo.vue'
 import { GameSize } from '@/types/question'
@@ -302,9 +302,9 @@ function handleEndGame() {
         <!-- History Tab - Question History View -->
         <QuestionHistory v-else-if="currentTab === 'history'" />
 
-        <!-- Map Tab - shared Stillwater base map (MAP-001) -->
+        <!-- Map Tab - shared Stillwater map + hiding zone (MAP-001/002/004) -->
         <div v-else-if="currentTab === 'map'" class="gameplay-map-tab" data-testid="map-tab">
-          <BaseMap />
+          <MapPanel />
         </div>
       </div>
 

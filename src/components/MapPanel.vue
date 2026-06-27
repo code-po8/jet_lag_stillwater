@@ -1,0 +1,142 @@
+<script setup lang="ts">
+/**
+ * Map panel (MAP-004): the BaseMap plus the hiding-zone UI. The hider picks a
+ * bus stop to declare a ¼-mile zone (synced via zone.set); everyone sees the
+ * declared zone drawn on the map and described in a labeled sheet.
+ */
+import { computed } from 'vue'
+import BaseMap from './BaseMap.vue'
+import { useZone, type BusStopLike } from '@/composables/useZone'
+import { useSync } from '@/composables/useSync'
+import poiGeo from '../assets/map/stillwater-poi.json'
+
+const { zone, hasZone, setFromBusStop } = useZone()
+const sync = useSync()
+
+const isHider = computed(() => sync.role.value === 'hider')
+
+// Bus stops the hider can choose as the zone center.
+const busStops = computed<BusStopLike[]>(() =>
+  (
+    poiGeo.features as Array<{
+      properties: { kind: string; name?: string | null }
+      geometry: { coordinates: number[] }
+    }>
+  )
+    .filter((f) => f.properties.kind === 'bus-stop')
+    .map((f) => ({
+      lng: f.geometry.coordinates[0]!,
+      lat: f.geometry.coordinates[1]!,
+      name: f.properties.name ?? null,
+    })),
+)
+
+const radiusMiles = computed(() => (zone.value ? (zone.value.radiusM / 1609.34).toFixed(2) : null))
+
+function pickStop(event: Event) {
+  const idx = Number((event.target as HTMLSelectElement).value)
+  const stop = busStops.value[idx]
+  if (stop) setFromBusStop(stop)
+}
+</script>
+
+<template>
+  <div class="map-panel">
+    <BaseMap :zone="zone" />
+
+    <!-- Hiding-zone sheet (labeled) -->
+    <section class="zone-sheet" data-testid="zone-sheet" aria-label="Hiding zone">
+      <h3 class="zone-sheet-title">Hiding Zone</h3>
+
+      <template v-if="hasZone">
+        <p class="zone-sheet-row">
+          <span class="zone-sheet-key">Center:</span>
+          <span data-testid="zone-center">{{ zone?.label ?? 'Chosen bus stop' }}</span>
+        </p>
+        <p class="zone-sheet-row">
+          <span class="zone-sheet-key">Radius:</span>
+          <span data-testid="zone-radius"
+            >¼ mi ({{ zone?.radiusM }} m{{ radiusMiles ? `, ${radiusMiles} mi` : '' }})</span
+          >
+        </p>
+      </template>
+      <p v-else class="zone-sheet-empty" data-testid="zone-empty">No hiding zone set yet.</p>
+
+      <!-- Hider-only: pick a bus stop to declare the zone. -->
+      <div v-if="isHider" class="zone-picker">
+        <label class="zone-picker-label" for="zone-stop-select">Set zone center (bus stop)</label>
+        <select
+          id="zone-stop-select"
+          data-testid="zone-stop-select"
+          class="zone-picker-select"
+          @change="pickStop"
+        >
+          <option value="" disabled selected>Choose a bus stop…</option>
+          <option v-for="(stop, i) in busStops" :key="i" :value="i">
+            {{ stop.name ?? `Bus stop ${i + 1}` }}
+          </option>
+        </select>
+      </div>
+    </section>
+  </div>
+</template>
+
+<style scoped>
+.map-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.zone-sheet {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 600;
+  max-width: 240px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--color-ui-border, #475569);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--color-ui-text-primary, #f8fafc);
+  font-size: 0.82rem;
+  backdrop-filter: blur(4px);
+}
+.zone-sheet-title {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ui-text-secondary, #94a3b8);
+}
+.zone-sheet-row {
+  margin: 2px 0;
+  display: flex;
+  gap: 6px;
+}
+.zone-sheet-key {
+  color: var(--color-ui-text-secondary, #94a3b8);
+}
+.zone-sheet-empty {
+  margin: 2px 0;
+  color: var(--color-ui-text-secondary, #94a3b8);
+}
+.zone-picker {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.zone-picker-label {
+  font-size: 0.72rem;
+  color: var(--color-ui-text-secondary, #94a3b8);
+}
+.zone-picker-select {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--color-ui-border, #475569);
+  background: var(--color-ui-bg, #0f172a);
+  color: inherit;
+  padding: 0 8px;
+  font-size: 0.85rem;
+}
+</style>
