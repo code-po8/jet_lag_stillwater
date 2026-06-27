@@ -4324,19 +4324,26 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-004: Hider Zone
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MAP-002
 
 **Story:** As a hider, I need to set my hiding zone so that everyone shares the same ¼-mile boundary.
 
 **Acceptance Criteria:**
 
-- [ ] Hider picks a bus stop as the zone center
-- [ ] Draws a ¼-mile (402 m) radius circle
-- [ ] Zone syncs via `zone.set`; seekers see the declared zone
-- [ ] Zone center/radius shown with text in a labeled sheet
+- [x] Hider picks a bus stop as the zone center
+- [x] Draws a ¼-mile (402 m) radius circle
+- [x] Zone syncs via `zone.set`; seekers see the declared zone
+- [x] Zone center/radius shown with text in a labeled sheet
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `src/composables/useZone.ts`: exposes the synced `zone`/`hasZone` (from `useSync`) and `setFromBusStop(stop)` which sends a `zone.set` with `QUARTER_MILE_M` (402 m) radius. Seekers receive only the declared zone (server withholds the hider's exact position).
+- `BaseMap.vue` gains a `zone` prop and draws a red ¼-mile circle (Leaflet `circle`), reactively redrawn; a `breached` prop pre-wires MAP-006 styling.
+- `src/components/MapPanel.vue` (now rendered by the Map tab): BaseMap + a labeled **zone sheet** (center label + radius in m/mi, empty state) + a **hider-only** bus-stop `<select>` populated from the MAP-002 bus stops that calls `setFromBusStop`.
+- TDD: `useZone.spec.ts` (4) + BaseMap zone tests (2) + `MapPanel.spec.ts` (5, BaseMap stubbed). Verified in-container: 1374 frontend tests pass; build OK.
 
 ---
 

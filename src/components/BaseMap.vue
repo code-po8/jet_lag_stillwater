@@ -6,12 +6,13 @@
  * Game overlays (markers, zone, shading) draw on top in later MAP stories via
  * the exposed `map` instance.
  */
-import { onMounted, onBeforeUnmount, ref, shallowRef } from 'vue'
+import { onMounted, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import baseGeo from '../assets/map/stillwater-base.json'
 import poiGeo from '../assets/map/stillwater-poi.json'
 import { BRAND_COLORS } from '@/design/colors'
+import type { Zone } from '@/services/sync/protocol'
 
 /** Game-data overlay categories (MAP-002) and their legend colors. */
 const POI_STYLE: Record<string, { color: string; label: string }> = {
@@ -26,8 +27,12 @@ const props = withDefaults(
   defineProps<{
     /** Inject a Leaflet-like factory for tests. Defaults to real Leaflet. */
     leaflet?: typeof L
+    /** Hiding zone to draw (MAP-004). Null = no zone. */
+    zone?: Zone | null
+    /** When true, the zone circle renders in a breached (red) style (MAP-006). */
+    breached?: boolean
   }>(),
-  {},
+  { zone: null, breached: false },
 )
 
 const emit = defineEmits<{ ready: [map: L.Map] }>()
@@ -101,8 +106,41 @@ onMounted(() => {
   }
 
   mapInstance.value = map
+  drawZone()
   emit('ready', map)
 })
+
+// ── Hiding zone circle (MAP-004 / MAP-006) ──
+let zoneCircle: L.Circle | null = null
+
+function drawZone() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+
+  if (zoneCircle) {
+    zoneCircle.remove()
+    zoneCircle = null
+  }
+  if (!props.zone) return
+
+  const breached = props.breached
+  zoneCircle = leaflet.circle([props.zone.lat, props.zone.lng], {
+    radius: props.zone.radiusM,
+    color: BRAND_COLORS.red,
+    weight: breached ? 3 : 2,
+    fillColor: BRAND_COLORS.red,
+    fillOpacity: breached ? 0.25 : 0.12,
+    className: breached ? 'zone-breached' : 'zone-normal',
+  })
+  zoneCircle.addTo(map)
+}
+
+watch(
+  () => [props.zone, props.breached],
+  () => drawZone(),
+  { deep: true },
+)
 
 onBeforeUnmount(() => {
   mapInstance.value?.remove()

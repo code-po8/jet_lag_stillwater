@@ -15,12 +15,14 @@ function fakeLeaflet() {
     addTo: vi.fn().mockReturnThis(),
     getBounds: vi.fn().mockReturnValue({ isValid: () => true }),
   }
+  const circle = { addTo: vi.fn().mockReturnThis(), remove: vi.fn() }
   const L = {
     map: vi.fn().mockReturnValue(map),
     geoJSON: vi.fn().mockReturnValue(layer),
     circleMarker: vi.fn().mockReturnValue({ bindTooltip: vi.fn() }),
+    circle: vi.fn().mockReturnValue(circle),
   }
-  return { L, map, layer }
+  return { L, map, layer, circle }
 }
 
 describe('BaseMap (MAP-001)', () => {
@@ -81,6 +83,26 @@ describe('BaseMap (MAP-001)', () => {
     const { emitted } = render(BaseMap, { props: { leaflet: fake.L as never } })
     await nextTick()
     expect(emitted().ready).toBeTruthy()
+  })
+
+  it('draws a zone circle when a zone prop is provided (MAP-004)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        zone: { lat: 36.12, lng: -97.07, radiusM: 402, label: 'Union' },
+      },
+    })
+    await nextTick()
+    expect(fake.L.circle).toHaveBeenCalledTimes(1)
+    const [center, opts] = fake.L.circle.mock.calls[0]! as [number[], { radius: number }]
+    expect(center).toEqual([36.12, -97.07])
+    expect(opts.radius).toBe(402)
+  })
+
+  it('does not draw a zone when none is provided', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never } })
+    await nextTick()
+    expect(fake.L.circle).not.toHaveBeenCalled()
   })
 
   it('styles city-limits distinctly from roads', async () => {
