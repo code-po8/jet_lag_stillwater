@@ -14,6 +14,9 @@ export type {
   ClientMessage,
   ServerMessage,
   SyncedState,
+  GameEventKind,
+  GameEventMessage,
+  GameEventRelay,
 } from '@shared'
 
 export { QUARTER_MILE_M, isClientMessageType, isServerMessageType } from '@shared'

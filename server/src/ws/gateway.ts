@@ -197,6 +197,16 @@ function handleMessage(
       if (phase) broadcast(code, { t: 'phase', phase })
       break
     }
+    case 'game.event': {
+      // Relay question/curse events to everyone else, tagged with the sender so
+      // clients can suppress their own echo (MULTI-003b-2).
+      broadcast(
+        code,
+        { t: 'game.event', kind: msg.kind, from: playerId, payload: msg.payload },
+        playerId,
+      )
+      break
+    }
     case 'hello':
       // Already authenticated — ignore a duplicate hello.
       break

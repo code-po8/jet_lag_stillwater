@@ -79,12 +79,29 @@ export interface HostActionMessage {
   action: 'start-hiding' | 'start-seeking' | 'end-round' | 'pause' | 'resume'
 }
 
+/** Kinds of game events relayed between devices (MULTI-003b-2+). */
+export type GameEventKind =
+  | 'question.asked'
+  | 'question.answered'
+  | 'question.vetoed'
+  | 'curse.activated'
+  | 'curse.cleared'
+
+/** A game event a client emits to be relayed to the rest of the room. */
+export interface GameEventMessage {
+  t: 'game.event'
+  kind: GameEventKind
+  /** Opaque, kind-specific payload (validated by the applying store). */
+  payload: Record<string, unknown>
+}
+
 export type ClientMessage =
   | HelloMessage
   | PosMessage
   | ZoneSetMessage
   | RuledOutAddMessage
   | HostActionMessage
+  | GameEventMessage
 
 // ── Server → Client messages ────────────────────────────────────────────────
 
@@ -142,6 +159,15 @@ export interface PhaseMessage {
   phase: GamePhase
 }
 
+/** A game event relayed from another device (the server echoes it on). */
+export interface GameEventRelay {
+  t: 'game.event'
+  kind: GameEventKind
+  /** Id of the player who originated the event (for echo suppression). */
+  from: string
+  payload: Record<string, unknown>
+}
+
 export interface ErrorMessage {
   t: 'error'
   code: 'bad_token' | 'room_not_found' | 'bad_message' | 'forbidden'
@@ -158,6 +184,7 @@ export type ServerMessage =
   | RuledOutMessage
   | ZoneBreachMessage
   | PhaseMessage
+  | GameEventRelay
   | ErrorMessage
 
 // ── Synced state snapshot (persisted in sessions.state JSONB) ────────────────
@@ -173,7 +200,12 @@ export interface SyncedState {
 
 export function isClientMessageType(t: string): t is ClientMessage['t'] {
   return (
-    t === 'hello' || t === 'pos' || t === 'zone.set' || t === 'ruledout.add' || t === 'host.action'
+    t === 'hello' ||
+    t === 'pos' ||
+    t === 'zone.set' ||
+    t === 'ruledout.add' ||
+    t === 'host.action' ||
+    t === 'game.event'
   )
 }
 
@@ -188,6 +220,7 @@ export function isServerMessageType(t: string): t is ServerMessage['t'] {
     t === 'ruledout' ||
     t === 'zone.breach' ||
     t === 'phase' ||
+    t === 'game.event' ||
     t === 'error'
   )
 }
