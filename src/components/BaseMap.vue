@@ -127,21 +127,33 @@ onMounted(() => {
 })
 
 // ── Ruled-out shading (MAP-005): one rectangle per geohash cell ──
+// Incrementally reconciled: a `ruledout` broadcast carries the full unioned set,
+// so we add rectangles only for newly-shaded cells and remove those no longer
+// present (local undo) — never rebuild the whole layer (MAP-005 perf).
 let shadeLayer: L.LayerGroup | null = null
+const shadeRectsByCell = new Map<string, L.Rectangle>()
 
 function drawShading() {
   const map = mapInstance.value
   if (!map) return
   const leaflet = props.leaflet ?? L
 
-  if (shadeLayer) {
-    shadeLayer.remove()
-    shadeLayer = null
+  if (!shadeLayer) {
+    shadeLayer = leaflet.layerGroup()
+    shadeLayer.addTo(map)
   }
-  if (!props.shadedCells.length) return
 
-  shadeLayer = leaflet.layerGroup()
-  for (const cell of props.shadedCells) {
+  const next = new Set(props.shadedCells)
+  // Remove rectangles for cells that are no longer shaded.
+  for (const [cell, rect] of shadeRectsByCell) {
+    if (!next.has(cell)) {
+      shadeLayer.removeLayer(rect)
+      shadeRectsByCell.delete(cell)
+    }
+  }
+  // Add rectangles only for cells we aren't already drawing.
+  for (const cell of next) {
+    if (shadeRectsByCell.has(cell)) continue
     const b = geohashBounds(cell)
     const rect = leaflet.rectangle(
       [
@@ -151,15 +163,13 @@ function drawShading() {
       { color: '#64748b', weight: 0, fillColor: '#475569', fillOpacity: 0.4 },
     )
     shadeLayer.addLayer(rect)
+    shadeRectsByCell.set(cell, rect)
   }
-  shadeLayer.addTo(map)
 }
 
-watch(
-  () => props.shadedCells,
-  () => drawShading(),
-  { deep: true },
-)
+// Identity change is enough — `shadedCells` is a fresh array on each update;
+// no deep walk needed (it would scan every cell just to detect the change).
+watch(() => props.shadedCells, drawShading)
 
 // ── Hiding zone circle (MAP-004 / MAP-006) ──
 let zoneCircle: L.Circle | null = null
@@ -194,10 +204,31 @@ watch(
 )
 
 // ── Live position markers (MAP-003) ──
+// Position batches arrive ~1/s; reconcile in place (move existing markers via
+// setLatLng, add new, remove gone) rather than rebuilding the whole group every
+// tick (MAP-003 perf).
 let markerLayer: L.LayerGroup | null = null
+const markersById = new Map<string, { marker: L.CircleMarker; entry: PlayerMarker }>()
 
 function markerColor(m: PlayerMarker): string {
   return m.role === 'hider' ? BRAND_COLORS.orange : BRAND_COLORS.cyan
+}
+
+function tooltipFor(m: PlayerMarker): string {
+  return m.isSelf ? `${m.name} (you)` : m.name
+}
+
+function createMarker(leaflet: typeof L, m: PlayerMarker): L.CircleMarker {
+  const marker = leaflet.circleMarker([m.pos.lat, m.pos.lng], {
+    radius: m.isSelf ? 9 : 7,
+    color: '#ffffff',
+    weight: 2,
+    fillColor: markerColor(m),
+    fillOpacity: 0.95,
+  })
+  // Text label so markers are identifiable (accessibility).
+  marker.bindTooltip(tooltipFor(m), { permanent: false, direction: 'top' })
+  return marker
 }
 
 function drawMarkers() {
@@ -205,36 +236,44 @@ function drawMarkers() {
   if (!map) return
   const leaflet = props.leaflet ?? L
 
-  if (markerLayer) {
-    markerLayer.remove()
-    markerLayer = null
+  if (!markerLayer) {
+    markerLayer = leaflet.layerGroup()
+    markerLayer.addTo(map)
   }
-  if (!props.markers.length) return
 
-  markerLayer = leaflet.layerGroup()
-  for (const m of props.markers) {
-    const marker = leaflet.circleMarker([m.pos.lat, m.pos.lng], {
-      radius: m.isSelf ? 9 : 7,
-      color: '#ffffff',
-      weight: 2,
-      fillColor: markerColor(m),
-      fillOpacity: 0.95,
-    })
-    // Text label so markers are identifiable (accessibility).
-    marker.bindTooltip(m.isSelf ? `${m.name} (you)` : m.name, {
-      permanent: false,
-      direction: 'top',
-    })
-    markerLayer.addLayer(marker)
+  const next = new Map(props.markers.map((m) => [m.id, m]))
+  // Remove markers for players no longer present.
+  for (const [id, { marker }] of markersById) {
+    if (!next.has(id)) {
+      markerLayer.removeLayer(marker)
+      markersById.delete(id)
+    }
   }
-  markerLayer.addTo(map)
+  // Add or update the rest.
+  for (const m of props.markers) {
+    const existing = markersById.get(m.id)
+    if (!existing) {
+      const marker = createMarker(leaflet, m)
+      markerLayer.addLayer(marker)
+      markersById.set(m.id, { marker, entry: m })
+      continue
+    }
+    const { marker, entry } = existing
+    marker.setLatLng([m.pos.lat, m.pos.lng])
+    // Role drives color; update style only when it actually changed.
+    if (entry.role !== m.role || entry.isSelf !== m.isSelf) {
+      marker.setStyle({ radius: m.isSelf ? 9 : 7, fillColor: markerColor(m) })
+    }
+    if (entry.name !== m.name || entry.isSelf !== m.isSelf) {
+      marker.setTooltipContent(tooltipFor(m))
+    }
+    existing.entry = m
+  }
 }
 
-watch(
-  () => props.markers,
-  () => drawMarkers(),
-  { deep: true },
-)
+// Identity change suffices — `markers` is rebuilt each batch; a deep watch would
+// walk every PlayerMarker each tick just to detect the change.
+watch(() => props.markers, drawMarkers)
 
 onBeforeUnmount(() => {
   mapInstance.value?.remove()

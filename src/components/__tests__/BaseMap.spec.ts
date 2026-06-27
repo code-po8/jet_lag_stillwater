@@ -16,16 +16,38 @@ function fakeLeaflet() {
     getBounds: vi.fn().mockReturnValue({ isValid: () => true }),
   }
   const circle = { addTo: vi.fn().mockReturnThis(), remove: vi.fn() }
-  const group = { addLayer: vi.fn(), addTo: vi.fn().mockReturnThis(), remove: vi.fn() }
+  const group = {
+    addLayer: vi.fn(),
+    removeLayer: vi.fn(),
+    addTo: vi.fn().mockReturnThis(),
+    remove: vi.fn(),
+  }
+  // Each circleMarker/rectangle is a distinct object so per-layer ops (setLatLng,
+  // remove) can be asserted; record them for inspection.
+  const markers: Array<{ setLatLng: ReturnType<typeof vi.fn> }> = []
+  const rects: unknown[] = []
   const L = {
     map: vi.fn().mockReturnValue(map),
     geoJSON: vi.fn().mockReturnValue(layer),
-    circleMarker: vi.fn().mockReturnValue({ bindTooltip: vi.fn().mockReturnThis() }),
+    circleMarker: vi.fn(() => {
+      const m = {
+        setLatLng: vi.fn().mockReturnThis(),
+        setStyle: vi.fn().mockReturnThis(),
+        bindTooltip: vi.fn().mockReturnThis(),
+        setTooltipContent: vi.fn().mockReturnThis(),
+      }
+      markers.push(m)
+      return m
+    }),
     circle: vi.fn().mockReturnValue(circle),
     layerGroup: vi.fn().mockReturnValue(group),
-    rectangle: vi.fn().mockReturnValue({ addTo: vi.fn() }),
+    rectangle: vi.fn(() => {
+      const r = { addTo: vi.fn() }
+      rects.push(r)
+      return r
+    }),
   }
-  return { L, map, layer, circle, group }
+  return { L, map, layer, circle, group, markers, rects }
 }
 
 describe('BaseMap (MAP-001)', () => {
@@ -142,9 +164,65 @@ describe('BaseMap (MAP-001)', () => {
     })
     await nextTick()
     const fills = fake.L.circleMarker.mock.calls.map(
-      (c) => (c[1] as { fillColor: string }).fillColor,
+      (c) => (c as unknown as [unknown, { fillColor: string }])[1].fillColor,
     )
     expect(new Set(fills).size).toBe(2) // hider vs seeker color differ
+  })
+
+  it('updates existing markers in place instead of rebuilding (MAP-003 perf)', async () => {
+    const { rerender } = render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        markers: [{ id: 's1', name: 'Sue', role: 'seeker', pos: { lat: 36.1, lng: -97.0, ts: 1 } }],
+      },
+    })
+    await nextTick()
+    expect(fake.L.circleMarker).toHaveBeenCalledTimes(1)
+    const created = fake.markers.length
+
+    // A new position batch for the SAME player must move the existing marker,
+    // not allocate a new circleMarker (the ~1s hot path).
+    await rerender({
+      leaflet: fake.L as never,
+      markers: [{ id: 's1', name: 'Sue', role: 'seeker', pos: { lat: 36.2, lng: -97.1, ts: 2 } }],
+    })
+    await nextTick()
+    expect(fake.L.circleMarker).toHaveBeenCalledTimes(created) // no new marker
+    expect(fake.markers[0]!.setLatLng).toHaveBeenCalledWith([36.2, -97.1])
+  })
+
+  it('removes only markers for players who left', async () => {
+    const { rerender } = render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        markers: [
+          { id: 'a', name: 'A', role: 'seeker', pos: { lat: 1, lng: 1, ts: 1 } },
+          { id: 'b', name: 'B', role: 'seeker', pos: { lat: 2, lng: 2, ts: 1 } },
+        ],
+      },
+    })
+    await nextTick()
+    await rerender({
+      leaflet: fake.L as never,
+      markers: [{ id: 'a', name: 'A', role: 'seeker', pos: { lat: 1, lng: 1, ts: 2 } }],
+    })
+    await nextTick()
+    // 'b' was removed from the group; 'a' was not re-created.
+    expect(fake.group.removeLayer).toHaveBeenCalledTimes(1)
+    expect(fake.L.circleMarker).toHaveBeenCalledTimes(2)
+  })
+
+  it('adds only new shading rectangles on a union update (MAP-005 perf)', async () => {
+    const { rerender } = render(BaseMap, {
+      props: { leaflet: fake.L as never, shadedCells: ['9yd8s', '9yd8t'] },
+    })
+    await nextTick()
+    expect(fake.L.rectangle).toHaveBeenCalledTimes(2)
+
+    // A broadcast adds one new cell; only the new cell gets a rectangle.
+    await rerender({ leaflet: fake.L as never, shadedCells: ['9yd8s', '9yd8t', '9yd8w'] })
+    await nextTick()
+    expect(fake.L.rectangle).toHaveBeenCalledTimes(3) // +1, not +3
   })
 
   it('shades ruled-out geohash cells as rectangles (MAP-005)', async () => {
