@@ -3541,25 +3541,33 @@ Real-time synchronization of game state across multiple player devices, similar 
 
 ### MULTI-002: Room Creation & Join Flow
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MULTI-001
 
 **Story:** As a player, I need to create a game room and share a code so that other players can join from their devices.
 
 **Acceptance Criteria:**
 
-- [ ] Host can create a new game room (`POST /rooms` → returns code + host rejoin token)
-- [ ] Room generates a short, memorable **Crockford-style** code (len 4, alphabet excludes `0/O/1/I/L`, collision retry, recyclable across ended rooms)
-- [ ] Room code is displayed prominently for sharing
-- [ ] Other players can enter room code + name to join (`POST /rooms/:code/join` → returns player id + rejoin token)
-- [ ] Joined players appear in a lobby/waiting area
-- [ ] Host can see all joined players
-- [ ] Host can start the game when ready
-- [ ] Players can leave and **rejoin** with their rejoin token after a drop (`POST /rooms/:code/rejoin`)
-- [ ] Session persists a few days while paused/ongoing (TTL slides on activity) and expires shortly after the round ends
-- [ ] Invalid/expired room codes and room-full scenarios are handled gracefully
+- [x] Host can create a new game room (`POST /rooms` → returns code + host rejoin token)
+- [x] Room generates a short, memorable **Crockford-style** code (len 4, alphabet excludes `0/O/1/I/L`, collision retry, recyclable across ended rooms)
+- [x] Room code is displayed prominently for sharing
+- [x] Other players can enter room code + name to join (`POST /rooms/:code/join` → returns player id + rejoin token)
+- [x] Joined players appear in a lobby/waiting area
+- [x] Host can see all joined players
+- [x] Host can start the game when ready
+- [x] Players can leave and **rejoin** with their rejoin token after a drop (`POST /rooms/:code/rejoin`)
+- [x] Session persists a few days while paused/ongoing (TTL slides on activity) and expires shortly after the round ends
+- [x] Invalid/expired room codes and room-full scenarios are handled gracefully
 
 **Size:** L
+
+**Implementation Notes:**
+
+- `src/services/sync/roomApi.ts`: typed `RoomApi` client for the INFRA-005 endpoints (create/get/join/rejoin) with `RoomApiError` (status + `notFound`); base URL from `VITE_API_URL`.
+- `src/stores/roomStore.ts`: Pinia store holding code/roster/self/rejoin token; persists `{code, rejoinToken, selfId}` via the existing persistence service so a refresh/drop can rejoin; `inRoom`/`isHost` getters; injectable `api` for tests. (Codes/TTL/recycling are enforced server-side by INFRA-004/005.)
+- `src/views/LobbyView.vue` + `/lobby` route + a "MULTIPLAYER" entry on HomeView: host/join forms, prominent code display, roster, host-only Start, leave, graceful error banner.
+- TDD: `roomApi.spec.ts` (8), `roomStore.spec.ts` (7), `LobbyView.spec.ts` (7). Verified in-container: 1297 frontend tests pass; production build succeeds.
+- Note: "Start Game" navigates to the game view for now; phase/start broadcast wiring lands in SYNC-002 / MULTI-003b.
 
 **Depends On:** MULTI-001, INFRA-003, INFRA-004, INFRA-005
 
