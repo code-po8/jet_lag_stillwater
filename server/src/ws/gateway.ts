@@ -198,13 +198,19 @@ function handleMessage(
       break
     }
     case 'game.event': {
-      // Relay question/curse events to everyone else, tagged with the sender so
-      // clients can suppress their own echo (MULTI-003b-2).
+      // Relay question/curse/card/trap events to everyone else, tagged with the
+      // sender so clients can suppress their own echo (MULTI-003b-2/3).
       broadcast(
         code,
         { t: 'game.event', kind: msg.kind, from: playerId, payload: msg.payload },
         playerId,
       )
+      break
+    }
+    case 'time.sync': {
+      // Clock-sync reply for timer alignment (MULTI-003b-3). Reply only to the
+      // requester with the server's current time.
+      send(socket, { t: 'time.reply', t1: msg.t1, t2: Date.now() })
       break
     }
     case 'hello':

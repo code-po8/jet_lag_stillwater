@@ -19,4 +19,9 @@ export type {
   GameEventRelay,
 } from '@shared'
 
-export { QUARTER_MILE_M, isClientMessageType, isServerMessageType } from '@shared'
+export {
+  QUARTER_MILE_M,
+  isClientMessageType,
+  isServerMessageType,
+  computeClockOffset,
+} from '@shared'

@@ -86,6 +86,16 @@ export type GameEventKind =
   | 'question.vetoed'
   | 'curse.activated'
   | 'curse.cleared'
+  | 'card.drawn'
+  | 'timetrap.triggered'
+  | 'timer.sync'
+
+/** Clock-sync probe (NTP-style): client stamps t1 and the server replies. */
+export interface TimeSyncRequest {
+  t: 'time.sync'
+  /** Client send time (ms). */
+  t1: number
+}
 
 /** A game event a client emits to be relayed to the rest of the room. */
 export interface GameEventMessage {
@@ -102,6 +112,7 @@ export type ClientMessage =
   | RuledOutAddMessage
   | HostActionMessage
   | GameEventMessage
+  | TimeSyncRequest
 
 // ── Server → Client messages ────────────────────────────────────────────────
 
@@ -168,6 +179,14 @@ export interface GameEventRelay {
   payload: Record<string, unknown>
 }
 
+/** Clock-sync reply: echoes the client's t1 and adds the server time t2. */
+export interface TimeSyncReply {
+  t: 'time.reply'
+  t1: number
+  /** Server time when it processed the probe (ms). */
+  t2: number
+}
+
 export interface ErrorMessage {
   t: 'error'
   code: 'bad_token' | 'room_not_found' | 'bad_message' | 'forbidden'
@@ -185,6 +204,7 @@ export type ServerMessage =
   | ZoneBreachMessage
   | PhaseMessage
   | GameEventRelay
+  | TimeSyncReply
   | ErrorMessage
 
 // ── Synced state snapshot (persisted in sessions.state JSONB) ────────────────
@@ -198,6 +218,15 @@ export interface SyncedState {
 
 // ── Type guards / helpers (tiny, still zero-dep) ─────────────────────────────
 
+/**
+ * Estimate the client→server clock offset (ms) from a time-sync round trip.
+ * offset ≈ serverTime − clientMidpoint, where clientMidpoint is halfway between
+ * send (t1) and receive (t3). Add `offset` to a client clock to get server time.
+ */
+export function computeClockOffset(t1: number, t2: number, t3: number): number {
+  return t2 - (t1 + t3) / 2
+}
+
 export function isClientMessageType(t: string): t is ClientMessage['t'] {
   return (
     t === 'hello' ||
@@ -205,7 +234,8 @@ export function isClientMessageType(t: string): t is ClientMessage['t'] {
     t === 'zone.set' ||
     t === 'ruledout.add' ||
     t === 'host.action' ||
-    t === 'game.event'
+    t === 'game.event' ||
+    t === 'time.sync'
   )
 }
 
@@ -221,6 +251,7 @@ export function isServerMessageType(t: string): t is ServerMessage['t'] {
     t === 'zone.breach' ||
     t === 'phase' ||
     t === 'game.event' ||
+    t === 'time.reply' ||
     t === 'error'
   )
 }
