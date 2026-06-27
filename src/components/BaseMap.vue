@@ -10,7 +10,17 @@ import { onMounted, onBeforeUnmount, ref, shallowRef } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import baseGeo from '../assets/map/stillwater-base.json'
+import poiGeo from '../assets/map/stillwater-poi.json'
 import { BRAND_COLORS } from '@/design/colors'
+
+/** Game-data overlay categories (MAP-002) and their legend colors. */
+const POI_STYLE: Record<string, { color: string; label: string }> = {
+  'bus-stop': { color: '#ffffff', label: 'Bus stop' },
+  restaurant: { color: '#f07d2e', label: 'Restaurant' },
+  school: { color: '#f5b830', label: 'School' },
+  park: { color: '#2d8a4e', label: 'Park' },
+}
+const LEGEND = Object.entries(POI_STYLE).map(([kind, s]) => ({ kind, ...s }))
 
 const props = withDefaults(
   defineProps<{
@@ -62,6 +72,27 @@ onMounted(() => {
   })
   layer.addTo(map)
 
+  // Game-data overlay (MAP-002): bus stops + POIs as category-colored markers.
+  const poiLayer = leaflet.geoJSON(poiGeo as unknown as GeoJSON.GeoJsonObject, {
+    pointToLayer: (feature, latlng) => {
+      const kind = (feature.properties as { kind?: string })?.kind ?? ''
+      const style = POI_STYLE[kind] ?? { color: '#94a3b8', label: kind }
+      return leaflet.circleMarker(latlng, {
+        radius: kind === 'bus-stop' ? 4 : 5,
+        color: '#0f172a',
+        weight: 1,
+        fillColor: style.color,
+        fillOpacity: 0.9,
+      })
+    },
+    onEachFeature: (feature, lyr) => {
+      const props = feature.properties as { kind?: string; name?: string }
+      const label = props?.name ?? POI_STYLE[props?.kind ?? '']?.label ?? props?.kind ?? ''
+      if (label) lyr.bindTooltip(String(label))
+    },
+  })
+  poiLayer.addTo(map)
+
   // Fit to the city limits so the whole town is in view.
   try {
     map.fitBounds(layer.getBounds(), { padding: [16, 16] })
@@ -84,6 +115,19 @@ defineExpose({ map: mapInstance })
 <template>
   <div class="base-map" role="region" aria-label="Stillwater game map">
     <div ref="container" class="base-map-canvas" data-testid="base-map-canvas"></div>
+
+    <!-- Map legend (MAP-002): text labels for each overlay category. -->
+    <ul class="base-map-legend" data-testid="map-legend" aria-label="Map legend">
+      <li v-for="item in LEGEND" :key="item.kind" class="base-map-legend-item">
+        <span
+          class="base-map-legend-dot"
+          :style="{ backgroundColor: item.color }"
+          aria-hidden="true"
+        ></span>
+        {{ item.label }}
+      </li>
+    </ul>
+
     <!-- Overlay controls / children draw on top (later MAP stories) -->
     <slot :map="mapInstance" />
   </div>
@@ -111,5 +155,34 @@ defineExpose({ map: mapInstance })
   height: 40px;
   line-height: 40px;
   font-size: 1.2rem;
+}
+/* Legend with text labels (no icon-only controls). */
+.base-map-legend {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 500;
+  margin: 0;
+  padding: 8px 10px;
+  list-style: none;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--color-ui-border, #475569);
+  border-radius: 8px;
+  font-size: 0.72rem;
+  color: var(--color-ui-text-primary, #f8fafc);
+  backdrop-filter: blur(4px);
+}
+.base-map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.6;
+}
+.base-map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid #0f172a;
+  flex: none;
 }
 </style>

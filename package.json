@@ -21,7 +21,8 @@
     "prepare": "husky",
     "secrets:scan": "gitleaks-secret-scanner --diff-mode history",
     "secrets:scan:staged": "gitleaks-secret-scanner --diff-mode staged",
-    "bake:map": "node scripts/bake-stillwater-map.mjs"
+    "bake:map": "node scripts/bake-stillwater-map.mjs",
+    "bake:poi": "node scripts/bake-stillwater-poi.mjs"
   },
   "dependencies": {
     "pinia": "^3.0.4",
