@@ -4227,19 +4227,25 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-000: Bake Stylized Stillwater Base Map
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** None
 
 **Story:** As a developer, I need a pre-baked stylized Stillwater base map so that the map works fully offline without a tile server or API key.
 
 **Acceptance Criteria:**
 
-- [ ] One-time build script pulls Stillwater OSM data (streets + city limits)
-- [ ] Renders an on-brand stylized base (image and/or baked GeoJSON), bundled into the app as a static asset checked into the repo
-- [ ] Re-running the script regenerates the asset
-- [ ] Base renders fully offline (no live tile server, no key)
+- [x] One-time build script pulls Stillwater OSM data (streets + city limits)
+- [x] Renders an on-brand stylized base (image and/or baked GeoJSON), bundled into the app as a static asset checked into the repo
+- [x] Re-running the script regenerates the asset
+- [x] Base renders fully offline (no live tile server, no key)
 
 **Size:** M
+
+**Implementation Notes:**
+
+- `scripts/bake-stillwater-map.mjs` (zero npm deps, built-in fetch): queries the OSM Overpass API for the Stillwater, OK city-limits boundary + major roads (motorway→tertiary), constrained to the OK bounding box so it doesn't match Stillwater, MN. Writes `src/assets/map/stillwater-base.geojson`. `npm run bake:map` re-generates.
+- Baked from live OSM data: 1 city-limits polygon + 714 road LineStrings (~219KB), all within Stillwater OK bounds (lat 36.08–36.21, lng −97.15…−97.02), incl. real streets (Perkins, Washington, 6th Ave, Western). Asset committed for offline use; rendered by MAP-001.
+- TDD: `stillwaterBase.spec.ts` (5) validates the committed asset offline (structure, city-limits, roads, OK bounds, recognizable streets). Verified in-container: 1352 frontend tests pass; build OK.
 
 ---
 

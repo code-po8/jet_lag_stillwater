@@ -20,7 +20,8 @@
     "format": "prettier --write --experimental-cli src/",
     "prepare": "husky",
     "secrets:scan": "gitleaks-secret-scanner --diff-mode history",
-    "secrets:scan:staged": "gitleaks-secret-scanner --diff-mode staged"
+    "secrets:scan:staged": "gitleaks-secret-scanner --diff-mode staged",
+    "bake:map": "node scripts/bake-stillwater-map.mjs"
   },
   "dependencies": {
     "pinia": "^3.0.4",
