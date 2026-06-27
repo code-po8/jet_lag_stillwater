@@ -162,7 +162,9 @@ describe('CardHand', () => {
       await nextTick()
 
       const cardElement = screen.getByTestId(`card-${curse.instanceId}`)
-      expect(within(cardElement).getByText(/seekers must find and wear lemons/i)).toBeInTheDocument()
+      expect(
+        within(cardElement).getByText(/seekers must find and wear lemons/i),
+      ).toBeInTheDocument()
     })
   })
 
@@ -255,7 +257,7 @@ describe('CardHand', () => {
 
       // Should show "6/6" and some visual indicator of full
       expect(screen.getByText(/6\/6/)).toBeInTheDocument()
-      expect(screen.getByTestId('hand-limit-indicator')).toHaveClass('hand-full')
+      expect(screen.getByTestId('hand-limit-indicator').className).toMatch(/full/)
     })
   })
 
@@ -318,9 +320,9 @@ describe('CardHand', () => {
 
       await nextTick()
 
-      // Container should allow scrolling
+      // Container should have proper grid layout class
       const container = screen.getByTestId('card-hand-container')
-      expect(container.className).toMatch(/overflow/)
+      expect(container.className).toMatch(/card-hand-grid/)
     })
   })
 

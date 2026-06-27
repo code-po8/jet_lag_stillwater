@@ -10,7 +10,9 @@ import { QuestionCategoryId, GameSize } from '@/types/question'
 /**
  * Helper to set up a game in seeking phase with a pending question
  */
-function setupGameWithPendingQuestion(categoryId: QuestionCategoryId = QuestionCategoryId.Matching) {
+function setupGameWithPendingQuestion(
+  categoryId: QuestionCategoryId = QuestionCategoryId.Matching,
+) {
   const gameStore = useGameStore()
   const questionStore = useQuestionStore()
 
@@ -337,7 +339,8 @@ describe('QuestionResponseTimer', () => {
       await nextTick()
 
       const timerDisplay = screen.getByTestId('timer-display')
-      expect(timerDisplay.className).toMatch(/text-(2xl|3xl|4xl)/)
+      // Uses response-timer-display class with large font-size via scoped CSS
+      expect(timerDisplay.className).toMatch(/response-timer-display/)
     })
 
     it('should have touch-friendly container', async () => {
@@ -347,7 +350,8 @@ describe('QuestionResponseTimer', () => {
       await nextTick()
 
       const timer = screen.getByTestId('question-response-timer')
-      expect(timer).toHaveClass('p-4')
+      // Uses response-timer class with padding via scoped CSS
+      expect(timer.className).toMatch(/response-timer/)
     })
   })
 

@@ -2946,6 +2946,73 @@ describe('player name input focus behavior (UX-005)', () => {
 
 ---
 
+### UX-006: Icon-Based Question Menu Redesign
+
+**Status:** `complete`
+**Depends On:** UX-004, Q-003b, Q-006
+
+**Story:** As a player, I need the question menu to look and feel like the official Jet Lag: Hide and Seek show UI, with category-colored tiles and per-question icons, so that questions are faster to recognize and the app feels polished.
+
+**Acceptance Criteria:**
+
+- [x] New `QuestionMenu` component renders questions as a grid of category-colored tiles (replaces the plain `QuestionList` in `SeekerView`)
+- [x] Each question has an SVG icon (from `src/design/questionIcons.ts`) matching the show's "Question Icon Reference"; questions without a defined icon fall back to a short text label
+- [x] Category headers show icon, name, and "DRAW X, PICK Y" cost using the Nebula category colors
+- [x] Tile status states: available / asked (faded, strikethrough) / pending (pulsing)
+- [x] Questions locked during hiding period (shows locked notice); Photo/Tentacle categories disabled during end-game
+- [x] Tapping an available tile emits `questionSelect`; tapping an asked tile opens a detail overlay with Re-ask (2× cost) emitting `reaskSelect`
+- [x] Bottom nav, timers, and history converted to inline SVG icons to match the new aesthetic
+- [x] All existing tests pass; new `QuestionMenu.spec.ts` covers the component (19 tests)
+
+**Size:** L
+
+**Notes:**
+
+- Continuation of UX-004 (which delivered colors only); this card adds the icon set and the tile-grid menu.
+- `QuestionMenu.spec.ts` added retroactively to bring the component up to the project's TDD standard before committing.
+
+**Tests Written (19 tests):**
+
+```typescript
+describe('QuestionMenu', () => {
+  describe('menu display', () => {
+    it('should render the question menu container')
+    it('should display the QUESTION MENU header')
+    it('should display all six categories')
+    it('should display draw/pick values for each category')
+    it('should render a tile for every question')
+  })
+  describe('question selection', () => {
+    it('should emit questionSelect when an available question tile is clicked')
+    it('should not emit questionSelect for an already-asked question tile')
+    it('should not emit questionSelect while another question is pending')
+  })
+  describe('status indicators', () => {
+    it('should mark asked questions with the asked tile class')
+    it('should mark the pending question with the pending tile class')
+  })
+  describe('hiding period lock', () => {
+    it('should show a locked notice during the hiding period')
+    it('should not emit questionSelect during the hiding period')
+    it('should not show the locked notice during seeking')
+  })
+  describe('end-game category disabling', () => {
+    it('should disable Photo and Tentacle categories during end-game')
+    it('should not emit questionSelect for a disabled category during end-game')
+  })
+  describe('question detail overlay', () => {
+    it('should open the detail overlay when an asked question is tapped')
+    it('should emit reaskSelect when Re-ask is clicked in the detail overlay')
+    it('should close the detail overlay when Close is clicked')
+  })
+  describe('category stats', () => {
+    it('should show available/total counts per category')
+  })
+})
+```
+
+---
+
 ## Epic 6: Developer Tools
 
 Tools to help with local development and testing. Only visible/active when running in dev mode (`npm run dev`).
@@ -3728,7 +3795,7 @@ describe('hand limit warning display (BUG-001)', () => {
 | 2: Timers                      | 4       | 4        | 0         |
 | 3: Card Management             | 12      | 12       | 0         |
 | 4: Game State                  | 7       | 7        | 0         |
-| 5: Mobile UX Polish            | 5       | 5        | 0         |
+| 5: Mobile UX Polish            | 6       | 6        | 0         |
 | 6: Developer Tools             | 1       | 1        | 0         |
 | 7: Question UX Improvements    | 2       | 2        | 0         |
 | 8: Physical Play & Standalone  | 3       | 3        | 0         |
@@ -3736,7 +3803,7 @@ describe('hand limit warning display (BUG-001)', () => {
 | 10: Multiplayer Sync           | 4       | 0        | 4         |
 | 11: Branding & Visual Identity | 2       | 2        | 0         |
 | 12: Bug Fixes                  | 1       | 1        | 0         |
-| **Total**                      | **63**  | **59**   | **4**     |
+| **Total**                      | **64**  | **60**   | **4**     |
 
 ---
 

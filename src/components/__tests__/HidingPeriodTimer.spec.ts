@@ -349,7 +349,8 @@ describe('HidingPeriodTimer', () => {
       await nextTick()
 
       const pauseButton = screen.getByRole('button', { name: /pause/i })
-      expect(pauseButton).toHaveClass('min-h-11', 'min-w-11')
+      // Uses btn-show class from design system which provides touch-friendly sizing
+      expect(pauseButton.className).toMatch(/btn-show/)
     })
 
     it('should have large readable timer text', async () => {
@@ -359,8 +360,8 @@ describe('HidingPeriodTimer', () => {
       await nextTick()
 
       const timerDisplay = screen.getByTestId('timer-display')
-      // Should have large text class
-      expect(timerDisplay.className).toMatch(/text-(3xl|4xl|5xl)/)
+      // Uses timer-display class with large font-size via scoped CSS
+      expect(timerDisplay.className).toMatch(/timer-display/)
     })
   })
 

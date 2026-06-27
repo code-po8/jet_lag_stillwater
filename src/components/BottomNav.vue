@@ -14,14 +14,13 @@ const emit = defineEmits<{
 interface TabConfig {
   id: NavTab
   label: string
-  icon: string
 }
 
 const tabs: TabConfig[] = [
-  { id: 'questions', label: 'Questions', icon: '?' },
-  { id: 'timers', label: 'Timers', icon: '⏱' },
-  { id: 'cards', label: 'Cards', icon: '🃏' },
-  { id: 'history', label: 'History', icon: '📋' },
+  { id: 'questions', label: 'Questions' },
+  { id: 'timers', label: 'Timers' },
+  { id: 'cards', label: 'Cards' },
+  { id: 'history', label: 'History' },
 ]
 
 function handleTabClick(tabId: NavTab) {
@@ -38,28 +37,108 @@ function isActive(tabId: NavTab): boolean {
     data-testid="bottom-nav"
     role="navigation"
     aria-label="Main navigation"
-    class="fixed bottom-0 left-0 flex w-full border-t border-slate-700 bg-slate-800"
+    class="bottom-nav safe-area-bottom"
   >
     <button
       v-for="tab in tabs"
       :key="tab.id"
       type="button"
       :data-testid="`nav-tab-${tab.id}`"
-      :class="[
-        'flex min-h-11 flex-1 flex-col items-center justify-center py-2 transition-colors',
-        isActive(tab.id)
-          ? 'active bg-slate-700 text-blue-400'
-          : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200',
-      ]"
+      class="bottom-nav-item"
+      :class="{ active: isActive(tab.id) }"
       :aria-current="isActive(tab.id) ? 'page' : undefined"
       @click="handleTabClick(tab.id)"
     >
-      <span :data-testid="`nav-tab-${tab.id}-icon`" class="text-lg">
-        {{ tab.icon }}
-      </span>
-      <span class="mt-1 text-xs font-medium">
-        {{ tab.label }}
-      </span>
+      <!-- Questions Icon -->
+      <svg
+        v-if="tab.id === 'questions'"
+        :data-testid="`nav-tab-${tab.id}-icon`"
+        class="bottom-nav-icon"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path
+          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"
+        />
+      </svg>
+
+      <!-- Timers Icon -->
+      <svg
+        v-else-if="tab.id === 'timers'"
+        :data-testid="`nav-tab-${tab.id}-icon`"
+        class="bottom-nav-icon"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path
+          d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"
+        />
+      </svg>
+
+      <!-- Cards Icon -->
+      <svg
+        v-else-if="tab.id === 'cards'"
+        :data-testid="`nav-tab-${tab.id}-icon`"
+        class="bottom-nav-icon"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path
+          d="M21.47 4.35l-1.34-.56v9.03l2.43-5.86c.41-1.02-.06-2.19-1.09-2.61zm-19.5 3.7L6.93 20a2.01 2.01 0 001.81 1.26c.26 0 .53-.05.79-.16l7.37-3.05c.75-.31 1.21-1.05 1.23-1.79.01-.26-.04-.55-.13-.81L13 3.5c-.29-.72-.97-1.17-1.73-1.17-.27 0-.54.05-.79.15L3.11 5.54c-1.03.42-1.51 1.6-1.14 2.51zm16.15-3.8c-.55-.22-1.17 0-1.44.49L14.13 9.4l1.49-6.71c.09-.41.07-.8-.11-1.1z"
+        />
+      </svg>
+
+      <!-- History Icon -->
+      <svg
+        v-else-if="tab.id === 'history'"
+        :data-testid="`nav-tab-${tab.id}-icon`"
+        class="bottom-nav-icon"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path
+          d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+        />
+      </svg>
+
+      <span class="bottom-nav-label">{{ tab.label }}</span>
     </button>
   </nav>
 </template>
+
+<style scoped>
+.bottom-nav-icon {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.bottom-nav-label {
+  margin-top: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* Active state indicator */
+.bottom-nav-item {
+  position: relative;
+}
+
+.bottom-nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-brand-red) 0%, var(--color-brand-orange) 100%);
+  border-radius: 0 0 3px 3px;
+}
+
+.bottom-nav-item.active {
+  color: white;
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.15) 0%, transparent 100%);
+}
+</style>

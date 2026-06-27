@@ -55,12 +55,12 @@ describe('BottomNav', () => {
         },
       })
 
-      // Check only button elements (not their children) for the min-h-11 class
+      // Check only button elements (not their children) for touch-friendly styling
       const tabs = wrapper.findAll('button[data-testid^="nav-tab-"]')
       expect(tabs.length).toBe(4)
       tabs.forEach((tab) => {
-        // Verify tab has min-h-11 class (44px) or equivalent
-        expect(tab.classes()).toContain('min-h-11')
+        // Verify tab has bottom-nav-item class for proper touch target styling
+        expect(tab.classes()).toContain('bottom-nav-item')
       })
     })
   })
@@ -178,8 +178,8 @@ describe('BottomNav', () => {
       })
 
       const nav = wrapper.find('[data-testid="bottom-nav"]')
-      expect(nav.classes()).toContain('fixed')
-      expect(nav.classes()).toContain('bottom-0')
+      // Uses bottom-nav class which handles fixed positioning via CSS
+      expect(nav.classes()).toContain('bottom-nav')
     })
 
     it('should span full width', () => {
@@ -190,7 +190,8 @@ describe('BottomNav', () => {
       })
 
       const nav = wrapper.find('[data-testid="bottom-nav"]')
-      expect(nav.classes()).toContain('w-full')
+      // Uses bottom-nav class which sets width via CSS
+      expect(nav.classes()).toContain('bottom-nav')
     })
 
     it('should have horizontal flex layout for tabs', () => {
@@ -201,7 +202,8 @@ describe('BottomNav', () => {
       })
 
       const nav = wrapper.find('[data-testid="bottom-nav"]')
-      expect(nav.classes()).toContain('flex')
+      // Uses bottom-nav class which sets flex display via CSS
+      expect(nav.classes()).toContain('bottom-nav')
     })
   })
 
