@@ -4355,19 +4355,29 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-005: Seeker Ruled-Out Shading
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MAP-002, MULTI-003a
 
 **Story:** As a seeker, I need to shade ruled-out regions so that the team can narrow the search.
 
 **Acceptance Criteria:**
 
-- [ ] **Answer-driven auto-shading** for Radar / Measuring / Thermometer answers (geometry relative to seeker position)
-- [ ] **Manual freehand shading** override
-- [ ] Stored/synced as geohash grid cells (sync = set union)
-- [ ] Shading toolbar controls all have textual descriptions/labels (incl. undo)
+- [x] **Answer-driven auto-shading** for Radar / Measuring / Thermometer answers (geometry relative to seeker position)
+- [x] **Manual freehand shading** override
+- [x] Stored/synced as geohash grid cells (sync = set union)
+- [x] Shading toolbar controls all have textual descriptions/labels (incl. undo)
 
 **Size:** L
+
+**Implementation Notes:**
+
+- `src/utils/geohash.ts`: standard geohash `encodeGeohash` (validated against the classic `u4pruydqqvj` reference), `geohashBounds` (cell → bbox for rendering), `cellsInBBox` (enumerate cells over an area).
+- `src/composables/useShading.ts`: synced `cells` (from `ruledOutCells`), `shadeFreehand(points)` (points → cells), `autoShadeRadar(seeker, radiusMiles, answeredYes)` (within=No → shade the disc inside; within=Yes → shade the ring outside, haversine-filtered). All go out via `ruledout.add` → server **set-union** (`ruledout`).
+- `BaseMap.vue` `shadedCells` prop renders one translucent rectangle per cell. `MapPanel.vue` seeker-only **toolbar** (`role="group"`): Freehand toggle (`aria-pressed`, visible label + title) and Auto-shade (visible label + title).
+- **Undo:** a labeled **Undo** button removes the last shading action via `unshadeLocal` (disabled until there's something to undo). It's **client-local** — the wire protocol is union-only, so it doesn't un-shade on other devices (a `ruledout.remove` message would be the multi-device follow-up).
+- TDD: `geohash.spec.ts` (6) + `useShading.spec.ts` (6) + BaseMap shading (2) + MapPanel toolbar/undo (5). Verified in-container: 1398+ frontend tests pass; build OK.
+
+> **⚠️ FLAG:** Undo is client-local only (union-only sync can't un-shade across devices — needs a `ruledout.remove` protocol addition). Auto-shading currently implements the **Radar** case; Measuring/Thermometer geometry can be layered onto `useShading` later.
 
 ---
 

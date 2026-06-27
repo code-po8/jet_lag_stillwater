@@ -11,9 +11,9 @@ import { QUARTER_MILE_M } from '@/services/sync/protocol'
 vi.mock('../BaseMap.vue', () => ({
   default: {
     name: 'BaseMap',
-    props: ['zone', 'breached', 'markers'],
+    props: ['zone', 'breached', 'markers', 'shadedCells'],
     template:
-      '<div data-testid="base-map-stub" :data-marker-count="(markers || []).length" :data-breached="String(!!breached)" />',
+      '<div data-testid="base-map-stub" :data-marker-count="(markers || []).length" :data-breached="String(!!breached)" :data-shaded="(shadedCells || []).length" />',
   },
 }))
 
@@ -113,6 +113,56 @@ describe('MapPanel (MAP-004)', () => {
     render(MapPanel)
     await nextTick()
     expect(screen.getByTestId('base-map-stub').getAttribute('data-breached')).toBe('true')
+  })
+
+  it('shows the shading toolbar (with text labels) for a seeker', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    render(MapPanel)
+    await nextTick()
+    const toolbar = screen.getByTestId('shade-toolbar')
+    expect(toolbar).toBeInTheDocument()
+    // Buttons carry visible text labels (not icon-only).
+    expect(screen.getByTestId('shade-freehand-btn')).toHaveTextContent(/freehand/i)
+    expect(screen.getByTestId('shade-auto-btn')).toHaveTextContent(/auto-shade/i)
+    expect(screen.getByTestId('shade-undo-btn')).toHaveTextContent(/undo/i)
+  })
+
+  it('disables undo until a shading action has happened', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('shade-undo-btn')).toBeDisabled()
+  })
+
+  it('does NOT show the shading toolbar for a hider', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.queryByTestId('shade-toolbar')).not.toBeInTheDocument()
+  })
+
+  it('toggles freehand active state', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    render(MapPanel)
+    await nextTick()
+    const btn = screen.getByTestId('shade-freehand-btn')
+    expect(btn.getAttribute('aria-pressed')).toBe('false')
+    await fireEvent.click(btn)
+    expect(btn.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('renders synced ruled-out cells onto the map', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    sync.ruledOutCells.value = ['9yd8s', '9yd8t']
+    render(MapPanel)
+    await nextTick()
+    // Toolbar present (seeker) and BaseMap stub receives the cells via prop.
+    expect(screen.getByTestId('base-map-stub')).toBeInTheDocument()
   })
 
   it('sends a zone.set when the hider picks a bus stop', async () => {

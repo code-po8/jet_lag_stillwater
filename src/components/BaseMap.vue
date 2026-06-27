@@ -13,6 +13,7 @@ import baseGeo from '../assets/map/stillwater-base.json'
 import poiGeo from '../assets/map/stillwater-poi.json'
 import { BRAND_COLORS } from '@/design/colors'
 import type { Position, Role, Zone } from '@/services/sync/protocol'
+import { geohashBounds } from '@/utils/geohash'
 
 /** A live position marker to draw (MAP-003). */
 export interface PlayerMarker {
@@ -42,8 +43,10 @@ const props = withDefaults(
     breached?: boolean
     /** Live player position markers to draw (MAP-003). */
     markers?: PlayerMarker[]
+    /** Ruled-out geohash cells to shade (MAP-005). */
+    shadedCells?: string[]
   }>(),
-  { zone: null, breached: false, markers: () => [] },
+  { zone: null, breached: false, markers: () => [], shadedCells: () => [] },
 )
 
 const emit = defineEmits<{ ready: [map: L.Map] }>()
@@ -117,10 +120,46 @@ onMounted(() => {
   }
 
   mapInstance.value = map
+  drawShading()
   drawZone()
   drawMarkers()
   emit('ready', map)
 })
+
+// ── Ruled-out shading (MAP-005): one rectangle per geohash cell ──
+let shadeLayer: L.LayerGroup | null = null
+
+function drawShading() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+
+  if (shadeLayer) {
+    shadeLayer.remove()
+    shadeLayer = null
+  }
+  if (!props.shadedCells.length) return
+
+  shadeLayer = leaflet.layerGroup()
+  for (const cell of props.shadedCells) {
+    const b = geohashBounds(cell)
+    const rect = leaflet.rectangle(
+      [
+        [b.south, b.west],
+        [b.north, b.east],
+      ],
+      { color: '#64748b', weight: 0, fillColor: '#475569', fillOpacity: 0.4 },
+    )
+    shadeLayer.addLayer(rect)
+  }
+  shadeLayer.addTo(map)
+}
+
+watch(
+  () => props.shadedCells,
+  () => drawShading(),
+  { deep: true },
+)
 
 // ── Hiding zone circle (MAP-004 / MAP-006) ──
 let zoneCircle: L.Circle | null = null

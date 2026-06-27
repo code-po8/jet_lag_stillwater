@@ -4,11 +4,12 @@
  * bus stop to declare a ¼-mile zone (synced via zone.set); everyone sees the
  * declared zone drawn on the map and described in a labeled sheet.
  */
-import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import BaseMap, { type PlayerMarker } from './BaseMap.vue'
 import { useZone, type BusStopLike } from '@/composables/useZone'
 import { useSync } from '@/composables/useSync'
 import { useGeolocation } from '@/composables/useGeolocation'
+import { useShading } from '@/composables/useShading'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import poiGeo from '../assets/map/stillwater-poi.json'
 
@@ -16,8 +17,46 @@ const { zone, hasZone, setFromBusStop } = useZone()
 const sync = useSync()
 const geo = useGeolocation()
 const gameStore = useGameStore()
+const { cells: shadedCells, shadeFreehand, autoShadeRadar, unshadeLocal } = useShading()
 
 const isHider = computed(() => sync.role.value === 'hider')
+const isSeeker = computed(() => sync.role.value === 'seeker')
+
+// Manual freehand shading state (seeker tool).
+const freehandActive = ref(false)
+const undoStack = ref<string[]>([]) // last applied set of cells (for undo)
+
+function toggleFreehand() {
+  freehandActive.value = !freehandActive.value
+}
+
+/** Auto-shade from the most recent ¼-mile radar "no" relative to our position. */
+function autoShade() {
+  const pos = geo.ownPosition.value
+  if (!pos) return
+  const before = shadedCells.value.length
+  // Conservative default: ½ mi radar "no" rules out the disc around us.
+  autoShadeRadar({ lat: pos.lat, lng: pos.lng }, 0.5, false)
+  undoStack.value = shadedCells.value.slice(before)
+}
+
+/** Apply a freehand path (called by the map drawing handler). */
+function applyFreehand(points: { lat: number; lng: number }[]) {
+  const before = shadedCells.value.length
+  shadeFreehand(points)
+  undoStack.value = shadedCells.value.slice(before)
+}
+
+/** Undo the last shading action (client-local; see STORIES MAP-005). */
+function undo() {
+  if (undoStack.value.length) {
+    unshadeLocal(undoStack.value)
+    undoStack.value = []
+  }
+}
+const canUndo = computed(() => undoStack.value.length > 0)
+
+defineExpose({ applyFreehand })
 
 // End-game breach (MAP-006): a seeker entered the hiding zone.
 const isBreached = computed(() => sync.breachedSeekers.value.length > 0)
@@ -100,7 +139,47 @@ function pickStop(event: Event) {
       ⚠️ Seekers in your zone — end game triggered!
     </div>
 
-    <BaseMap :zone="zone" :markers="markers" :breached="isBreached" />
+    <BaseMap :zone="zone" :markers="markers" :breached="isBreached" :shaded-cells="shadedCells" />
+
+    <!-- Seeker shading toolbar (MAP-005): all controls have text labels. -->
+    <div
+      v-if="isSeeker"
+      class="shade-toolbar"
+      data-testid="shade-toolbar"
+      role="group"
+      aria-label="Shading tools"
+    >
+      <button
+        type="button"
+        class="shade-btn"
+        :class="{ 'shade-btn-active': freehandActive }"
+        data-testid="shade-freehand-btn"
+        :aria-pressed="freehandActive"
+        title="Freehand shade — draw to rule out an area"
+        @click="toggleFreehand"
+      >
+        ✎ <span class="shade-btn-label">Freehand</span>
+      </button>
+      <button
+        type="button"
+        class="shade-btn"
+        data-testid="shade-auto-btn"
+        title="Auto-shade ½-mile disc around me from a Radar 'no'"
+        @click="autoShade"
+      >
+        ◎ <span class="shade-btn-label">Auto-shade</span>
+      </button>
+      <button
+        type="button"
+        class="shade-btn"
+        data-testid="shade-undo-btn"
+        :disabled="!canUndo"
+        title="Undo the last shading action"
+        @click="undo"
+      >
+        ↺ <span class="shade-btn-label">Undo</span>
+      </button>
+    </div>
 
     <!-- Hiding-zone sheet (labeled) -->
     <section class="zone-sheet" data-testid="zone-sheet" aria-label="Hiding zone">
@@ -144,6 +223,35 @@ function pickStop(event: Event) {
   position: relative;
   width: 100%;
   height: 100%;
+}
+.shade-toolbar {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.shade-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-ui-border, #475569);
+  background: rgba(30, 41, 59, 0.92);
+  color: var(--color-ui-text-primary, #f8fafc);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.shade-btn-active {
+  border-color: var(--color-brand-cyan, #00aaff);
+  box-shadow: 0 0 0 2px rgba(0, 170, 255, 0.35);
+}
+.shade-btn-label {
+  font-weight: 600;
 }
 .breach-banner {
   position: absolute;
