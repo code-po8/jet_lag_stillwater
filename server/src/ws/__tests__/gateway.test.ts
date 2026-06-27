@@ -167,4 +167,31 @@ describe('WS gateway (integration)', () => {
     hider.close()
     seeker.close()
   })
+
+  it('relays a game.event to OTHERS tagged with the sender, not back to itself', async () => {
+    const { ws: hider } = await helloAs('tok-hider')
+    const { ws: seeker } = await helloAs('tok-seeker')
+
+    // Sender should NOT receive its own event back.
+    let echoed = false
+    seeker.on('message', (d: Buffer) => {
+      if ((JSON.parse(d.toString()) as ServerMessage).t === 'game.event') echoed = true
+    })
+
+    const relayPromise = nextMessage(hider, (m) => m.t === 'game.event')
+    seeker.send(
+      JSON.stringify({ t: 'game.event', kind: 'question.asked', payload: { questionId: 'q1' } }),
+    )
+
+    const relay = await relayPromise
+    if (relay.t === 'game.event') {
+      expect(relay.kind).toBe('question.asked')
+      expect(relay.from).toBe('s1')
+      expect(relay.payload).toMatchObject({ questionId: 'q1' })
+    }
+    await new Promise((r) => setTimeout(r, 100))
+    expect(echoed).toBe(false)
+    hider.close()
+    seeker.close()
+  })
 })

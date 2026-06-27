@@ -18,6 +18,7 @@ import {
   type SyncStatus,
 } from '@/services/sync/syncService'
 import type {
+  GameEventKind,
   GamePhase,
   Position,
   PublicPlayer,
@@ -47,10 +48,19 @@ export interface SyncSession {
   setZone(zone: Zone): void
   addRuledOutCells(cells: string[]): void
   sendHostAction(action: HostAction): void
+  sendGameEvent(kind: GameEventKind, payload: Record<string, unknown>): void
+  /** Subscribe to inbound relayed game events. Returns an unsubscribe fn. */
+  onGameEvent(handler: GameEventHandler): () => void
 }
 
 /** Host-only phase/control actions (MULTI-003b-1). */
 export type HostAction = 'start-hiding' | 'start-seeking' | 'end-round' | 'pause' | 'resume'
+
+export type GameEventHandler = (e: {
+  kind: GameEventKind
+  from: string
+  payload: Record<string, unknown>
+}) => void
 
 export function createSyncSession(options: SyncSessionOptions = {}): SyncSession {
   const service = options.service ?? createSyncService('ws')
@@ -65,6 +75,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
 
   const role = computed<Role | null>(() => self.value?.role ?? null)
 
+  const gameEventHandlers = new Set<GameEventHandler>()
   let unsubscribe: (() => void) | null = null
 
   /** Apply an inbound server message to local state (never echoes outbound). */
@@ -109,6 +120,11 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
         positions.value = next
         break
       }
+      case 'game.event':
+        for (const h of gameEventHandlers) {
+          h({ kind: msg.kind, from: msg.from, payload: msg.payload })
+        }
+        break
       case 'error':
         // Surfaced via status/logging later; ignore for state purposes.
         break
@@ -145,6 +161,13 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   function sendHostAction(action: HostAction): void {
     service.send({ t: 'host.action', action })
   }
+  function sendGameEvent(kind: GameEventKind, payload: Record<string, unknown>): void {
+    service.send({ t: 'game.event', kind, payload })
+  }
+  function onGameEvent(handler: GameEventHandler): () => void {
+    gameEventHandlers.add(handler)
+    return () => gameEventHandlers.delete(handler)
+  }
 
   return {
     status: service.status,
@@ -162,6 +185,8 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     setZone,
     addRuledOutCells,
     sendHostAction,
+    sendGameEvent,
+    onGameEvent,
   }
 }
 

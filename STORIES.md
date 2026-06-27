@@ -3670,18 +3670,25 @@ describe('room creation and join', () => {
 
 ### MULTI-003b-2: Question & Curse Sync
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MULTI-003b-1
 
 **Story:** As a player, I need asked/answered questions and curse activations to appear on every device.
 
 **Acceptance Criteria:**
 
-- [ ] Question asked/answered events sync immediately to all players
-- [ ] Curse activations appear on all seeker devices
-- [ ] Reuses `questionStore`/`cardStore` shapes (no parallel state)
+- [x] Question asked/answered events sync immediately to all players
+- [x] Curse activations appear on all seeker devices
+- [x] Reuses `questionStore`/`cardStore` shapes (no parallel state)
 
 **Size:** L
+
+**Implementation Notes:**
+
+- Shared protocol: added `game.event` client message + `GameEventRelay` server message (`{kind, from, payload}`) with kinds `question.asked/answered/vetoed`, `curse.activated/cleared`; type-guards updated.
+- Server: gateway `game.event` handler relays to everyone **except the sender**, tagged with `from` (test verifies no self-echo).
+- Client: `useSync` gains `sendGameEvent`/`onGameEvent`. `src/composables/useQuestionCurseSync.ts` wraps `askQuestion/answerQuestion/vetoQuestion/activateCurse` to emit when in a room, and applies inbound events to the existing `questionStore`/`cardStore` with an `applyingRemote` echo guard (no parallel state).
+- TDD: `useQuestionCurseSync.spec.ts` (5) + gateway relay test (1). Verified in-container: server 66, frontend 1335 pass; both prod builds OK.
 
 ---
 
