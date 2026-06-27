@@ -194,4 +194,17 @@ describe('WS gateway (integration)', () => {
     hider.close()
     seeker.close()
   })
+
+  it('replies to a time.sync probe with the server time', async () => {
+    const { ws: seeker } = await helloAs('tok-seeker')
+    const t1 = 123456
+    const replyPromise = nextMessage(seeker, (m) => m.t === 'time.reply')
+    seeker.send(JSON.stringify({ t: 'time.sync', t1 }))
+    const reply = await replyPromise
+    if (reply.t === 'time.reply') {
+      expect(reply.t1).toBe(t1)
+      expect(typeof reply.t2).toBe('number')
+    }
+    seeker.close()
+  })
 })

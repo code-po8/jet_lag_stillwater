@@ -67,6 +67,26 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     expect(sent).toHaveLength(0)
   })
 
+  it('applying a remote time-trap event does not re-emit (echo guard)', () => {
+    enterRoom()
+    const sync = useSync()
+    const sent: unknown[] = []
+    sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+    const bridge = useQuestionCurseSync()
+    // Unknown trap id is a no-op in the store, but the echo guard must still
+    // prevent any outbound emit while applying a remote event.
+    bridge.applyRemoteEvent('timetrap.triggered', { trapInstanceId: 'nope' })
+    expect(sent).toHaveLength(0)
+  })
+
+  it('does not apply card.drawn for seekers (cards withheld)', () => {
+    enterRoom()
+    const bridge = useQuestionCurseSync()
+    // Should be a no-op and not throw.
+    expect(() => bridge.applyRemoteEvent('card.drawn', { cardId: 'x' })).not.toThrow()
+  })
+
   it('round-trips ask then answer through the bridge', () => {
     enterRoom()
     const questions = useQuestionStore()

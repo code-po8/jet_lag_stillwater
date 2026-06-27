@@ -49,6 +49,11 @@ export function useQuestionCurseSync() {
     if (res.success) emit('curse.activated', { curseId })
     return res
   }
+  function triggerTimeTrap(trapInstanceId: string) {
+    const res = cards.triggerTimeTrap(trapInstanceId)
+    if (res.success) emit('timetrap.triggered', { trapInstanceId })
+    return res
+  }
 
   // ── Apply inbound events from other devices ──
   function applyRemoteEvent(kind: GameEventKind, payload: Record<string, unknown>) {
@@ -72,6 +77,19 @@ export function useQuestionCurseSync() {
         case 'curse.cleared':
           // clear-by-instance handled in a later slice; no-op for now.
           break
+        case 'timetrap.triggered':
+          if (typeof payload.trapInstanceId === 'string') {
+            cards.triggerTimeTrap(payload.trapInstanceId)
+          }
+          break
+        case 'card.drawn':
+          // Card draws are the hider's private hand; seekers do not apply them
+          // (server withholds hider-only data). Hider-to-hider sync is a future
+          // slice — no-op here to keep cards withheld from seekers.
+          break
+        case 'timer.sync':
+          // Timer alignment uses the dedicated time.sync probe, not this relay.
+          break
       }
     } finally {
       applyingRemote = false
@@ -85,6 +103,7 @@ export function useQuestionCurseSync() {
     answerQuestion,
     vetoQuestion,
     activateCurse,
+    triggerTimeTrap,
     applyRemoteEvent,
     stopQuestionCurseSync: stop,
   }

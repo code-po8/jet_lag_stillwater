@@ -17,6 +17,7 @@ import {
   type SyncService,
   type SyncStatus,
 } from '@/services/sync/syncService'
+import { computeClockOffset } from '@/services/sync/protocol'
 import type {
   GameEventKind,
   GamePhase,
@@ -42,6 +43,8 @@ export interface SyncSession {
   breachedSeekers: Ref<string[]>
   ruledOutCells: Ref<string[]>
   role: Ref<Role | null>
+  /** Estimated server−client clock offset (ms). Add to a client clock for server time. */
+  clockOffset: Ref<number>
   connect(options: ConnectOptions): Promise<void>
   disconnect(): void
   sendPosition(pos: Position): void
@@ -51,6 +54,8 @@ export interface SyncSession {
   sendGameEvent(kind: GameEventKind, payload: Record<string, unknown>): void
   /** Subscribe to inbound relayed game events. Returns an unsubscribe fn. */
   onGameEvent(handler: GameEventHandler): () => void
+  /** Send a clock-sync probe; the reply updates `clockOffset`. */
+  syncClock(): void
 }
 
 /** Host-only phase/control actions (MULTI-003b-1). */
@@ -74,6 +79,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   const ruledOutCells = ref<string[]>([])
 
   const role = computed<Role | null>(() => self.value?.role ?? null)
+  const clockOffset = ref(0)
 
   const gameEventHandlers = new Set<GameEventHandler>()
   let unsubscribe: (() => void) | null = null
@@ -125,6 +131,9 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
           h({ kind: msg.kind, from: msg.from, payload: msg.payload })
         }
         break
+      case 'time.reply':
+        clockOffset.value = computeClockOffset(msg.t1, msg.t2, Date.now())
+        break
       case 'error':
         // Surfaced via status/logging later; ignore for state purposes.
         break
@@ -168,6 +177,9 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     gameEventHandlers.add(handler)
     return () => gameEventHandlers.delete(handler)
   }
+  function syncClock(): void {
+    service.send({ t: 'time.sync', t1: Date.now() })
+  }
 
   return {
     status: service.status,
@@ -187,6 +199,8 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     sendHostAction,
     sendGameEvent,
     onGameEvent,
+    syncClock,
+    clockOffset,
   }
 }
 

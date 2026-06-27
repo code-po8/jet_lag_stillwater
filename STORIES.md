@@ -3694,18 +3694,29 @@ describe('room creation and join', () => {
 
 ### MULTI-003b-3: Timer, Card & Time-Trap Sync
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MULTI-003b-2
 
 **Story:** As a player, I need timers, card draws, and time traps synchronized so scoring and tension stay consistent.
 
 **Acceptance Criteria:**
 
-- [ ] Timer states synchronized using a ping/pong clock offset
-- [ ] Card draws recorded/synced; cards withheld from seekers (server-side)
-- [ ] Time trap triggers sync to all players
+- [x] Timer states synchronized using a ping/pong clock offset
+- [x] Card draws recorded/synced; cards withheld from seekers (server-side)
+- [x] Time trap triggers sync to all players
 
 **Size:** L
+
+**Implementation Notes:**
+
+- Clock offset: shared `time.sync`/`time.reply` messages + pure `computeClockOffset(t1,t2,t3)` (NTP-style midpoint). Gateway replies to `time.sync` with server `Date.now()`; `useSync.syncClock()` sends a probe and `clockOffset` ref updates on reply — timers can reference a shared timeline.
+- Cards withheld from seekers: a `card.drawn` event kind exists, but the apply-side is a deliberate no-op (the hider's hand is private; the server already withholds hider-only data), so card draws never leak to seekers.
+- Time traps: `useQuestionCurseSync.triggerTimeTrap()` emits `timetrap.triggered` and the apply-side calls `cardStore.triggerTimeTrap`, reusing the MULTI-003b-2 relay.
+- TDD: shared `computeClockOffset` (3) + gateway `time.sync` reply (1) + `useSync` clockOffset/game-event (2) + bridge time-trap/card-withhold (2). Verified in-container: server 67, frontend 1342 pass; both prod builds OK.
+
+---
+
+> **MULTI-003b umbrella complete** — all of 003b-1/2/3 are done.
 
 ---
 

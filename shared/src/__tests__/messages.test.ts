@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   isClientMessageType,
   isServerMessageType,
+  computeClockOffset,
   QUARTER_MILE_M,
   type ClientMessage,
   type ServerMessage,
@@ -42,6 +43,27 @@ describe('message type guards', () => {
 describe('constants', () => {
   it('quarter mile is 402 meters', () => {
     expect(QUARTER_MILE_M).toBe(402)
+  })
+})
+
+describe('computeClockOffset', () => {
+  it('is zero when client and server clocks agree (no latency)', () => {
+    expect(computeClockOffset(1000, 1000, 1000)).toBe(0)
+  })
+
+  it('recovers a constant offset under symmetric latency', () => {
+    // client sends at 1000, receives reply at 1200 (200ms RTT, symmetric).
+    // server clock is 5000 ahead at the midpoint (t2 = 1100 + 5000 = 6100).
+    const t1 = 1000
+    const t3 = 1200
+    const serverOffset = 5000
+    const t2 = (t1 + t3) / 2 + serverOffset
+    expect(computeClockOffset(t1, t2, t3)).toBe(serverOffset)
+  })
+
+  it('time.sync / time.reply are recognized message types', () => {
+    expect(isClientMessageType('time.sync')).toBe(true)
+    expect(isServerMessageType('time.reply')).toBe(true)
   })
 })
 

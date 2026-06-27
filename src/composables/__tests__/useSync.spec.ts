@@ -125,4 +125,22 @@ describe('createSyncSession', () => {
     session.disconnect()
     expect(f.svc.disconnect).toHaveBeenCalled()
   })
+
+  it('updates clockOffset from a time.reply', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    // Server claims a large time vs the local clock → positive offset.
+    const t1 = Date.now()
+    f.emit({ t: 'time.reply', t1, t2: t1 + 100000 })
+    expect(session.clockOffset.value).toBeGreaterThan(50000)
+  })
+
+  it('relays game events to subscribers', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    const events: string[] = []
+    session.onGameEvent((e) => events.push(e.kind))
+    f.emit({ t: 'game.event', kind: 'question.asked', from: 'p9', payload: { questionId: 'q' } })
+    expect(events).toEqual(['question.asked'])
+  })
 })
