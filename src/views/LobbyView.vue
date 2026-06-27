@@ -7,9 +7,23 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoomStore } from '@/stores/roomStore'
+import { useSync } from '@/composables/useSync'
+import { getWsUrl } from '@/services/sync/roomApi'
 
 const router = useRouter()
 const room = useRoomStore()
+const sync = useSync()
+
+/** Open the realtime connection once we have a room code + rejoin token. */
+async function connectSync() {
+  if (room.code && room.rejoinToken) {
+    try {
+      await sync.connect({ url: getWsUrl(), code: room.code, rejoinToken: room.rejoinToken })
+    } catch {
+      // Lobby still works over REST; realtime will retry on next action.
+    }
+  }
+}
 
 const hostName = ref('')
 const joinCode = ref('')
@@ -26,6 +40,7 @@ async function createRoom() {
   busy.value = true
   try {
     await room.createRoom(hostName.value.trim())
+    await connectSync()
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Could not create room.'
   } finally {
@@ -42,6 +57,7 @@ async function joinRoom() {
   busy.value = true
   try {
     await room.joinRoom(joinCode.value.trim(), joinName.value.trim())
+    await connectSync()
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Could not join room.'
   } finally {
@@ -55,6 +71,7 @@ function startGame() {
 }
 
 function leave() {
+  sync.disconnect()
   room.leaveRoom()
   error.value = null
 }

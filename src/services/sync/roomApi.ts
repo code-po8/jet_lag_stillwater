@@ -99,3 +99,17 @@ export function getApiBaseUrl(): string {
   const fromEnv = import.meta.env.VITE_API_URL as string | undefined
   return fromEnv ?? ''
 }
+
+/**
+ * WebSocket URL for the gateway, derived from the API base (http→ws, https→wss).
+ * Falls back to same-origin `/ws` when no API base is configured.
+ */
+export function getWsUrl(): string {
+  const base = getApiBaseUrl()
+  if (!base) {
+    if (typeof window === 'undefined') return '/ws'
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${proto}//${window.location.host}/ws`
+  }
+  return `${base.replace(/^http/, 'ws').replace(/\/+$/, '')}/ws`
+}

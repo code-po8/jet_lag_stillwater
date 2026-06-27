@@ -4070,19 +4070,27 @@ Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested 
 
 ### SYNC-002: Store ↔ Sync Wiring
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** SYNC-001, MULTI-002
 
 **Story:** As a developer, I need the Pinia stores wired to the sync layer so that remote changes apply locally without loops.
 
 **Acceptance Criteria:**
 
-- [ ] `useSync()` composable owns the active transport
-- [ ] Remote-applied mutations carry `origin:'remote'` to prevent echo loops
-- [ ] In a room, role derives from server `currentHiderId`; manual toggle retained for offline play
-- [ ] Reuses existing `gameStore`/`questionStore` shapes (no parallel state)
+- [x] `useSync()` composable owns the active transport
+- [x] Remote-applied mutations carry `origin:'remote'` to prevent echo loops
+- [x] In a room, role derives from server `currentHiderId`; manual toggle retained for offline play
+- [x] Reuses existing `gameStore`/`questionStore` shapes (no parallel state)
 
 **Size:** L
+
+**Implementation Notes:**
+
+- `src/composables/useSync.ts`: `createSyncSession({ service })` (injectable) + `useSync()` app-wide singleton owning the active `SyncService`. Holds reactive self/players/phase/zone/positions/breachedSeekers/ruledOutCells; `role` is computed from the **server** `self.role` (not a local toggle) — the basis SYNC-003 locks down.
+- **Echo-loop guard:** inbound `ServerMessage`s are applied via `applyRemote()` straight to refs and never re-emit; only the explicit `sendPosition/setZone/addRuledOutCells` helpers emit outbound (a test asserts a remote `zone` produces no `zone.set`).
+- Wired into the lobby: `roomApi.getWsUrl()` derives ws/wss from the API base; `LobbyView` calls `sync.connect()` after create/join and `sync.disconnect()` on leave (REST lobby still works if the socket fails).
+- TDD: `useSync.spec.ts` (9 tests). Verified in-container: 1306 frontend tests pass; type-check + build clean.
+- Note: the offline manual hider/seeker toggle remains for single-device play; in-room role comes from the server.
 
 ---
 
