@@ -15,9 +15,11 @@ const host = process.env.HOST ?? '0.0.0.0'
 // Register room routes + start the sweeper when a database is configured.
 // (Both skipped if DATABASE_URL is unset, e.g. a bare HTTP-layer smoke test.)
 const db = process.env.DATABASE_URL ? getPool() : undefined
+const webOrigin = process.env.WEB_ORIGIN
 const app = buildApp({
   db,
-  ws: db ? { auth: dbConnectionAuth(db) } : undefined,
+  webOrigin,
+  ws: db ? { auth: dbConnectionAuth(db), allowedOrigin: webOrigin } : undefined,
 })
 
 let sweeper: SweeperHandle | undefined

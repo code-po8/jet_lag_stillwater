@@ -58,4 +58,26 @@ describe('backend app', () => {
       expect(app).toBeDefined()
     })
   })
+
+  describe('CORS (INFRA-007)', () => {
+    it('reflects the allowed web origin when locked', async () => {
+      app = buildApp({ logger: false, webOrigin: 'https://web.example.com' })
+      const res = await app.inject({
+        method: 'GET',
+        url: '/health',
+        headers: { origin: 'https://web.example.com' },
+      })
+      expect(res.headers['access-control-allow-origin']).toBe('https://web.example.com')
+    })
+
+    it('does not reflect a disallowed origin', async () => {
+      app = buildApp({ logger: false, webOrigin: 'https://web.example.com' })
+      const res = await app.inject({
+        method: 'GET',
+        url: '/health',
+        headers: { origin: 'https://evil.example.com' },
+      })
+      expect(res.headers['access-control-allow-origin']).not.toBe('https://evil.example.com')
+    })
+  })
 })
