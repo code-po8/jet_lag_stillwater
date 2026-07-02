@@ -84,6 +84,26 @@ services:
     # Invoked by .husky/pre-commit via scripts/run-hooks.sh.
     command: sh -c "/app/scripts/hooks-in-container.sh"
 
+  # Playwright E2E (mirrors the CI e2e step). Uses the official Playwright image
+  # so chromium + its system libs are baked in — the slim Dockerfile.dev has no
+  # browser. NOT network-isolated: playwright.config.ts starts the Vite dev
+  # server (webServer) and drives it over localhost inside this one container.
+  # No ports are published, so nothing is exposed to the host. The image tag
+  # MUST match the @playwright/test version in package.json.
+  #   docker compose run --rm e2e                       # full suite
+  #   docker compose run --rm e2e npx playwright test tests/e2e/home.spec.ts --project=chromium
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.57.0-noble
+    volumes:
+      - ./:/app:cached
+      - frontend_node_modules:/app/node_modules
+      - npm_cache:/root/.npm
+    working_dir: /app
+    environment:
+      # CI=1 → workers:1 + reuseExistingServer:false (deterministic, like CI).
+      CI: "1"
+    command: npx playwright test
+
   # --- Backend (Fastify) sandbox services (INFRA-003) -----------------------
   # Same isolation guarantees as the frontend: bind-mount only the source, no
   # $HOME/~/.ssh, non-root, node_modules in a named volume. The server has its
