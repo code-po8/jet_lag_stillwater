@@ -76,7 +76,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@shared': fileURLToPath(new URL('./shared/src/index.ts', import.meta.url)),
+      '@jet-lag-stillwater/shared': fileURLToPath(
+        new URL('./shared/src/index.ts', import.meta.url),
+      ),
     },
   },
 })

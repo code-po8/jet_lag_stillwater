@@ -5,7 +5,7 @@ import {
   type PublicPlayer,
   type Role,
   type Zone,
-} from '@shared'
+} from '@jet-lag-stillwater/shared'
 
 /** Host action → resulting phase (host-authoritative transitions). */
 const ACTION_TO_PHASE: Record<string, GamePhase> = {

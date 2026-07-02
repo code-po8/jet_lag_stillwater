@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import type { WebSocket } from '@fastify/websocket'
-import type { ClientMessage, ServerMessage, PublicPlayer } from '@shared'
+import type { ClientMessage, ServerMessage, PublicPlayer } from '@jet-lag-stillwater/shared'
 import { RoomHubRegistry } from './registry.js'
 import type { RoomHub } from './roomHub.js'
 

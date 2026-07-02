@@ -1,4 +1,4 @@
-import type { SyncedState } from '@shared'
+import type { SyncedState } from '@jet-lag-stillwater/shared'
 import { DEFAULT_CODE_LENGTH, generateCode } from './code.js'
 import { generateRejoinToken, verifyToken } from './token.js'
 import { initialExpiry } from './ttl.js'

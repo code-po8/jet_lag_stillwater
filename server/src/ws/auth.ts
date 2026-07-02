@@ -1,4 +1,4 @@
-import type { PublicPlayer } from '@shared'
+import type { PublicPlayer } from '@jet-lag-stillwater/shared'
 import { getRoomByCode, type Queryable } from '../rooms/repository.js'
 import { verifyToken } from '../rooms/token.js'
 import type { ConnectionAuth } from './gateway.js'

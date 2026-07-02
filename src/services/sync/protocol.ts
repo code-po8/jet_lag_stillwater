@@ -17,11 +17,11 @@ export type {
   GameEventKind,
   GameEventMessage,
   GameEventRelay,
-} from '@shared'
+} from '@jet-lag-stillwater/shared'
 
 export {
   QUARTER_MILE_M,
   isClientMessageType,
   isServerMessageType,
   computeClockOffset,
-} from '@shared'
+} from '@jet-lag-stillwater/shared'

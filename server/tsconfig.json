@@ -17,7 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true,
     "paths": {
-      "@shared": ["../shared/dist/index.d.ts"]
+      "@jet-lag-stillwater/shared": ["../shared/dist/index.d.ts"]
     }
   },
   "references": [{ "path": "../shared" }],

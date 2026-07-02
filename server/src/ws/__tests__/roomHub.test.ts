@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { RoomHub } from '../roomHub.js'
-import type { Position, Zone } from '@shared'
+import type { Position, Zone } from '@jet-lag-stillwater/shared'
 
 const hiderPlayer = { id: 'h1', name: 'Hank', role: 'hider' as const, isHost: true }
 const seekerPlayer = { id: 's1', name: 'Sue', role: 'seeker' as const, isHost: false }

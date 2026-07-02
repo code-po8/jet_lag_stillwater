@@ -6,7 +6,9 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   resolve: {
     alias: {
-      '@shared': fileURLToPath(new URL('../shared/src/index.ts', import.meta.url)),
+      '@jet-lag-stillwater/shared': fileURLToPath(
+        new URL('../shared/src/index.ts', import.meta.url),
+      ),
     },
   },
   test: {

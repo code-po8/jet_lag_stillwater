@@ -3,7 +3,7 @@ import { WebSocket } from 'ws'
 import { buildApp } from '../../app.js'
 import type { FastifyInstance } from 'fastify'
 import type { ConnectionAuth } from '../gateway.js'
-import type { ServerMessage } from '@shared'
+import type { ServerMessage } from '@jet-lag-stillwater/shared'
 
 // Mock auth: maps rejoin tokens to players, no DB needed. This exercises the
 // full WS gateway over a real socket. Runs as an integration test because it

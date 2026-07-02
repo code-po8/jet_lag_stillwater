@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { useSync } from './useSync'
 import { encodeGeohash, geohashBounds, cellsInBBox, type Bounds } from '@/utils/geohash'
-import { distanceMeters } from '@shared'
+import { distanceMeters } from '@jet-lag-stillwater/shared'
 
 const SHADE_PRECISION = 6 // ~1.2km cells — coarse enough to sync cheaply
 

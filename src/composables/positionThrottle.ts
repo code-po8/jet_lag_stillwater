@@ -8,7 +8,7 @@
  * Pure function so it is trivially unit-testable.
  */
 import type { Position } from '@/services/sync/protocol'
-import { distanceMeters as distanceMetersLL } from '@shared'
+import { distanceMeters as distanceMetersLL } from '@jet-lag-stillwater/shared'
 
 export const MIN_INTERVAL_MS = 2500 // ~2.5s between sends
 export const MIN_MOVE_M = 15 // or whenever moved > 15 m
