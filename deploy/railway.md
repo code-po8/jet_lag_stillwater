@@ -32,10 +32,14 @@ services map 1:1 to the local `docker-compose.yml` services (`web` ↔ `frontend
      - `PORT` / `HOST` — Railway sets `PORT`; the server binds `0.0.0.0`.
    - **Single instance only (v1):** the `RoomHub` is in-memory, so do **not**
      scale `api` past 1 replica until a Redis fan-out is added. Set
-     replicas/horizontal scaling = 1.
-   - Migrations: the server image's start path does not auto-migrate in prod by
-     default — run `npm run migrate:up` once (Railway one-off command or a
-     release step) against `DATABASE_URL`.
+     replicas/horizontal scaling = 1. (With the auto-migrate-on-boot below, a
+     second replica would also race to apply migrations — another reason to keep
+     it at 1 for now.)
+   - Migrations: **automatic** — on boot the server applies any pending SQL
+     migrations from `server/migrations` (via node-pg-migrate's programmatic
+     runner) before it starts listening. A fresh Railway Postgres is migrated on
+     the first deploy with no manual step. It's idempotent, so restarts/redeploys
+     are safe. (No `WEB_ORIGIN` / manual `migrate:up` needed.)
    - Health check path: `/health`.
 4. **`web` service:**
    - Dockerfile path: `Dockerfile.web`.

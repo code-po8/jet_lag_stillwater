@@ -21,13 +21,14 @@
   "dependencies": {
     "@fastify/cors": "10.0.2",
     "@fastify/websocket": "11.0.2",
+    "@jet-lag-stillwater/shared": "file:../shared",
     "fastify": "5.2.1",
+    "node-pg-migrate": "7.9.0",
     "pg": "8.13.1"
   },
   "devDependencies": {
     "@types/node": "22.10.5",
     "@types/pg": "8.11.10",
-    "node-pg-migrate": "7.9.0",
     "tsx": "4.19.2",
     "typescript": "5.9.3",
     "vitest": "4.0.16"
