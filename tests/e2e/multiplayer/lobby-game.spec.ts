@@ -134,7 +134,10 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
 
     await expect(host.getByTestId('lobby-roster')).toContainText('Sam')
     await host.getByTestId('lobby-roster').getByRole('button', { name: 'Sam' }).click()
-    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER')
+    // Wait (generously) for the joiner to receive the role broadcast before
+    // starting — this is test setup, not the behavior under test, so don't let
+    // the roster-propagation race flake it.
+    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
     await host.getByTestId('start-game-btn').click()
     await expect(host).toHaveURL(/\/game/)
 
