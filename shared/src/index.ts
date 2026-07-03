@@ -79,6 +79,16 @@ export interface HostActionMessage {
   action: 'start-hiding' | 'start-seeking' | 'end-round' | 'pause' | 'resume'
 }
 
+/**
+ * Host-only: choose which player is the hider. The server sets that player's
+ * role to 'hider' and everyone else to 'seeker', then broadcasts the updated
+ * roster (RosterMessage). Carries a playerId, which host.action can't.
+ */
+export interface SetHiderMessage {
+  t: 'set-hider'
+  playerId: string
+}
+
 /** Kinds of game events relayed between devices (MULTI-003b-2+). */
 export type GameEventKind =
   | 'question.asked'
@@ -111,6 +121,7 @@ export type ClientMessage =
   | ZoneSetMessage
   | RuledOutAddMessage
   | HostActionMessage
+  | SetHiderMessage
   | GameEventMessage
   | TimeSyncRequest
 
@@ -128,6 +139,16 @@ export interface WelcomeMessage {
 export interface PlayerJoinedMessage {
   t: 'player.joined'
   player: PublicPlayer
+}
+
+/**
+ * Full roster re-broadcast after a role change (e.g. the host picks the hider
+ * via SetHiderMessage). Reuses `PublicPlayer.role`, so a single message keeps
+ * every client's roster + roles authoritative — no separate hider-id concept.
+ */
+export interface RosterMessage {
+  t: 'roster'
+  players: PublicPlayer[]
 }
 
 export interface PlayerLeftMessage {
@@ -205,6 +226,7 @@ export interface ErrorMessage {
 export type ServerMessage =
   | WelcomeMessage
   | PlayerJoinedMessage
+  | RosterMessage
   | PlayerLeftMessage
   | PresenceMessage
   | PosBatchMessage
@@ -260,6 +282,7 @@ export function isClientMessageType(t: string): t is ClientMessage['t'] {
     t === 'zone.set' ||
     t === 'ruledout.add' ||
     t === 'host.action' ||
+    t === 'set-hider' ||
     t === 'game.event' ||
     t === 'time.sync'
   )
@@ -269,6 +292,7 @@ export function isServerMessageType(t: string): t is ServerMessage['t'] {
   return (
     t === 'welcome' ||
     t === 'player.joined' ||
+    t === 'roster' ||
     t === 'player.left' ||
     t === 'player.presence' ||
     t === 'pos.batch' ||

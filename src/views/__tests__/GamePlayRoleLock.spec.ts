@@ -108,3 +108,60 @@ describe('GamePlayView role lock (SYNC-003)', () => {
     expect(screen.getByTestId('current-role-display')).toHaveTextContent(/seeker/i)
   })
 })
+
+describe('GamePlayView host End Game (multiplayer)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    __resetSyncSession()
+  })
+  afterEach(() => {
+    cleanup()
+    __resetSyncSession()
+  })
+
+  function enterRoomAs(isHost: boolean) {
+    const game = useGameStore()
+    game.currentPhase = GamePhase.Seeking
+    const room = useRoomStore()
+    room.code = 'ABCD'
+    room.rejoinToken = 'tok'
+    room.self = {
+      id: isHost ? 'h1' : 's1',
+      name: isHost ? 'Host' : 'Sue',
+      role: isHost ? 'seeker' : 'seeker',
+      isHost,
+      connected: true,
+    }
+  }
+
+  it('shows the End Game button to the host during play', () => {
+    enterRoomAs(true)
+    render(GamePlayView)
+    expect(screen.getByTestId('end-game-btn')).toBeInTheDocument()
+  })
+
+  it('hides the End Game button from a non-host', () => {
+    enterRoomAs(false)
+    render(GamePlayView)
+    expect(screen.queryByTestId('end-game-btn')).not.toBeInTheDocument()
+  })
+
+  it('does not show End Game in offline (no room) play', () => {
+    const game = useGameStore()
+    game.currentPhase = GamePhase.Seeking
+    render(GamePlayView)
+    expect(screen.queryByTestId('end-game-btn')).not.toBeInTheDocument()
+  })
+
+  it('clicking End Game broadcasts end-round', async () => {
+    enterRoomAs(true)
+    const sync = useSync()
+    const sendHostAction = vi.fn()
+    sync.sendHostAction = sendHostAction
+
+    render(GamePlayView)
+    await fireEvent.click(screen.getByTestId('end-game-btn'))
+    expect(sendHostAction).toHaveBeenCalledWith('end-round')
+  })
+})

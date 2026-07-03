@@ -1083,4 +1083,46 @@ describe('gameStore pause/resume (GS-007)', () => {
       expect(store.isGamePaused).toBe(false)
     })
   })
+
+  describe('syncFromRoster (multiplayer bridge)', () => {
+    it('maps the roster to players and sets the hider from the hider role', () => {
+      const store = useGameStore()
+      store.syncFromRoster([
+        { id: 'h1', name: 'Host', role: 'seeker' },
+        { id: 's1', name: 'Sam', role: 'hider' },
+      ])
+      expect(store.players.map((p) => p.id)).toEqual(['h1', 's1'])
+      expect(store.players.map((p) => p.name)).toEqual(['Host', 'Sam'])
+      expect(store.currentHiderId).toBe('s1')
+      expect(store.currentHider?.name).toBe('Sam')
+      expect(store.seekers.map((p) => p.id)).toEqual(['h1'])
+    })
+
+    it('preserves existing per-player stats when the roster changes', () => {
+      const store = useGameStore()
+      store.syncFromRoster([
+        { id: 'h1', name: 'Host', role: 'hider' },
+        { id: 's1', name: 'Sam', role: 'seeker' },
+      ])
+      const h1 = store.getPlayerById('h1')!
+      h1.totalHidingTimeMs = 12345
+      h1.hasBeenHider = true
+
+      // A later roster (host handed hider to s1) must not wipe h1's stats.
+      store.syncFromRoster([
+        { id: 'h1', name: 'Host', role: 'seeker' },
+        { id: 's1', name: 'Sam', role: 'hider' },
+      ])
+      const h1After = store.getPlayerById('h1')!
+      expect(h1After.totalHidingTimeMs).toBe(12345)
+      expect(h1After.hasBeenHider).toBe(true)
+      expect(store.currentHiderId).toBe('s1')
+    })
+
+    it('sets no hider when the roster has none', () => {
+      const store = useGameStore()
+      store.syncFromRoster([{ id: 's1', name: 'Sam', role: 'seeker' }])
+      expect(store.currentHiderId).toBeNull()
+    })
+  })
 })

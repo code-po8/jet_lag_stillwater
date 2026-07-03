@@ -171,6 +171,40 @@ describe('WS gateway (integration)', () => {
     seeker.close()
   })
 
+  it('broadcasts a roster with updated roles when the HOST sets the hider', async () => {
+    const { ws: hider } = await helloAs('tok-hider') // host, starts as hider
+    const { ws: seeker } = await helloAs('tok-seeker') // s1
+
+    // Host picks s1 as the hider → s1 becomes hider, host becomes seeker.
+    const rosterPromise = nextMessage(seeker, (m) => m.t === 'roster')
+    hider.send(JSON.stringify({ t: 'set-hider', playerId: 's1' }))
+    const roster = await rosterPromise
+
+    if (roster.t === 'roster') {
+      const s1 = roster.players.find((p) => p.id === 's1')
+      const h1 = roster.players.find((p) => p.id === 'h1')
+      expect(s1?.role).toBe('hider')
+      expect(h1?.role).toBe('seeker')
+    }
+    hider.close()
+    seeker.close()
+  })
+
+  it('ignores set-hider from a NON-host (no roster broadcast)', async () => {
+    const { ws: hider } = await helloAs('tok-hider')
+    const { ws: seeker } = await helloAs('tok-seeker')
+
+    let got = false
+    hider.on('message', (d: Buffer) => {
+      if ((JSON.parse(d.toString()) as ServerMessage).t === 'roster') got = true
+    })
+    seeker.send(JSON.stringify({ t: 'set-hider', playerId: 'h1' }))
+    await new Promise((r) => setTimeout(r, 200))
+    expect(got).toBe(false)
+    hider.close()
+    seeker.close()
+  })
+
   it('ignores host.action from a NON-host (no phase broadcast)', async () => {
     const { ws: hider } = await helloAs('tok-hider')
     const { ws: seeker } = await helloAs('tok-seeker')

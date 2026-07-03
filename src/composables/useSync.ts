@@ -53,6 +53,8 @@ export interface SyncSession {
   setZone(zone: Zone): void
   addRuledOutCells(cells: string[]): void
   sendHostAction(action: HostAction): void
+  /** Host-only: pick which player is the hider. */
+  setHider(playerId: string): void
   sendGameEvent(kind: GameEventKind, payload: Record<string, unknown>): void
   /** Subscribe to inbound relayed game events. Returns an unsubscribe fn. */
   onGameEvent(handler: GameEventHandler): () => void
@@ -102,6 +104,15 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
       case 'player.joined':
         if (!players.value.some((p) => p.id === msg.player.id)) {
           players.value = [...players.value, msg.player]
+        }
+        break
+      case 'roster':
+        // Full roster re-broadcast after a role change (host picked the hider).
+        players.value = msg.players
+        // Keep our own player (and thus `role`) in sync with the new roster.
+        if (self.value) {
+          const me = msg.players.find((p) => p.id === self.value!.id)
+          if (me) self.value = me
         }
         break
       case 'player.left':
@@ -186,6 +197,10 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   function sendHostAction(action: HostAction): void {
     service.send({ t: 'host.action', action })
   }
+  /** Host picks the hider; the server re-broadcasts the roster with new roles. */
+  function setHider(playerId: string): void {
+    service.send({ t: 'set-hider', playerId })
+  }
   function sendGameEvent(kind: GameEventKind, payload: Record<string, unknown>): void {
     service.send({ t: 'game.event', kind, payload })
   }
@@ -216,6 +231,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     setZone,
     addRuledOutCells,
     sendHostAction,
+    setHider,
     sendGameEvent,
     onGameEvent,
     syncClock,

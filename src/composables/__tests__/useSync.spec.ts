@@ -158,6 +158,37 @@ describe('createSyncSession', () => {
     expect(session.paused.value).toBe(false)
   })
 
+  it('applies a roster broadcast, updating players and own role', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    f.emit({
+      t: 'welcome',
+      you: { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true },
+      players: [{ id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true }],
+      phase: 'setup',
+      zone: null,
+    })
+    expect(session.role.value).toBe('hider')
+
+    // Host picked s1 as hider → host is now a seeker.
+    f.emit({
+      t: 'roster',
+      players: [
+        { id: 'h1', name: 'Host', role: 'seeker', isHost: true, connected: true },
+        { id: 's1', name: 'Sam', role: 'hider', isHost: false, connected: true },
+      ],
+    })
+    expect(session.players.value.map((p) => p.id)).toEqual(['h1', 's1'])
+    expect(session.role.value).toBe('seeker') // own role updated from the roster
+  })
+
+  it('setHider sends a set-hider frame', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    session.setHider('s1')
+    expect(f.sent.at(-1)).toEqual({ t: 'set-hider', playerId: 's1' })
+  })
+
   it('relays game events to subscribers', async () => {
     const session = createSyncSession({ service: f.svc })
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })

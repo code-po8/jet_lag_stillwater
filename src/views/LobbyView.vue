@@ -4,18 +4,30 @@
  * roster, and (host) start the game. The room/session lives in roomStore; the
  * realtime connection (SyncService) is wired in SYNC-002.
  */
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSync } from '@/composables/useSync'
 import { useGameSync } from '@/composables/useGameSync'
 import { getWsUrl } from '@/services/sync/roomApi'
 import { GamePhase } from '@/stores/gameStore'
 
-const router = useRouter()
 const room = useRoomStore()
 const sync = useSync()
 const { hostAction } = useGameSync()
+
+// Live WS roster once connected; fall back to the REST snapshot before `welcome`
+// arrives. (Fixes the host not seeing joiners — the REST list never updated.)
+const roster = computed(() => (sync.players.value.length ? sync.players.value : room.players))
+/** The currently chosen hider, if any (server-assigned role). */
+const hiderId = computed(() => roster.value.find((p) => p.role === 'hider')?.id ?? null)
+/** Host must pick a hider before starting (explicit selection required). */
+const canStart = computed(() => room.isHost && hiderId.value !== null && roster.value.length >= 2)
+
+/** Host picks which player hides; the server re-broadcasts roles to everyone. */
+function pickHider(playerId: string) {
+  if (!room.isHost) return
+  sync.setHider(playerId)
+}
 
 /** Open the realtime connection once we have a room code + rejoin token. */
 async function connectSync() {
@@ -69,9 +81,11 @@ async function joinRoom() {
 }
 
 function startGame() {
-  // Host starts the round: broadcast the phase transition, then enter the game.
+  // Host starts the round: broadcast the phase transition. Navigation for ALL
+  // clients (host + joiners) is handled by the app-level useMultiplayerBridge
+  // reacting to the synced phase, so we don't push here.
+  if (!canStart.value) return
   hostAction('start-hiding', GamePhase.HidingPeriod)
-  router.push('/game')
 }
 
 function leave() {
@@ -166,10 +180,35 @@ function leave() {
       <p class="lobby-code-hint">Share this code so others can join.</p>
 
       <h2 class="lobby-card-title">Players</h2>
+      <p v-if="room.isHost" class="lobby-code-hint">Tap a player to choose the hider.</p>
       <ul data-testid="lobby-roster" class="lobby-roster">
-        <li v-for="p in room.players" :key="p.id" class="lobby-roster-item">
-          <span class="lobby-roster-name">{{ p.name }}</span>
-          <span v-if="p.isHost" class="lobby-roster-badge">HOST</span>
+        <li
+          v-for="p in roster"
+          :key="p.id"
+          class="lobby-roster-item"
+          :class="{
+            'lobby-roster-item-selectable': room.isHost,
+            'lobby-roster-item-hider': p.id === hiderId,
+          }"
+          :data-testid="`roster-${p.id}`"
+        >
+          <button
+            v-if="room.isHost"
+            type="button"
+            class="lobby-roster-pick"
+            :data-testid="`pick-hider-${p.id}`"
+            :aria-pressed="p.id === hiderId"
+            @click="pickHider(p.id)"
+          >
+            {{ p.name }}
+          </button>
+          <span v-else class="lobby-roster-name">{{ p.name }}</span>
+          <span class="lobby-roster-badges">
+            <span v-if="p.id === hiderId" class="lobby-roster-badge lobby-roster-badge-hider"
+              >HIDER</span
+            >
+            <span v-if="p.isHost" class="lobby-roster-badge">HOST</span>
+          </span>
         </li>
       </ul>
 
@@ -177,10 +216,14 @@ function leave() {
         v-if="room.isHost"
         data-testid="start-game-btn"
         class="lobby-btn lobby-btn-primary"
+        :disabled="!canStart"
         @click="startGame"
       >
         Start Game
       </button>
+      <p v-if="room.isHost && !canStart" class="lobby-code-hint" data-testid="start-hint">
+        {{ roster.length < 2 ? 'Waiting for players to join…' : 'Choose a hider to start.' }}
+      </p>
       <button data-testid="leave-room-btn" class="lobby-btn lobby-btn-ghost" @click="leave">
         Leave Room
       </button>
@@ -339,6 +382,11 @@ function leave() {
   border-radius: 8px;
   padding: 0.6rem 0.9rem;
 }
+.lobby-roster-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 .lobby-roster-badge {
   font-size: 0.7rem;
   font-weight: 700;
@@ -346,5 +394,24 @@ function leave() {
   border: 1px solid var(--color-brand-gold, #f5b830);
   border-radius: 999px;
   padding: 0.1rem 0.5rem;
+}
+.lobby-roster-badge-hider {
+  color: var(--color-role-hider, #f59e0b);
+  border-color: var(--color-role-hider, #f59e0b);
+}
+.lobby-roster-item-hider {
+  border-color: var(--color-role-hider, #f59e0b);
+}
+/* Host-selectable roster rows: the name becomes a full-width tap target. */
+.lobby-roster-pick {
+  flex: 1;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  min-height: 24px;
+  cursor: pointer;
+  padding: 0;
 }
 </style>
