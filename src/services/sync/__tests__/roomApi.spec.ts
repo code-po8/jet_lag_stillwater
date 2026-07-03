@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { RoomApi, RoomApiError } from '../roomApi'
+import { RoomApi, RoomApiError, getApiBaseUrl, getWsUrl, isApiBaseMisconfigured } from '../roomApi'
 
 function mockFetch(status: number, body: unknown) {
   return vi.fn().mockResolvedValue({
@@ -111,6 +111,51 @@ describe('RoomApi', () => {
       const api = new RoomApi('http://api/')
       await api.getRoom('ABCD')
       expect(fetchMock).toHaveBeenCalledWith('http://api/rooms/ABCD', expect.anything())
+    })
+  })
+
+  // Guard for the VITE_API_URL misconfiguration (issue #3).
+  describe('VITE_API_URL misconfiguration guard', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    it('is not misconfigured in dev even with no base', () => {
+      vi.stubEnv('PROD', false)
+      vi.stubEnv('VITE_API_URL', '')
+      expect(isApiBaseMisconfigured()).toBe(false)
+    })
+
+    it('is misconfigured in a PROD build with no base', () => {
+      vi.stubEnv('PROD', true)
+      vi.stubEnv('VITE_API_URL', '')
+      expect(isApiBaseMisconfigured()).toBe(true)
+    })
+
+    it('is fine in a PROD build when the base is set', () => {
+      vi.stubEnv('PROD', true)
+      vi.stubEnv('VITE_API_URL', 'https://api.example.com')
+      expect(isApiBaseMisconfigured()).toBe(false)
+      expect(getApiBaseUrl()).toBe('https://api.example.com')
+    })
+
+    it('a room request throws a clear error (not a same-origin fetch) when misconfigured', async () => {
+      vi.stubEnv('PROD', true)
+      vi.stubEnv('VITE_API_URL', '')
+      const fetchMock = vi.fn()
+      vi.stubGlobal('fetch', fetchMock)
+
+      const api = new RoomApi(getApiBaseUrl())
+      await expect(api.createRoom('Matthew')).rejects.toBeInstanceOf(RoomApiError)
+      await expect(api.createRoom('Matthew')).rejects.toThrow(/VITE_API_URL is missing/)
+      // Never fell through to a same-origin fetch.
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('getWsUrl throws in a misconfigured PROD build instead of same-origin', () => {
+      vi.stubEnv('PROD', true)
+      vi.stubEnv('VITE_API_URL', '')
+      expect(() => getWsUrl()).toThrow(/VITE_API_URL is missing/)
     })
   })
 })
