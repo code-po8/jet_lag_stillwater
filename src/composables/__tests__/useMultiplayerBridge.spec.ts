@@ -25,6 +25,9 @@ describe('useMultiplayerBridge', () => {
     __resetSyncSession()
     routeName.value = 'lobby'
     push.mockClear()
+    // Default: neutralize the reconnect effect so it never opens a real socket.
+    // Tests that assert on reconnect override this.
+    useSync().connect = vi.fn(async () => {})
   })
   afterEach(() => {
     __resetSyncSession()
@@ -35,6 +38,16 @@ describe('useMultiplayerBridge', () => {
     room.code = 'ABCD'
     room.rejoinToken = 'tok'
     room.self = { id: 'h1', name: 'Host', role: 'seeker', isHost: true, connected: true }
+  }
+
+  /** Stub the transport connect so the reconnect effect doesn't open a real WS. */
+  function stubConnect() {
+    const sync = useSync()
+    const connect = vi.fn(async () => {
+      sync.status.value = 'connected'
+    })
+    sync.connect = connect
+    return connect
   }
 
   it('bridges the synced roster into gameStore players + hider', async () => {
@@ -140,5 +153,46 @@ describe('useMultiplayerBridge', () => {
     sync.paused.value = true
     await nextTick()
     expect(game.isGamePaused).toBe(false)
+  })
+
+  it('does NOT wipe gameStore players on an empty (not-yet-synced) roster', async () => {
+    enterRoom()
+    const game = useGameStore()
+    // Seed real players (as if the game was in progress before a refresh).
+    game.syncFromRoster([
+      { id: 'h1', name: 'Host', role: 'seeker' },
+      { id: 's1', name: 'Sam', role: 'hider' },
+    ])
+    useMultiplayerBridge() // immediate roster watch fires with sync.players = []
+    await nextTick()
+
+    // Empty roster (pre-welcome) must not clear the names.
+    expect(game.players.map((p) => p.name)).toEqual(['Host', 'Sam'])
+    expect(game.currentHiderId).toBe('s1')
+  })
+
+  it('reconnects the transport when in a room but disconnected (mid-game refresh)', async () => {
+    enterRoom() // code + rejoinToken restored (as roomStore.hydrate would)
+    const sync = useSync()
+    const connect = stubConnect()
+    sync.status.value = 'disconnected'
+
+    useMultiplayerBridge() // immediate reconnect effect
+    await nextTick()
+
+    expect(connect).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'ABCD', rejoinToken: 'tok' }),
+    )
+  })
+
+  it('does not reconnect when already connected', async () => {
+    enterRoom()
+    const sync = useSync()
+    const connect = stubConnect()
+    sync.status.value = 'connected'
+
+    useMultiplayerBridge()
+    await nextTick()
+    expect(connect).not.toHaveBeenCalled()
   })
 })
