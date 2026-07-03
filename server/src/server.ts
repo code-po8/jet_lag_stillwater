@@ -3,6 +3,7 @@ import { getPool, closePool } from './db/pool.js'
 import { runMigrations } from './db/migrate.js'
 import { startExpirySweeper, type SweeperHandle } from './db/sweeper.js'
 import { dbConnectionAuth } from './ws/auth.js'
+import { setHiderRole } from './rooms/repository.js'
 
 /**
  * Entry point: build the app and start listening.
@@ -34,7 +35,13 @@ const db = databaseUrl ? getPool() : undefined
 const app = buildApp({
   db,
   webOrigin,
-  ws: db ? { auth: dbConnectionAuth(db), allowedOrigin: webOrigin } : undefined,
+  ws: db
+    ? {
+        auth: dbConnectionAuth(db),
+        allowedOrigin: webOrigin,
+        persistHiderRole: (code, hiderId) => setHiderRole(db, { code, hiderId }),
+      }
+    : undefined,
 })
 
 let sweeper: SweeperHandle | undefined

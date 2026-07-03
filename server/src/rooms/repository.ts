@@ -143,6 +143,27 @@ export async function rejoinRoom(
   return { player: match }
 }
 
+/**
+ * Persist a single-hider role assignment for a room: the target player becomes
+ * `hider`, everyone else in the session becomes `seeker`. Mirrors RoomHub.setHider
+ * so a reconnecting client's role (read from the DB via auth.resolve) survives a
+ * refresh or a server restart — without this the hider comes back as a seeker.
+ */
+export async function setHiderRole(
+  db: Queryable,
+  opts: { code: string; hiderId: string },
+): Promise<void> {
+  const session = await getRoomByCode(db, opts.code)
+  if (!session) return
+  // Two statements keyed by session_id keep it atomic-enough for a single-writer
+  // (single-instance) API: demote all, then promote the chosen hider.
+  await db.query(`UPDATE players SET role = 'seeker' WHERE session_id = $1`, [session.id])
+  await db.query(`UPDATE players SET role = 'hider' WHERE session_id = $1 AND id = $2`, [
+    session.id,
+    opts.hiderId,
+  ])
+}
+
 function isUniqueViolation(err: unknown): boolean {
   return (
     typeof err === 'object' && err !== null && (err as { code?: string }).code === UNIQUE_VIOLATION

@@ -83,11 +83,13 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
 
     // Wait until the JOINER has received the roster update (their own row shows
     // the HIDER badge) before starting — otherwise starting can race the role
-    // broadcast and the joiner would enter the game still shown as a seeker.
+    // broadcast and the joiner would enter the game still shown as a seeker. Use a
+    // generous timeout: the first WS handshake after a cold dev-server boot can be
+    // slow, and this is test setup (not the behavior under test). On failure, dump
+    // the joiner's frames to show whether the `roster` message ever arrived.
     try {
-      await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER')
+      await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
     } catch (e) {
-      // Diagnostic: what did the joiner's socket actually receive?
       console.log('=== JOINER WS FRAMES (received) ===')
       for (const f of joinerFrames) console.log(f)
       console.log('=== JOINER lobby roster DOM ===')
@@ -129,7 +131,6 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
     const joinCtx = await browser.newContext()
 
     const { page: host, code } = await createHost(hostCtx, 'Hank')
-    const hostFrames = captureWsFrames(host)
     const { page: joiner } = await joinRoom(joinCtx, code, 'Sam')
 
     await expect(host.getByTestId('lobby-roster')).toContainText('Sam')
@@ -141,8 +142,11 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
     await host.getByTestId('start-game-btn').click()
     await expect(host).toHaveURL(/\/game/)
 
-    // Names render for the host before the refresh.
+    // Names render for the host before the refresh (host is a seeker; Sam hides).
     await expect(host.getByTestId('hider-name')).toContainText('Sam')
+
+    // Capture the host's frames ACROSS the reload (attach before reloading).
+    const hostFrames = captureWsFrames(host)
 
     // The bug: host refreshes mid-hiding → reconnect welcome must restore the
     // roster (names) AND host status (the pause control).
@@ -159,6 +163,99 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
       console.log(
         await host
           .getByTestId('hider-name')
+          .textContent()
+          .catch(() => '(missing)'),
+      )
+      throw e
+    }
+
+    await hostCtx.close()
+    await joinCtx.close()
+  })
+
+  test('BOTH host and joiner keep names after each refreshes mid-game', async ({ browser }) => {
+    const hostCtx = await browser.newContext()
+    const joinCtx = await browser.newContext()
+
+    const { page: host, code } = await createHost(hostCtx, 'Hank')
+    const { page: joiner } = await joinRoom(joinCtx, code, 'Sam')
+
+    await expect(host.getByTestId('lobby-roster')).toContainText('Sam')
+    await host.getByTestId('lobby-roster').getByRole('button', { name: 'Sam' }).click()
+    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
+    await host.getByTestId('start-game-btn').click()
+    await expect(host).toHaveURL(/\/game/)
+    await expect(joiner).toHaveURL(/\/game/)
+
+    // Joiner (the hider) refreshes → must still see itself + the seeker roster.
+    const joinerFrames = captureWsFrames(joiner)
+    await joiner.reload()
+    await expect(joiner).toHaveURL(/\/game/)
+    try {
+      await expect(joiner.getByTestId('current-role-display')).toContainText(/hider/i, {
+        timeout: 10_000,
+      })
+      await expect(joiner.getByTestId('seekers-list')).toContainText('Hank')
+    } catch (e) {
+      console.log('=== JOINER WS FRAMES after reload ===')
+      for (const f of joinerFrames) console.log(f)
+      throw e
+    }
+
+    // Then the HOST refreshes → must still see the hider + host controls.
+    const hostFrames = captureWsFrames(host)
+    await host.reload()
+    await expect(host).toHaveURL(/\/game/)
+    try {
+      await expect(host.getByTestId('hider-name')).toContainText('Sam', { timeout: 10_000 })
+      await expect(host.getByLabel('Pause game')).toBeVisible()
+    } catch (e) {
+      console.log('=== HOST WS FRAMES after reload ===')
+      for (const f of hostFrames) console.log(f)
+      throw e
+    }
+
+    await hostCtx.close()
+    await joinCtx.close()
+  })
+
+  test('host-as-hider keeps its hider role + names after a mid-game refresh', async ({
+    browser,
+  }) => {
+    // The reported scenario: the HOST is the hider. Its DB role is 'seeker' until
+    // set-hider persists the assignment; without that, a host-hider refresh reads
+    // the stale DB role and comes back as a seeker with the roster/name lost.
+    const hostCtx = await browser.newContext()
+    const joinCtx = await browser.newContext()
+
+    const { page: host, code } = await createHost(hostCtx, 'Hank')
+    const { page: joiner } = await joinRoom(joinCtx, code, 'Sam')
+
+    await expect(host.getByTestId('lobby-roster')).toContainText('Sam')
+    // Host picks ITSELF as the hider.
+    await host.getByTestId('lobby-roster').getByRole('button', { name: 'Hank' }).click()
+    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
+    await host.getByTestId('start-game-btn').click()
+    await expect(host).toHaveURL(/\/game/)
+
+    await expect(host.getByTestId('current-role-display')).toContainText(/hider/i)
+
+    const hostFrames = captureWsFrames(host)
+    await host.reload()
+    await expect(host).toHaveURL(/\/game/)
+    try {
+      // Still the hider (not demoted to seeker) and still sees the seeker roster.
+      await expect(host.getByTestId('current-role-display')).toContainText(/hider/i, {
+        timeout: 10_000,
+      })
+      await expect(host.getByTestId('seekers-list')).toContainText('Sam')
+    } catch (e) {
+      console.log('=== HOST(=hider) WS FRAMES after reload ===')
+      for (const f of hostFrames) console.log(f)
+      console.log('=== role display DOM ===')
+      console.log(
+        await host
+          .getByTestId('current-role-display')
           .textContent()
           .catch(() => '(missing)'),
       )
