@@ -83,11 +83,13 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
 
     // Wait until the JOINER has received the roster update (their own row shows
     // the HIDER badge) before starting — otherwise starting can race the role
-    // broadcast and the joiner would enter the game still shown as a seeker.
+    // broadcast and the joiner would enter the game still shown as a seeker. Use a
+    // generous timeout: the first WS handshake after a cold dev-server boot can be
+    // slow, and this is test setup (not the behavior under test). On failure, dump
+    // the joiner's frames to show whether the `roster` message ever arrived.
     try {
-      await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER')
+      await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
     } catch (e) {
-      // Diagnostic: what did the joiner's socket actually receive?
       console.log('=== JOINER WS FRAMES (received) ===')
       for (const f of joinerFrames) console.log(f)
       console.log('=== JOINER lobby roster DOM ===')
