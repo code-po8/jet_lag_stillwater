@@ -62,6 +62,21 @@ export function useMultiplayerBridge() {
     { immediate: true },
   )
 
+  // 0b. Synced self → roomStore. The WS `welcome` (on connect AND every
+  // reconnect) is the authoritative source for THIS device's identity — id,
+  // role, and crucially `isHost`. After a mid-game refresh roomStore.self is
+  // null until this lands, so mirroring it restores host-only controls
+  // (pause/resume, end game) that would otherwise stay disabled. Skip null
+  // (pre-welcome) so we never clobber the persisted host/role fallback.
+  const stopSelf = watch(
+    () => sync.self.value,
+    (self) => {
+      if (!inRoom.value || !self) return
+      room.applySyncedSelf(self)
+    },
+    { immediate: true },
+  )
+
   // 1. Roster → gameStore. New array identity on each roster update is enough;
   // syncFromRoster merges by id so stats survive. Skip an EMPTY roster: before
   // the (re)connect `welcome` arrives, sync.players is [] — bridging that would
@@ -110,6 +125,7 @@ export function useMultiplayerBridge() {
   return {
     stopMultiplayerBridge: () => {
       stopReconnect()
+      stopSelf()
       stopRoster()
       stopPhase()
       stopPaused()

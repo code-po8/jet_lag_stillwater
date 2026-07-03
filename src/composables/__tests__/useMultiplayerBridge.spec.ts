@@ -65,6 +65,23 @@ describe('useMultiplayerBridge', () => {
     expect(game.currentHiderId).toBe('s1')
   })
 
+  it('mirrors the synced self into roomStore (restores host after refresh)', async () => {
+    const room = useRoomStore()
+    // Post-refresh: code/token hydrated, but self is null (no welcome yet).
+    room.code = 'ABCD'
+    room.rejoinToken = 'tok'
+    room.self = null
+    const sync = useSync()
+    useMultiplayerBridge()
+    expect(room.isHost).toBe(false)
+
+    // The reconnect welcome re-establishes self as the host.
+    sync.self.value = { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true }
+    await nextTick()
+    expect(room.isHost).toBe(true)
+    expect(room.role).toBe('hider')
+  })
+
   it('does nothing to gameStore when not in a room', async () => {
     const game = useGameStore()
     const sync = useSync()

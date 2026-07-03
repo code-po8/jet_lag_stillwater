@@ -78,6 +78,42 @@ describe('roomStore', () => {
       const store2 = useRoomStore()
       expect(store2.role).toBe('seeker')
     })
+
+    it('rehydrates host status across reloads (before welcome)', async () => {
+      const store = useRoomStore()
+      store.api = stubApi() as never
+      await store.createRoom('Host')
+      expect(store.isHost).toBe(true)
+
+      // A mid-game refresh must know it's the host immediately, or host-only
+      // controls (pause/resume, end game) vanish until the WS welcome lands.
+      setActivePinia(createPinia())
+      const store2 = useRoomStore()
+      expect(store2.isHost).toBe(true)
+    })
+
+    it('applySyncedSelf adopts authoritative self and re-persists host/role', async () => {
+      const store = useRoomStore()
+      store.api = stubApi() as never
+      await store.createRoom('Host')
+
+      // Simulate a welcome that (re)establishes self as host + hider.
+      store.applySyncedSelf({
+        id: 'p1',
+        name: 'Host',
+        role: 'hider',
+        isHost: true,
+        connected: true,
+      })
+      expect(store.isHost).toBe(true)
+      expect(store.role).toBe('hider')
+
+      // Re-persisted: a subsequent refresh keeps host + the updated role.
+      setActivePinia(createPinia())
+      const store2 = useRoomStore()
+      expect(store2.isHost).toBe(true)
+      expect(store2.role).toBe('hider')
+    })
   })
 
   describe('joinRoom', () => {
