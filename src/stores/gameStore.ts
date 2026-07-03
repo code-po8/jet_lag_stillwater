@@ -105,11 +105,7 @@ export const useGameStore = defineStore('game', () => {
    * Only active gameplay phases (hiding-period, seeking, end-game) allow pausing.
    */
   const canPauseGame = computed<boolean>(() => {
-    const pauseablePhases = [
-      GamePhase.HidingPeriod,
-      GamePhase.Seeking,
-      GamePhase.EndGame,
-    ]
+    const pauseablePhases = [GamePhase.HidingPeriod, GamePhase.Seeking, GamePhase.EndGame]
     return pauseablePhases.includes(currentPhase.value)
   })
 
@@ -120,10 +116,7 @@ export const useGameStore = defineStore('game', () => {
    */
   const canStartMove = computed<boolean>(() => {
     if (isHiderMoving.value) return false
-    const moveablePhases = [
-      GamePhase.HidingPeriod,
-      GamePhase.Seeking,
-    ]
+    const moveablePhases = [GamePhase.HidingPeriod, GamePhase.Seeking]
     return moveablePhases.includes(currentPhase.value)
   })
 
@@ -169,7 +162,16 @@ export const useGameStore = defineStore('game', () => {
 
   // Watch for state changes and persist automatically
   watch(
-    [currentPhase, currentHiderId, roundNumber, players, isGamePaused, pausedAt, isHiderMoving, moveStartedAt],
+    [
+      currentPhase,
+      currentHiderId,
+      roundNumber,
+      players,
+      isGamePaused,
+      pausedAt,
+      isHiderMoving,
+      moveStartedAt,
+    ],
     () => {
       persist()
     },
@@ -205,6 +207,28 @@ export const useGameStore = defineStore('game', () => {
    */
   function getPlayerById(playerId: string): Player | undefined {
     return players.value.find((p) => p.id === playerId)
+  }
+
+  /**
+   * Bridge the multiplayer roster into the local game state (used by the
+   * app-level multiplayer bridge). Maps the synced roster to `Player`s and sets
+   * `currentHiderId` from the member whose role is 'hider'. Existing per-player
+   * stats (hasBeenHider / totalHidingTimeMs) are preserved by merging on id, so
+   * roster churn (joins/leaves/role changes) doesn't wipe scores.
+   */
+  function syncFromRoster(
+    roster: Array<{ id: string; name: string; role: 'hider' | 'seeker' }>,
+  ): void {
+    players.value = roster.map((r) => {
+      const existing = getPlayerById(r.id)
+      return {
+        id: r.id,
+        name: r.name,
+        hasBeenHider: existing?.hasBeenHider ?? false,
+        totalHidingTimeMs: existing?.totalHidingTimeMs ?? 0,
+      }
+    })
+    currentHiderId.value = roster.find((r) => r.role === 'hider')?.id ?? null
   }
 
   /**
@@ -404,6 +428,7 @@ export const useGameStore = defineStore('game', () => {
     addPlayer,
     removePlayer,
     getPlayerById,
+    syncFromRoster,
     startRound,
     startSeeking,
     enterHidingZone,

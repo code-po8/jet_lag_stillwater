@@ -12,7 +12,7 @@ import {
 
 describe('message type guards', () => {
   it('recognizes all client message types', () => {
-    for (const t of ['hello', 'pos', 'zone.set', 'ruledout.add', 'host.action']) {
+    for (const t of ['hello', 'pos', 'zone.set', 'ruledout.add', 'host.action', 'set-hider']) {
       expect(isClientMessageType(t)).toBe(true)
     }
   })
@@ -21,6 +21,7 @@ describe('message type guards', () => {
     for (const t of [
       'welcome',
       'player.joined',
+      'roster',
       'player.left',
       'player.presence',
       'pos.batch',

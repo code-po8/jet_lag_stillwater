@@ -86,6 +86,22 @@ export class RoomHub {
     return paused
   }
 
+  /**
+   * Host picks the hider: set the target to 'hider' and everyone else (incl. the
+   * host) to 'seeker' — enforcing a single hider. Host-authoritative. Returns
+   * the updated public roster to broadcast, or null if ignored (non-host actor
+   * or unknown target).
+   */
+  setHider(actorId: string, targetId: string): PublicPlayer[] | null {
+    const actor = this.membersById.get(actorId)
+    if (!actor || !actor.isHost) return null
+    if (!this.membersById.has(targetId)) return null
+    for (const member of this.membersById.values()) {
+      member.role = member.id === targetId ? 'hider' : 'seeker'
+    }
+    return this.publicMembers()
+  }
+
   addMember(input: MemberInput): void {
     this.membersById.set(input.id, { ...input, connected: true })
   }

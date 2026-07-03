@@ -206,6 +206,46 @@ describe('RoomHub pause (host-authoritative)', () => {
   })
 })
 
+describe('RoomHub setHider (host-authoritative)', () => {
+  let hub: RoomHub
+  beforeEach(() => {
+    hub = new RoomHub('ABCD')
+    hub.addMember(hiderPlayer) // h1, isHost, starts as hider
+    hub.addMember(seekerPlayer) // s1
+    hub.addMember(seeker2) // s2
+  })
+
+  function roleOf(id: string): string | undefined {
+    return hub.members().find((m) => m.id === id)?.role
+  }
+
+  it('sets the chosen player to hider and everyone else to seeker', () => {
+    const players = hub.setHider('h1', 's1')
+    expect(players).not.toBeNull()
+    expect(roleOf('s1')).toBe('hider')
+    expect(roleOf('h1')).toBe('seeker') // host reassigned to seeker
+    expect(roleOf('s2')).toBe('seeker')
+    // exactly one hider
+    expect(hub.members().filter((m) => m.role === 'hider')).toHaveLength(1)
+  })
+
+  it('returns the updated public roster', () => {
+    const players = hub.setHider('h1', 's1')
+    const s1 = players?.find((p) => p.id === 's1')
+    expect(s1?.role).toBe('hider')
+    expect(players?.map((p) => p.id).sort()).toEqual(['h1', 's1', 's2'])
+  })
+
+  it('ignores a non-host actor', () => {
+    expect(hub.setHider('s1', 's2')).toBeNull()
+    expect(roleOf('s2')).toBe('seeker') // unchanged
+  })
+
+  it('ignores an unknown target', () => {
+    expect(hub.setHider('h1', 'nobody')).toBeNull()
+  })
+})
+
 describe('RoomHub ruled-out cells (set union)', () => {
   let hub: RoomHub
   beforeEach(() => {

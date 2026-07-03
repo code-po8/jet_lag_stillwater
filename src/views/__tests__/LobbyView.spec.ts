@@ -133,6 +133,63 @@ describe('LobbyView', () => {
     __resetSyncSession()
   })
 
+  it('renders the LIVE ws roster (host sees a joiner), not just the REST snapshot', async () => {
+    const room = useRoomStore()
+    room.code = 'ABCD'
+    room.rejoinToken = 'tok'
+    room.self = { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true }
+    const sync = useSync()
+    // A second player joined over WS — must appear on the host's screen.
+    sync.players.value = [
+      { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true },
+      { id: 's1', name: 'Sam', role: 'seeker', isHost: false, connected: true },
+    ]
+
+    render(LobbyView)
+    expect(screen.getByTestId('lobby-roster')).toHaveTextContent('Sam')
+  })
+
+  it('host picking a player calls sync.setHider', async () => {
+    const room = useRoomStore()
+    room.code = 'ABCD'
+    room.rejoinToken = 'tok'
+    room.self = { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true }
+    const sync = useSync()
+    const setHider = vi.fn()
+    sync.setHider = setHider
+    sync.players.value = [
+      { id: 'h1', name: 'Host', role: 'seeker', isHost: true, connected: true },
+      { id: 's1', name: 'Sam', role: 'seeker', isHost: false, connected: true },
+    ]
+
+    render(LobbyView)
+    await fireEvent.click(screen.getByTestId('pick-hider-s1'))
+    expect(setHider).toHaveBeenCalledWith('s1')
+  })
+
+  it('start button is disabled until a hider is chosen', async () => {
+    const room = useRoomStore()
+    room.code = 'ABCD'
+    room.rejoinToken = 'tok'
+    room.self = { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true }
+    const sync = useSync()
+    // Two players, but no hider role assigned yet.
+    sync.players.value = [
+      { id: 'h1', name: 'Host', role: 'seeker', isHost: true, connected: true },
+      { id: 's1', name: 'Sam', role: 'seeker', isHost: false, connected: true },
+    ]
+
+    render(LobbyView)
+    expect(screen.getByTestId('start-game-btn')).toBeDisabled()
+
+    // Once a hider exists, start is enabled.
+    sync.players.value = [
+      { id: 'h1', name: 'Host', role: 'seeker', isHost: true, connected: true },
+      { id: 's1', name: 'Sam', role: 'hider', isHost: false, connected: true },
+    ]
+    await waitFor(() => expect(screen.getByTestId('start-game-btn')).toBeEnabled())
+  })
+
   it('non-host does not see the start button', async () => {
     render(LobbyView)
     const store = useRoomStore()

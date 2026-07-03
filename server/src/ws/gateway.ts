@@ -249,6 +249,14 @@ function handleMessage(
       }
       break
     }
+    case 'set-hider': {
+      // Host picks the hider. The hub reassigns roles (single hider) and returns
+      // the updated roster; broadcast it to EVERYONE (incl. the host) so all
+      // clients reconcile roles from the authoritative result.
+      const players = hub.setHider(playerId, msg.playerId)
+      if (players) broadcast(code, { t: 'roster', players })
+      break
+    }
     case 'game.event': {
       // Relay question/curse/card/trap events to everyone else, tagged with the
       // sender so clients can suppress their own echo (MULTI-003b-2/3).

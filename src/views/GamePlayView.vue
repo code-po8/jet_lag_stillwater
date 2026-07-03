@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSync } from '@/composables/useSync'
+import { useGameSync } from '@/composables/useGameSync'
 import HiderView from './HiderView.vue'
 import SeekerView from './SeekerView.vue'
 import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
@@ -30,6 +31,16 @@ const router = useRouter()
 const gameStore = useGameStore()
 const roomStore = useRoomStore()
 const sync = useSync()
+const { hostAction } = useGameSync()
+
+/**
+ * Host ends the game early (multiplayer). Broadcasts `end-round`; the app-level
+ * bridge routes ALL clients to results/round-complete, so it's not just local.
+ */
+function endGameEarly() {
+  hostAction('end-round', GamePhase.RoundComplete)
+}
+const canEndGame = computed(() => roomStore.isHost && !isRoundComplete.value)
 
 // Current role being viewed (for single-device / offline play)
 type ViewRole = 'hider' | 'seeker'
@@ -233,6 +244,19 @@ function handleEndGame() {
 
     <!-- Regular gameplay UI (hidden during round-complete) -->
     <template v-else>
+      <!-- Host-only: end the multiplayer game early. Broadcasts end-round so the
+           app-level bridge routes every client to the round summary. -->
+      <div v-if="canEndGame" class="gameplay-end-game">
+        <button
+          type="button"
+          data-testid="end-game-btn"
+          class="gameplay-end-game-btn"
+          @click="endGameEarly"
+        >
+          End Game
+        </button>
+      </div>
+
       <!-- Role Toggle — offline single-device only. In a multiplayer room the
            role is server-locked (SYNC-003), so this is hidden. -->
       <div v-if="!isInRoom" data-testid="role-toggle" class="gameplay-role-toggle">
@@ -483,5 +507,24 @@ function handleEndGame() {
   position: absolute;
   inset: 0;
   height: 100%;
+}
+
+/* Host-only "End Game" control (multiplayer). */
+.gameplay-end-game {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+.gameplay-end-game-btn {
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-brand-red, #c73e3e);
+  background: rgba(199, 62, 62, 0.15);
+  color: #ffb4b4;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 </style>
