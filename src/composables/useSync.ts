@@ -112,6 +112,13 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
         phase.value = msg.phase
         phaseStartedAt.value = msg.phaseStartedAt
         zone.value = msg.zone
+        // Start clock-sync only AFTER the handshake is acknowledged. Probing
+        // before `welcome` sends a time.sync that races the `hello` — the server
+        // sees a non-hello first message, rejects it ("expected hello") and
+        // CLOSES the socket, forcing a reconnect that can miss room broadcasts
+        // (e.g. the set-hider roster). `welcome` also arrives after every
+        // reconnect, so this re-arms the probe correctly.
+        startClockSync()
         break
       case 'player.joined':
         if (!players.value.some((p) => p.id === msg.player.id)) {
@@ -181,14 +188,22 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   /** Clock-sync probe cadence (ms) — keeps clockOffset fresh for timers. */
   const CLOCK_SYNC_INTERVAL_MS = 30_000
 
+  /**
+   * Begin (or restart) periodic clock-sync. Called on `welcome` — i.e. once the
+   * hello handshake is acknowledged — never before, or the probe races hello.
+   */
+  function startClockSync(): void {
+    syncClock()
+    if (clockTimer) clearInterval(clockTimer)
+    clockTimer = setInterval(syncClock, CLOCK_SYNC_INTERVAL_MS)
+  }
+
   async function connect(opts: ConnectOptions): Promise<void> {
     unsubscribe?.()
     unsubscribe = service.onMessage(applyRemote)
     await service.connect(opts)
-    // Probe once now, then periodically, so timers can align to server time.
-    syncClock()
-    if (clockTimer) clearInterval(clockTimer)
-    clockTimer = setInterval(syncClock, CLOCK_SYNC_INTERVAL_MS)
+    // Clock-sync is started from the `welcome` handler (after the handshake),
+    // not here — see the note in applyRemote's 'welcome' case.
   }
 
   function disconnect(): void {
