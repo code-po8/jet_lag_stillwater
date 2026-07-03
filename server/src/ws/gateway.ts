@@ -22,6 +22,13 @@ export interface ConnectionAuth {
 export interface GatewayOptions {
   registry: RoomHubRegistry
   auth: ConnectionAuth
+  /**
+   * Persist a hider assignment to the durable store (target → hider, rest →
+   * seeker). Called after an in-memory set-hider so the role survives a refresh /
+   * server restart (auth.resolve reads roles from the DB). Optional: omitted in
+   * tests / a DB-less build, where roles live only in memory for the session.
+   */
+  persistHiderRole?: (code: string, hiderId: string) => Promise<void>
   /** Position broadcast tick (ms). Default 1000. */
   batchIntervalMs?: number
   /** Heartbeat ping interval (ms). Default 15000. */
@@ -176,7 +183,7 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
       }
 
       // Authenticated message handling.
-      handleMessage(ctx, socket, msg, broadcast)
+      handleMessage(ctx, socket, msg, broadcast, opts.persistHiderRole)
     })
 
     socket.on('pong', () => {
@@ -251,6 +258,7 @@ function handleMessage(
   socket: WebSocket,
   msg: ClientMessage,
   broadcast: (code: string, msg: ServerMessage, exceptPlayerId?: string) => void,
+  persistHiderRole?: (code: string, hiderId: string) => Promise<void>,
 ): void {
   const { hub, code, playerId } = ctx
   switch (msg.t) {
@@ -296,7 +304,16 @@ function handleMessage(
       // the updated roster; broadcast it to EVERYONE (incl. the host) so all
       // clients reconcile roles from the authoritative result.
       const players = hub.setHider(playerId, msg.playerId)
-      if (players) broadcast(code, { t: 'roster', players })
+      if (players) {
+        broadcast(code, { t: 'roster', players })
+        // Persist the assignment so a reconnecting client (auth.resolve reads the
+        // DB) keeps its role across a refresh / server restart — otherwise the
+        // hider comes back as a seeker. Fire-and-forget; a DB hiccup only loses
+        // durability of the role, not the live in-memory assignment.
+        void persistHiderRole?.(code, msg.playerId)?.catch((err) => {
+          console.error('[set-hider] failed to persist role', err)
+        })
+      }
       break
     }
     case 'game.event': {

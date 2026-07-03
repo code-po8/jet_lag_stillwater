@@ -31,6 +31,8 @@ export interface BuildAppOptions {
     heartbeatMs?: number
     /** Lock WS connections to this origin (defaults to webOrigin). */
     allowedOrigin?: string
+    /** Persist a hider assignment so it survives reconnect (see GatewayOptions). */
+    persistHiderRole?: (code: string, hiderId: string) => Promise<void>
   }
 }
 
@@ -87,6 +89,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
       await registerWsGateway(scoped, {
         registry,
         auth: options.ws!.auth,
+        persistHiderRole: options.ws!.persistHiderRole,
         batchIntervalMs: options.ws!.batchIntervalMs,
         heartbeatMs: options.ws!.heartbeatMs,
       })
