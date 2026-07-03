@@ -1,0 +1,195 @@
+# Docker sandbox for development & testing (INFRA-001).
+#
+# WHY: installing/running npm dependencies executes untrusted third-party code
+# (pre/post-install scripts, dev server, test runner). Running that on the host
+# user exposes ~/.ssh, ~/.npmrc tokens, cloud creds, and the whole home dir.
+# These services run that code inside containers that bind-mount ONLY the repo
+# source — never $HOME, never ~/.ssh, with no git credentials present.
+#
+# Workflow:
+#   - Edit files and run `git` on the HOST (unchanged).
+#   - Run anything that executes dependency code via these services:
+#       docker compose run --rm test        # unit tests (no network)
+#       docker compose up frontend          # dev server at http://localhost:5173
+#       docker compose run --rm install      # install deps into the volume
+#
+# node_modules live in NAMED VOLUMES (not bind-mounted), so the host's
+# node_modules is never touched and host-incompatible native builds stay
+# contained.
+
+x-frontend-base: &frontend-base
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  # Bind-mount ONLY the repository source. Note there is no $HOME or ~/.ssh
+  # mount anywhere in this file — that is the core isolation guarantee.
+  volumes:
+    - ./:/app:cached
+    - frontend_node_modules:/app/node_modules
+    # Persistent npm cache + home so npm's final reify/rename step has a stable,
+    # writable location (avoids "Exit handler never called" on volume mounts).
+    - npm_cache:/home/node/.npm
+  working_dir: /app
+  # Reassert non-root at the compose layer (the image already drops to `node`).
+  user: node
+  environment:
+    NODE_ENV: development
+    npm_config_cache: /home/node/.npm
+
+services:
+  # One-shot dependency install into the named volume. Run this first, or any
+  # time package.json/lockfile changes:  docker compose run --rm install
+  #
+  # With ignore-scripts=true (.npmrc / INFRA-002) no package lifecycle scripts
+  # run during install. We then EXPLICITLY rebuild only the allow-listed native
+  # dependency (sharp), so its native binary is built without opening the door
+  # to arbitrary postinstall scripts from the rest of the tree.
+  install:
+    <<: *frontend-base
+    command: >
+      sh -c "if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      && npm rebuild sharp"
+
+  # Vite dev server. Host 0.0.0.0 so it is reachable from the host browser.
+  frontend:
+    <<: *frontend-base
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    ports:
+      - "5173:5173"
+    depends_on:
+      - install
+
+  # Unit tests + type-check. NETWORK ISOLATED: a malicious postinstall or test
+  # dependency cannot phone home or pull a second-stage payload.
+  test:
+    <<: *frontend-base
+    network_mode: "none"
+    command: sh -c "npm run type-check && npm run test:unit -- --run"
+
+  # Sentinel: proves the container cannot read host $HOME and has no network.
+  # See scripts/sandbox-sentinel.sh. Network isolated like the test-runner.
+  sentinel:
+    <<: *frontend-base
+    network_mode: "none"
+    command: sh -c "/app/scripts/sandbox-sentinel.sh"
+
+  # Pre-commit checks (eslint, prettier, type-check, vitest, gitleaks) run here
+  # instead of on the host, so none of that dependency code touches your user.
+  # Unlike `test`, this service needs the repo .git (gitleaks staged scan +
+  # lint-staged read the index) — but still NO $HOME / ~/.ssh mount. The
+  # gitleaks binary is baked into the image at build time, so this runs offline.
+  hooks:
+    <<: *frontend-base
+    network_mode: "none"
+    # Invoked by .husky/pre-commit via scripts/run-hooks.sh.
+    command: sh -c "/app/scripts/hooks-in-container.sh"
+
+  # Playwright E2E (mirrors the CI e2e step). Uses the official Playwright image
+  # so chromium + its system libs are baked in — the slim Dockerfile.dev has no
+  # browser. NOT network-isolated: playwright.config.ts starts the Vite dev
+  # server (webServer) and drives it over localhost inside this one container.
+  # No ports are published, so nothing is exposed to the host. The image tag
+  # MUST match the @playwright/test version in package.json.
+  #   docker compose run --rm e2e                       # full suite
+  #   docker compose run --rm e2e npx playwright test tests/e2e/home.spec.ts --project=chromium
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.57.0-noble
+    volumes:
+      - ./:/app:cached
+      - frontend_node_modules:/app/node_modules
+      - npm_cache:/root/.npm
+    working_dir: /app
+    environment:
+      # CI=1 → workers:1 + reuseExistingServer:false (deterministic, like CI).
+      CI: "1"
+    command: npx playwright test
+
+  # --- Backend (Fastify) sandbox services (INFRA-003) -----------------------
+  # Same isolation guarantees as the frontend: bind-mount only the source, no
+  # $HOME/~/.ssh, non-root, node_modules in a named volume. The server has its
+  # own package.json + lockfile, so it installs into its own volume.
+
+  # One-shot install of backend deps into server_node_modules.
+  install-server:
+    <<: *frontend-base
+    working_dir: /app/server
+    volumes:
+      - ./:/app:cached
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/home/node/.npm
+    command: sh -c "if [ -f package-lock.json ]; then npm ci; else npm install; fi"
+
+  # Backend dev server. Reachable on the host at :3000.
+  backend:
+    <<: *frontend-base
+    working_dir: /app/server
+    volumes:
+      - ./:/app:cached
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/home/node/.npm
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      DATABASE_URL: "postgres://jetlag:jetlag_local_dev@postgres:5432/jetlag"
+    ports:
+      - "3000:3000"
+    # Apply pending migrations, then start the dev server. (Waits briefly for
+    # Postgres to accept connections.)
+    command: sh -c "until node -e \"require('net').connect(5432,'postgres').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))\" 2>/dev/null; do echo 'waiting for postgres...'; sleep 1; done; npm run migrate:up && npm run dev"
+    depends_on:
+      - postgres
+
+  # Backend type-check + unit tests. Network-isolated like the frontend `test`.
+  # (Integration tests that need Postgres live in *.itest.ts and run in
+  # `itest-server` instead — this offline run never touches the DB.)
+  test-server:
+    <<: *frontend-base
+    working_dir: /app/server
+    network_mode: "none"
+    volumes:
+      - ./:/app:cached
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/home/node/.npm
+    command: sh -c "npm run type-check && npm run test -- --run"
+
+  # Backend INTEGRATION tests against a real Postgres (*.itest.ts). Needs the
+  # network + DATABASE_URL, so it is NOT network-isolated. Runs migrations first.
+  itest-server:
+    <<: *frontend-base
+    working_dir: /app/server
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: "postgres://jetlag:jetlag_local_dev@postgres:5432/jetlag"
+    volumes:
+      - ./:/app:cached
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/home/node/.npm
+    command: >
+      sh -c "until node -e \"require('net').connect(5432,'postgres').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))\" 2>/dev/null; do sleep 1; done
+      && npm run migrate:up
+      && npm run test:integration -- --run"
+    depends_on:
+      - postgres
+
+  # Postgres for room/session records (used from INFRA-004 onward).
+  # The backend reaches it over the compose network (host: postgres), so the
+  # host port mapping is only for optional direct access (psql/GUI). It's
+  # overridable to avoid clashing with a Postgres already running on the host:
+  #   POSTGRES_HOST_PORT=5433 docker compose up backend
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: jetlag
+      POSTGRES_PASSWORD: jetlag_local_dev
+      POSTGRES_DB: jetlag
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  frontend_node_modules:
+  server_node_modules:
+  npm_cache:
+  postgres_data:

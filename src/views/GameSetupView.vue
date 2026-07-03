@@ -425,6 +425,10 @@ function confirmStart() {
 
 .setup-input {
   flex: 1;
+  /* Allow the input to shrink below its intrinsic width so the input+button
+     row fits narrow (320px) viewports instead of overflowing horizontally.
+     A flex item's default min-width is `auto`, which blocks shrinking. */
+  min-width: 0;
   padding: 0.875rem 1rem;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.15);

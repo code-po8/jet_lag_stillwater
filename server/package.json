@@ -1,0 +1,36 @@
+{
+  "name": "jet-lag-stillwater-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Realtime sync backend (Fastify + WebSocket + Postgres) for Jet Lag Stillwater",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc --build",
+    "start": "node dist/server.js",
+    "type-check": "tsc --build",
+    "test": "vitest",
+    "test:integration": "vitest --config vitest.integration.config.ts",
+    "migrate": "node-pg-migrate -j sql -m migrations",
+    "migrate:up": "node-pg-migrate up -j sql -m migrations",
+    "migrate:down": "node-pg-migrate down -j sql -m migrations"
+  },
+  "dependencies": {
+    "@fastify/cors": "10.0.2",
+    "@fastify/websocket": "11.0.2",
+    "@jet-lag-stillwater/shared": "file:../shared",
+    "fastify": "5.2.1",
+    "node-pg-migrate": "7.9.0",
+    "pg": "8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "@types/pg": "8.11.10",
+    "tsx": "4.19.2",
+    "typescript": "5.9.3",
+    "vitest": "4.0.16"
+  }
+}

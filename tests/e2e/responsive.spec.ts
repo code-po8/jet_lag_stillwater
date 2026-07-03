@@ -31,7 +31,7 @@ test.describe('Responsive Layout - 320px width', () => {
     test('should have readable text without zooming', async ({ page }) => {
       await page.goto('/')
 
-      const header = page.getByRole('heading', { name: 'Jet Lag: Stillwater' })
+      const header = page.getByRole('heading', { name: 'JET LAG' })
       await expect(header).toBeVisible()
 
       // Check font size is at least 16px (readable without zooming)
@@ -66,7 +66,7 @@ test.describe('Responsive Layout - 320px width', () => {
     test('should have touch-friendly Add Player button (min 44px height)', async ({ page }) => {
       await page.goto('/setup')
 
-      const addButton = page.getByRole('button', { name: 'Add Player' })
+      const addButton = page.getByRole('button', { name: 'Add' })
       await expect(addButton).toBeVisible()
 
       const box = await addButton.boundingBox()
@@ -101,7 +101,7 @@ test.describe('Responsive Layout - 320px width', () => {
       await page.goto('/setup')
 
       // Input and button should be side by side but fit within 320px
-      const input = page.getByPlaceholder('Player name')
+      const input = page.getByPlaceholder('Enter player name...')
       await expect(input).toBeVisible()
 
       const inputBox = await input.boundingBox()
@@ -119,7 +119,7 @@ test.describe('Responsive Layout - Mobile Chrome (Pixel 5)', () => {
     test('should center content vertically and horizontally', async ({ page }) => {
       await page.goto('/')
 
-      const header = page.getByRole('heading', { name: 'Jet Lag: Stillwater' })
+      const header = page.getByRole('heading', { name: 'JET LAG' })
       await expect(header).toBeVisible()
 
       // Content should be centered
@@ -136,16 +136,16 @@ test.describe('Responsive Layout - Mobile Chrome (Pixel 5)', () => {
       await page.goto('/setup')
 
       // Add a player
-      await page.getByPlaceholder('Player name').fill('Alice')
-      await page.getByRole('button', { name: 'Add Player' }).click()
+      await page.getByPlaceholder('Enter player name...').fill('Alice')
+      await page.getByRole('button', { name: 'Add' }).click()
 
       // Player should appear in list (find it in the player list section)
-      const playersList = page.locator('ul.space-y-2')
+      const playersList = page.locator('ul.setup-player-list')
       await expect(playersList.getByText('Alice')).toBeVisible()
 
       // Add another player
-      await page.getByPlaceholder('Player name').fill('Bob')
-      await page.getByRole('button', { name: 'Add Player' }).click()
+      await page.getByPlaceholder('Enter player name...').fill('Bob')
+      await page.getByRole('button', { name: 'Add' }).click()
 
       // Bob should appear in the player list
       await expect(playersList.getByText('Bob')).toBeVisible()
@@ -155,11 +155,11 @@ test.describe('Responsive Layout - Mobile Chrome (Pixel 5)', () => {
       await page.goto('/setup')
 
       // Add two players
-      await page.getByPlaceholder('Player name').fill('Alice')
-      await page.getByRole('button', { name: 'Add Player' }).click()
+      await page.getByPlaceholder('Enter player name...').fill('Alice')
+      await page.getByRole('button', { name: 'Add' }).click()
 
-      await page.getByPlaceholder('Player name').fill('Bob')
-      await page.getByRole('button', { name: 'Add Player' }).click()
+      await page.getByPlaceholder('Enter player name...').fill('Bob')
+      await page.getByRole('button', { name: 'Add' }).click()
 
       // Hider selection should now be visible
       await expect(page.getByText('Choose First Hider')).toBeVisible()
@@ -187,7 +187,7 @@ test.describe('Touch Targets', () => {
 
   test('Setup page Add Player button should be at least 44px height', async ({ page }) => {
     await page.goto('/setup')
-    const btn = page.getByRole('button', { name: 'Add Player' })
+    const btn = page.getByRole('button', { name: 'Add' })
     await expect(btn).toBeVisible()
 
     const box = await btn.boundingBox()

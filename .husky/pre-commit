@@ -1,14 +1,7 @@
-# Scan staged files for secrets (block commit if secrets found)
-npm run secrets:scan:staged
-
-# Run lint-staged (ESLint + Prettier on staged files)
-npx lint-staged
-
-# Run TypeScript type checking
-npm run type-check
-
-# Run unit tests related to staged files (if any .ts/.vue files are staged)
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|vue)$' | tr '\n' ' ')
-if [ -n "$STAGED_FILES" ]; then
-  npx vitest related --run $STAGED_FILES
-fi
+# Pre-commit checks run INSIDE the Docker sandbox (INFRA-001), not on the host,
+# so eslint / prettier / vue-tsc / vitest / gitleaks never execute dependency
+# code on your user account. See scripts/run-hooks.sh and the `hooks` service
+# in docker-compose.yml.
+#
+# To bypass in an emergency (accepts the supply-chain risk): git commit --no-verify
+sh "$(dirname "$0")/../scripts/run-hooks.sh"

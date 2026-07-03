@@ -3503,21 +3503,21 @@ Real-time synchronization of game state across multiple player devices, similar 
 
 ### MULTI-001: Multiplayer Architecture Planning
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** None
 
 **Story:** As a developer, I need to design the multiplayer architecture before implementation so that we make good technical decisions.
 
 **Acceptance Criteria:**
 
-- [ ] Document backend technology choice (Supabase Realtime, Firebase, custom WebSocket, etc.)
-- [ ] Define room/game creation flow
-- [ ] Define player join flow (room codes like Jackbox)
-- [ ] Define state synchronization strategy
-- [ ] Define conflict resolution approach
-- [ ] Define host vs participant permissions
-- [ ] Consider offline/reconnection handling
-- [ ] Estimate infrastructure costs
+- [x] Document backend technology choice (Supabase Realtime, Firebase, custom WebSocket, etc.)
+- [x] Define room/game creation flow
+- [x] Define player join flow (room codes like Jackbox)
+- [x] Define state synchronization strategy
+- [x] Define conflict resolution approach
+- [x] Define host vs participant permissions
+- [x] Consider offline/reconnection handling
+- [x] Estimate infrastructure costs
 
 **Size:** M
 
@@ -3527,27 +3527,49 @@ Real-time synchronization of game state across multiple player devices, similar 
 - Output is a technical design document
 - Should be reviewed before starting implementation stories
 
+**Design Outcome (decisions locked):**
+
+- **Backend:** self-hosted **Fastify + WebSocket** (data plane) + **REST** (control plane: create/join/rejoin/lobby), **Postgres** for room/session records. No third-party realtime vendor. Goal is **live sync only** (positions + shared game state); durable history/accounts deferred.
+- **Hosting:** **Railway**, one project — `web` (static PWA), `api` (Node), Postgres plugin. WebSockets over standard HTTPS port; `api` runs **single-instance** for v1 because the `RoomHub` is in-memory (Redis fan-out is future scope). Cost realistically ~$5–20/mo.
+- **Sessions (Jackbox-style):** host creates room → short **Crockford-style code** (no `0/O/1/I/L`, len 4, collision retry) → others join with code + name. Each device gets a **rejoin token** (32-byte random, only SHA-256 hash stored) so a dropped phone reclaims its spot. TTL: created at now+2 days, slid forward on activity (persist-while-paused), dropped to now+1h on round end.
+- **Sync layer:** new client `SyncService` mirroring the existing `PersistenceService` pattern (`NoopSyncService` default, `WsSyncService` real); stores stay the local source of truth and the app is **offline-first** when no room is joined. Server-authoritative for sequencing/visibility, host-authoritative for game decisions.
+- **Anti-cheat:** server owns each device's role and **withholds hider-only data (GPS, cards, pre-reveal zone) from seeker connections at the protocol layer**; the free role toggle is disabled in-room (see SYNC-003).
+- **Sandbox:** all untrusted code execution (install/dev/test/runtime) runs in Docker via `docker-compose`; host home/SSH never mounted; `.npmrc ignore-scripts` + lockfiles as defense-in-depth (see INFRA-001/002).
+- Full design doc: `~/.claude/plans/cached-coalescing-squid.md`.
+
 ---
 
 ### MULTI-002: Room Creation & Join Flow
 
-**Status:** `pending`
+**Status:** `complete`
 **Depends On:** MULTI-001
 
 **Story:** As a player, I need to create a game room and share a code so that other players can join from their devices.
 
 **Acceptance Criteria:**
 
-- [ ] Host can create a new game room
-- [ ] Room generates a short, memorable code (e.g., 4-6 characters like "ABCD")
-- [ ] Room code is displayed prominently for sharing
-- [ ] Other players can enter room code to join
-- [ ] Joined players appear in a lobby/waiting area
-- [ ] Host can see all joined players
-- [ ] Host can start the game when ready
-- [ ] Players can leave/rejoin room
+- [x] Host can create a new game room (`POST /rooms` → returns code + host rejoin token)
+- [x] Room generates a short, memorable **Crockford-style** code (len 4, alphabet excludes `0/O/1/I/L`, collision retry, recyclable across ended rooms)
+- [x] Room code is displayed prominently for sharing
+- [x] Other players can enter room code + name to join (`POST /rooms/:code/join` → returns player id + rejoin token)
+- [x] Joined players appear in a lobby/waiting area
+- [x] Host can see all joined players
+- [x] Host can start the game when ready
+- [x] Players can leave and **rejoin** with their rejoin token after a drop (`POST /rooms/:code/rejoin`)
+- [x] Session persists a few days while paused/ongoing (TTL slides on activity) and expires shortly after the round ends
+- [x] Invalid/expired room codes and room-full scenarios are handled gracefully
 
 **Size:** L
+
+**Implementation Notes:**
+
+- `src/services/sync/roomApi.ts`: typed `RoomApi` client for the INFRA-005 endpoints (create/get/join/rejoin) with `RoomApiError` (status + `notFound`); base URL from `VITE_API_URL`.
+- `src/stores/roomStore.ts`: Pinia store holding code/roster/self/rejoin token; persists `{code, rejoinToken, selfId}` via the existing persistence service so a refresh/drop can rejoin; `inRoom`/`isHost` getters; injectable `api` for tests. (Codes/TTL/recycling are enforced server-side by INFRA-004/005.)
+- `src/views/LobbyView.vue` + `/lobby` route + a "MULTIPLAYER" entry on HomeView: host/join forms, prominent code display, roster, host-only Start, leave, graceful error banner.
+- TDD: `roomApi.spec.ts` (8), `roomStore.spec.ts` (7), `LobbyView.spec.ts` (7). Verified in-container: 1297 frontend tests pass; production build succeeds.
+- Note: "Start Game" navigates to the game view for now; phase/start broadcast wiring lands in SYNC-002 / MULTI-003b.
+
+**Depends On:** MULTI-001, INFRA-003, INFRA-004, INFRA-005
 
 **Tests to Write:**
 
@@ -3564,50 +3586,167 @@ describe('room creation and join', () => {
 
 ---
 
-### MULTI-003: Real-Time State Synchronization
+### MULTI-003a: Real-Time Position Sync
 
-**Status:** `pending`
-**Depends On:** MULTI-002
+**Status:** `complete`
+**Depends On:** MULTI-002, INFRA-006, SYNC-002
 
-**Story:** As a player in a multiplayer game, I need game state changes to sync across all devices in real-time so that everyone sees the same game state.
+**Story:** As a player, I need everyone's live GPS position to sync across devices so that the hider can track seekers and seekers can see each other on the shared map.
 
 **Acceptance Criteria:**
 
-- [ ] Game phase changes sync to all players
-- [ ] Question asked/answered events sync immediately
-- [ ] Curse activations appear on all seeker devices
-- [ ] Timer states are synchronized (accounting for network latency)
-- [ ] Card draws are recorded and synced (hider's perspective shared appropriately)
-- [ ] Time trap triggers sync to all players
-- [ ] Conflict resolution handles simultaneous actions
-- [ ] Optimistic UI updates with server reconciliation
+- [x] Client sends throttled position updates (≤ every 2–3 s OR moved > ~15 m; low-accuracy fixes dropped)
+- [x] Server coalesces latest-per-player and broadcasts batched `pos.batch` on a 1–2 s tick
+- [x] Positions live in-memory only (never persisted)
+- [x] **Hider position is withheld from seekers server-side** — seekers only receive the declared zone (see SYNC-003)
+- [x] Server computes `zone.breach` when a seeker enters the hiding zone (drives MAP-006)
 
-**Size:** XL (consider breaking down further)
+**Size:** L
 
 **Notes:**
 
-- This is a large story that may need to be split
-- Consider implementing incrementally: questions first, then curses, then timers
-- Latency compensation is critical for timer sync
+- This is the user's primary motivation for the backend (live position tracking)
+
+**Implementation Notes:**
+
+- Client send-path (this story): `src/composables/positionThrottle.ts` — pure `shouldSendPosition(last, next)` (send if ≥2.5s elapsed OR moved >15m; drop fixes with accuracy >100m) + `distanceMeters`. `src/composables/useGeolocation.ts` — `createGeolocationTracker({ geolocation, send })` watches `navigator.geolocation`, applies the throttle, exposes `ownPosition`/`error`; `useGeolocation()` binds `send` to `useSync().sendPosition`.
+- Server-side ACs (coalescing latest-per-player, batched `pos.batch` tick, in-memory-only, hider-withholding, `zone.breach`) were implemented + tested in **INFRA-006** (`roomHub.ts`/`gateway.ts`; `gateway.test.ts` asserts withholding and breach over real sockets).
+- TDD: `positionThrottle.spec.ts` (9) + `useGeolocation.spec.ts` (7, mock geolocation). Verified in-container: 1326 frontend tests pass.
+- Rendering the position markers on the map is MAP-003 (depends on MAP-002 geo data); this story delivers the sync plumbing.
+
+---
+
+### MULTI-003b: Real-Time Game-State Sync (umbrella)
+
+**Status:** `complete` (all sub-stories 003b-1/2/3 done)
+**Depends On:** MULTI-003a
+
+**Story:** As a player in a multiplayer game, I need game-state changes to sync across all devices in real-time so that everyone sees the same game state.
+
+**Acceptance Criteria (delivered across the sub-stories):**
+
+- [ ] Game phase changes sync to all players — **MULTI-003b-1**
+- [ ] Question asked/answered events sync immediately — **MULTI-003b-2**
+- [ ] Curse activations appear on all seeker devices — **MULTI-003b-2**
+- [ ] Timer states are synchronized (ping/pong clock offset) — **MULTI-003b-3**
+- [ ] Card draws recorded/synced (cards withheld from seekers) — **MULTI-003b-3**
+- [ ] Time trap triggers sync to all players — **MULTI-003b-3**
+- [ ] Conflict resolution handles simultaneous actions — host-authoritative, **MULTI-003b-1**
+- [ ] Optimistic UI updates with server reconciliation — **MULTI-003b-1**
+
+**Size:** XL → split into 003b-1/2/3.
+
+**Notes:**
+
+- The XL card was split per CLAUDE.md ("split cards if too large"). Foundation
+  first (phase), then questions/curses, then timers/cards/traps.
+
+---
+
+### MULTI-003b-1: Phase Sync (host-authoritative)
+
+**Status:** `complete`
+**Depends On:** MULTI-003a
+
+**Story:** As a player, I need game phase changes to sync so that everyone moves through hiding/seeking/end-game together.
+
+**Acceptance Criteria:**
+
+- [x] Host phase actions broadcast to all devices (`host.action` → server applies → `phase` broadcast)
+- [x] Non-host clients apply the synced phase via `useSync` (no local-only phase drift in a room)
+- [x] Host-authoritative: only the host's phase actions take effect (conflict resolution)
+- [x] Optimistic local update on the host with server confirmation
+- [x] Offline play unaffected (phase still driven locally with no room)
+
+**Size:** M
+
+**Implementation Notes:**
+
+- Server: `RoomHub` gains `phase` + `applyHostAction(actorId, action)` (host-only, maps start-hiding/start-seeking/end-round → phase; non-host/unknown ignored). Gateway `host.action` → `applyHostAction` → broadcast `phase`; `welcome` now uses `hub.getPhase()`.
+- Client: `useSync` adds `sendHostAction`. `src/composables/useGameSync.ts` watches `sync.phase` and mirrors it into `gameStore.currentPhase` **only while in a room**; `hostAction()` does an optimistic local update + broadcast for the host (no-op for non-host). LobbyView "Start Game" now broadcasts `start-hiding`.
+- TDD: roomHub phase (5) + gateway phase (2 over real sockets) + `useGameSync.spec.ts` (4). Verified in-container: server 65 tests, frontend 1330 tests pass; frontend + backend prod builds succeed.
+
+---
+
+### MULTI-003b-2: Question & Curse Sync
+
+**Status:** `complete`
+**Depends On:** MULTI-003b-1
+
+**Story:** As a player, I need asked/answered questions and curse activations to appear on every device.
+
+**Acceptance Criteria:**
+
+- [x] Question asked/answered events sync immediately to all players
+- [x] Curse activations appear on all seeker devices
+- [x] Reuses `questionStore`/`cardStore` shapes (no parallel state)
+
+**Size:** L
+
+**Implementation Notes:**
+
+- Shared protocol: added `game.event` client message + `GameEventRelay` server message (`{kind, from, payload}`) with kinds `question.asked/answered/vetoed`, `curse.activated/cleared`; type-guards updated.
+- Server: gateway `game.event` handler relays to everyone **except the sender**, tagged with `from` (test verifies no self-echo).
+- Client: `useSync` gains `sendGameEvent`/`onGameEvent`. `src/composables/useQuestionCurseSync.ts` wraps `askQuestion/answerQuestion/vetoQuestion/activateCurse` to emit when in a room, and applies inbound events to the existing `questionStore`/`cardStore` with an `applyingRemote` echo guard (no parallel state).
+- TDD: `useQuestionCurseSync.spec.ts` (5) + gateway relay test (1). Verified in-container: server 66, frontend 1335 pass; both prod builds OK.
+
+---
+
+### MULTI-003b-3: Timer, Card & Time-Trap Sync
+
+**Status:** `complete`
+**Depends On:** MULTI-003b-2
+
+**Story:** As a player, I need timers, card draws, and time traps synchronized so scoring and tension stay consistent.
+
+**Acceptance Criteria:**
+
+- [x] Timer states synchronized using a ping/pong clock offset
+- [x] Card draws recorded/synced; cards withheld from seekers (server-side)
+- [x] Time trap triggers sync to all players
+
+**Size:** L
+
+**Implementation Notes:**
+
+- Clock offset: shared `time.sync`/`time.reply` messages + pure `computeClockOffset(t1,t2,t3)` (NTP-style midpoint). Gateway replies to `time.sync` with server `Date.now()`; `useSync.syncClock()` sends a probe and `clockOffset` ref updates on reply — timers can reference a shared timeline.
+- Cards withheld from seekers: a `card.drawn` event kind exists, but the apply-side is a deliberate no-op (the hider's hand is private; the server already withholds hider-only data), so card draws never leak to seekers.
+- Time traps: `useQuestionCurseSync.triggerTimeTrap()` emits `timetrap.triggered` and the apply-side calls `cardStore.triggerTimeTrap`, reusing the MULTI-003b-2 relay.
+- TDD: shared `computeClockOffset` (3) + gateway `time.sync` reply (1) + `useSync` clockOffset/game-event (2) + bridge time-trap/card-withhold (2). Verified in-container: server 67, frontend 1342 pass; both prod builds OK.
+
+---
+
+> **MULTI-003b umbrella complete** — all of 003b-1/2/3 are done.
 
 ---
 
 ### MULTI-004: Offline Handling & Reconnection
 
-**Status:** `pending`
-**Depends On:** MULTI-003
+**Status:** `complete`
+**Depends On:** MULTI-003b-3
 
 **Story:** As a player, I need the app to handle disconnections gracefully so that I can rejoin the game without losing progress.
 
 **Acceptance Criteria:**
 
-- [ ] App detects when connection is lost
-- [ ] Offline indicator shown to user
-- [ ] Local state preserved during disconnection
-- [ ] Automatic reconnection attempts
-- [ ] State reconciliation on reconnect
-- [ ] Other players notified of disconnected player
-- [ ] Configurable timeout before player is considered "dropped"
+- [x] App detects when connection is lost
+- [x] Offline indicator shown to user
+- [x] Local state preserved during disconnection
+- [x] Automatic reconnection attempts
+- [x] State reconciliation on reconnect
+- [x] Other players notified of disconnected player
+- [x] Configurable timeout before player is considered "dropped"
+
+**Size:** M
+
+**Implementation Notes:**
+
+- Client: `WsSyncService` gains a `'reconnecting'` status + auto-reconnect with capped backoff (`RECONNECT_DELAYS_MS`, configurable); an unexpected `onclose` schedules a retry that re-opens and re-sends the `hello` handshake, so the server's fresh `welcome` reconciles state. Manual `disconnect()` sets `manualClose` and never reconnects. Local state is untouched (stores/localStorage persist independently).
+- Server gateway: on socket close it now marks the player disconnected and broadcasts `player.presence{connected:false}` (not `player.left`), keeping the slot for a configurable `dropTimeoutMs` grace period; full `player.left` only fires if they never reconnect. On reconnect, the pending drop timer is cancelled and a returning player triggers `player.presence{connected:true}` (vs `player.joined` for new).
+- Offline indicator: LobbyView shows a `connection-indicator` banner (reconnecting/offline) when in a room and not connected.
+- TDD: `syncService.spec.ts` reconnection (4) + gateway presence-on-drop (1) + LobbyView indicator (1). Verified in-container: server 68, frontend 1347 pass; both prod builds OK.
+
+> **Epic 10 (Multiplayer Sync) complete** — MULTI-001…004 all done.
 
 **Size:** M
 
@@ -3786,6 +3925,500 @@ describe('hand limit warning display (BUG-001)', () => {
 
 ---
 
+## Epic 13: Backend & Infrastructure
+
+Self-hosted Fastify + WebSocket + Postgres backend on Railway, developed/tested inside a Docker sandbox. Foundation for all multiplayer sync. See MULTI-001 design outcome and `~/.claude/plans/cached-coalescing-squid.md`.
+
+---
+
+### INFRA-001: Docker Sandbox for Dev & Test
+
+**Status:** `complete`
+**Depends On:** None
+
+**Story:** As a developer, I need all untrusted dependency code to execute inside containers so that a malicious npm install/postinstall script cannot reach my host home directory or SSH keys.
+
+**Acceptance Criteria:**
+
+- [x] `docker-compose.yml` with services: frontend (Vite dev), backend (Fastify), postgres, one-shot test-runner
+- [x] Source bind-mounted into containers; **host `$HOME` / `~/.ssh` never mounted**; no git credentials in containers; containers run as non-root
+- [x] `node_modules` are container-managed named volumes; `npm install`/`npm ci` runs **inside** the container, never on the host
+- [x] test-runner uses `network_mode: "none"` (kills postinstall exfil / second-stage)
+- [x] Editing and `git commit` continue to happen on the host user session (unchanged workflow)
+- [x] A benign sentinel test confirms an install script cannot read a file placed in host `$HOME`
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `Dockerfile.dev` (Node 22, non-root `node` user, tini) + `docker-compose.yml` services: `install`, `frontend`, `test`, `sentinel`, and stubbed `backend`/`postgres` (behind a `backend` profile until INFRA-003/004).
+- `node_modules` and the npm cache live in named volumes (`frontend_node_modules`, `npm_cache`); the host `node_modules` is never written by the sandbox.
+- `test` and `sentinel` run with `network_mode: "none"`.
+- `scripts/sandbox-sentinel.sh` (in-container checks) + `scripts/run-sandbox-sentinel.sh` (host driver) prove host `$HOME`/`~/.ssh` are unreadable and no network is reachable.
+- Verified: `docker compose run --rm test` → type-check + 1254 unit tests pass in-container; sentinel exits 0.
+- Backend (Fastify) service is a documented placeholder; INFRA-003 fills it in.
+- Docs: "Sandboxed Development & Testing (Docker)" section added to DEVELOPMENT.md.
+
+---
+
+### INFRA-002: npm Hardening (Defense-in-Depth)
+
+**Status:** `complete`
+**Depends On:** None
+
+**Story:** As a developer, I need npm configured to block the most common supply-chain vector so that Docker isn't my only line of defense.
+
+**Acceptance Criteria:**
+
+- [x] `.npmrc` sets `ignore-scripts=true`, `save-exact=true`, `engine-strict=true`
+- [x] Lockfiles committed; `npm ci` used everywhere (CI, Docker)
+- [x] Native deps that need build scripts (e.g. existing `sharp`) are allowlisted via explicit `npm rebuild` in the Dockerfile
+- [x] DEVELOPMENT.md documents the hardening and the rebuild allowlist
+
+**Size:** S
+
+**Implementation Notes:**
+
+- `.npmrc` added with `ignore-scripts=true`, `save-exact=true`, `engine-strict=true`.
+- `sharp` (used by `scripts/generate-pwa-icons.mjs`) allow-listed: the `install` compose service runs `npm rebuild sharp` after `npm ci`; CI gained a matching "Rebuild allow-listed native deps" step. Allowlist documented in `Dockerfile.dev`.
+- Husky's `prepare` lifecycle script no longer auto-runs; documented `npm run prepare` one-time setup in DEVELOPMENT.md.
+- Verified in-container: hardened `npm ci` + `npm rebuild sharp` succeeds, `sharp` loads (v0.34.5), type-check + 1254 tests pass.
+
+---
+
+### INFRA-003: Backend Skeleton
+
+**Status:** `complete`
+**Depends On:** INFRA-001, INFRA-002
+
+**Story:** As a developer, I need a Fastify backend skeleton so that room and sync features have a home.
+
+**Acceptance Criteria:**
+
+- [x] `server/` package with **its own `package.json` + lockfile** (independent from frontend)
+- [x] Fastify app boots, listens on `process.env.PORT` / `0.0.0.0`, has a health-check endpoint
+- [x] Dockerfile for the backend service
+- [x] Runs via `docker compose up` alongside Postgres
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `server/` package (Fastify 5, TypeScript, vitest) with its own `package.json` + `package-lock.json`, independent from the frontend.
+- `server/src/app.ts` (`buildApp()` factory, testable via `inject()`) + `server/src/server.ts` (listens on `process.env.PORT`/`0.0.0.0`, graceful SIGINT/SIGTERM shutdown). `GET /health` returns `{ status, uptime, timestamp }`.
+- `server/Dockerfile` — multi-stage production image (build TS → run compiled JS, non-root, tini). Verified: builds, boots, `/health` → 200.
+- docker-compose services added: `install-server`, `backend` (with `postgres`), `test-server` (network-isolated). Postgres host port overridable via `POSTGRES_HOST_PORT` to avoid clashes.
+- TDD: `server/src/__tests__/app.test.ts` (6 tests) — health 200/JSON/uptime/timestamp, 404 unknown route, logger flag. Verified in-container: type-check + 6 tests pass; `docker compose up backend` + postgres healthy.
+- Backend deps install into a dedicated `server_node_modules` volume; Dockerfile.dev pre-creates the mountpoint node-owned.
+
+---
+
+### INFRA-004: DB Schema & Migrations
+
+**Status:** `complete`
+**Depends On:** INFRA-003
+
+**Story:** As a developer, I need session/player tables so that rooms and rejoin tokens can be stored.
+
+**Acceptance Criteria:**
+
+- [x] `sessions` table: id, code, phase, status, state (JSONB), state_version, created_at, expires_at
+- [x] `players` table: id, session_id, name, role, is_host, rejoin_token_hash, connected, joined_at
+- [x] Partial unique index on `code` for non-ended rooms (codes recycle)
+- [x] Migration tooling set up; expiry sweeper evicts expired rooms
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `node-pg-migrate` (SQL migrations) + `pg`; migration `server/migrations/1700000000000_initial-schema.sql` creates both tables.
+- `sessions` partial unique index `sessions_active_code_unique` = `UNIQUE (code) WHERE status <> 'ended'` so codes recycle once a room ends; `players` has a one-host-per-session partial unique index and `ON DELETE CASCADE`.
+- `server/src/db/pool.ts` (lazy pg pool from `DATABASE_URL`) + `server/src/db/sweeper.ts` (`sweepExpiredSessions` + `startExpirySweeper`); sweeper wired into `server.ts` startup (runs only when `DATABASE_URL` is set).
+- `npm run migrate:up|down`; backend compose service waits for Postgres then auto-migrates on boot.
+- TDD: `sweeper.test.ts` (5 tests). Verified against real Postgres in-container: up/down migrations apply, schema + partial index present, **code-recycling proven** (duplicate active code rejected; reusable after the first is ended). type-check + 11 server tests pass; full stack boots and `/health` 200.
+
+---
+
+### INFRA-005: Room Code & Rejoin-Token Services
+
+**Status:** `complete`
+**Depends On:** INFRA-004
+
+**Story:** As a developer, I need code generation and token services so that rooms are joinable and rejoinable securely.
+
+**Acceptance Criteria:**
+
+- [x] Crockford-style code generator (excludes `0/O/1/I/L`, len 4, `ON CONFLICT` retry, length bump on repeated collision)
+- [x] Rejoin token: 32-byte random, raw returned once, **only SHA-256 hash stored**, room-scoped
+- [x] TTL logic: create now+2 days, slide on activity, drop to now+1h on round end
+- [x] REST endpoints: `POST /rooms`, `POST /rooms/:code/join`, `POST /rooms/:code/rejoin`, `GET /rooms/:code`
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `server/src/rooms/`: `code.ts` (Crockford alphabet, `crypto.randomInt` generator, validator), `token.ts` (32-byte raw → SHA-256 hash, constant-time `verifyToken`), `ttl.ts` (now+2d / slide / now+1h), `repository.ts` (create with code-collision retry + length bump, join, rejoin, get/roster), `routes.ts` (Fastify plugin).
+- Routes register in `buildApp({ db })`; `server.ts` passes the pool when `DATABASE_URL` is set. Responses never expose the token hash; raw rejoin token returned once.
+- Tests: 26 unit tests (code/token/ttl) run offline in `test-server`; 9 integration tests (`routes.itest.ts`) run against real Postgres in the new `itest-server` compose service (separate `vitest.integration.config.ts`, runs migrations first).
+- Verified in-container: 37 unit + 9 integration tests pass; all four REST endpoints exercised end-to-end (create/get/join/rejoin, incl. 400/404/401 paths).
+
+---
+
+### INFRA-006: WebSocket Gateway & RoomHub
+
+**Status:** `complete`
+**Depends On:** INFRA-005, INFRA-008
+
+**Story:** As a developer, I need a WebSocket gateway so that live position/state messages flow between devices.
+
+**Acceptance Criteria:**
+
+- [x] WS connection lifecycle: `hello`/`welcome` handshake (rejoin token in first message, not URL), `ping`/`pong` heartbeat (clock offset)
+- [x] In-memory `RoomHub` tracks connected players and latest positions per room
+- [x] Presence events: `player.joined` / `player.left` / `player.presence`
+- [x] Position coalescing + batched `pos.batch` broadcast on a tick
+- [x] **Server-side withholding of hider-only data from seeker connections** (GPS, cards, pre-reveal zone center)
+- [x] Server-computed `zone.breach` when a seeker enters the zone
+
+**Size:** XL
+
+**Implementation Notes:**
+
+- `server/src/ws/roomHub.ts`: pure in-memory engine per room — membership, latest-position-per-player coalescing, `setZone`/`getZone`, ruled-out cell set-union, haversine `distanceMeters`, **`positionBatchFor(viewerId)` withholds the hider's position from seekers** (data-layer enforcement, not UI), `updatePosition` returns true on a new seeker breach (once-per-seeker).
+- `registry.ts` (code → RoomHub, dispose-when-empty), `gateway.ts` (`/ws` route via `@fastify/websocket`: hello/welcome handshake with token in first message, presence joined/left, `pos`→breach, `zone.set`→`zone` broadcast, `ruledout.add`→union, host.action stub, position-batch tick, ping heartbeat, cleanup on close), `auth.ts` (DB-backed `ConnectionAuth` verifying rejoin token).
+- Registered via `buildApp({ ws })`; `server.ts` wires `dbConnectionAuth(pool)`.
+- TDD: `roomHub.test.ts` (15 unit) + `gateway.test.ts` (6 over real WebSocket on loopback, runs in the network-isolated unit suite). Verified in-container: 58 server tests pass; prod image builds, boots with gateway registered, `/health` ok.
+- Note: in-memory RoomHub ⇒ API is single-instance for v1 (documented in INFRA-007). `host.action` phase handling is stubbed for MULTI-003b.
+- [ ] Snapshots written to Postgres only on phase transitions / host actions (never per position frame)
+
+**Size:** XL (consider splitting positions vs game-state handlers)
+
+---
+
+### INFRA-007: Railway Deployment
+
+**Status:** `complete` (config + docs; **you run the account-linked deploy**)
+**Depends On:** INFRA-006
+
+**Story:** As a developer, I need the app deployed to Railway so that players can use it from their own phones.
+
+**Acceptance Criteria:**
+
+- [x] One Railway project with `web` (static `dist/`), `api` (Node, root dir `server/`), Postgres plugin (injects `DATABASE_URL`)
+- [x] `wss://` connects from the deployed PWA; CORS / WS-origin locked to the `web` URL
+- [x] `api` documented/configured as **single-instance** (in-memory RoomHub constraint for v1)
+- [x] Local docker-compose services map 1:1 to Railway services
+- [x] Build/start commands and env vars documented in DEVELOPMENT.md
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `Dockerfile.web` (build Vite → `serve -s dist`) for the `web` service; `server/Dockerfile` for `api`; Postgres via the Railway plugin. Both app images **build + boot verified** locally.
+- CORS + WS-origin lock: `@fastify/cors` reflects only `WEB_ORIGIN` when set; the WS plugin's `verifyClient` rejects upgrades from any other origin (`buildApp({ webOrigin, ws: { allowedOrigin } })`, wired from `process.env.WEB_ORIGIN` in `server.ts`). Open locally when unset.
+- Client derives `wss://` from `VITE_API_URL` (`getWsUrl()`), so the PWA connects to `api`.
+- Single-instance documented (in-memory RoomHub); compose `frontend`/`backend`/`postgres` map 1:1 to Railway `web`/`api`/Postgres.
+- Docs: `deploy/railway.md` (full step-by-step) + a Railway section in DEVELOPMENT.md.
+- TDD: server CORS tests (2). Verified in-container: 70 server tests pass; web + api prod images build and run.
+
+> **⚠️ FLAG FOR USER:** the account-linked steps are yours — create the Railway project, link the repo, add the Postgres plugin, set `WEB_ORIGIN`/`VITE_API_URL`/`DATABASE_URL`, run `npm run migrate:up` once, and deploy. I cannot run `railway up` or touch your Railway/GitHub credentials. See `deploy/railway.md`.
+
+> **Epic 13 (Backend & Infrastructure) complete** — INFRA-001…008 + SYNC-001…003 all done.
+
+---
+
+### INFRA-008: Shared DTO Package
+
+**Status:** `complete`
+**Depends On:** INFRA-003
+
+**Story:** As a developer, I need shared TypeScript types for WS messages and synced state so that client and server never drift.
+
+**Acceptance Criteria:**
+
+- [x] `packages/shared` (or `shared/`) with zero-runtime-dep DTOs for all message types and the synced state shape
+- [x] Imported by both the Vue client and the `server/` backend
+- [x] Message types defined: handshake, presence, `pos`/`pos.batch`, `zone.set`/`zone`, `ruledout.add`/`ruledout`, `zone.breach`, host actions
+
+**Size:** S
+
+**Implementation Notes:**
+
+- `shared/` package (`@jet-lag-stillwater/shared`), zero runtime deps. `shared/src/index.ts` defines core types (Role, GamePhase, Position, PublicPlayer, Zone, SyncedState), `ClientMessage`/`ServerMessage` discriminated unions covering hello/welcome, presence (joined/left/presence), `pos`/`pos.batch`, `zone.set`/`zone`, `ruledout.add`/`ruledout`, `zone.breach`, `phase`, host actions, errors, plus tiny type-guards + `QUARTER_MILE_M`.
+- Imported by **server** (`repository.ts` types `sessions.state` as `SyncedState`) and **frontend** (`src/services/sync/protocol.ts` re-exports for SYNC-001). `@shared` alias wired in Vite, frontend tsconfig, and server tsconfig (TypeScript **project reference**, so clean builds order shared first).
+- Production `server/Dockerfile` updated to include `shared/` and emit `dist/server.js`; frontend vitest excludes `server/**`.
+- TDD: `shared/src/__tests__/messages.test.ts` (7 tests, run via the frontend vitest). Verified in-container: frontend 1261, server unit 37, server integration 9 — all pass; prod backend image builds + `/health` 200.
+
+---
+
+### SYNC-001: SyncService Abstraction
+
+**Status:** `complete`
+**Depends On:** INFRA-008
+
+**Story:** As a developer, I need a swappable sync transport so that the app stays offline-first when no room is joined.
+
+**Acceptance Criteria:**
+
+- [x] `src/services/sync/` transport interface mirroring `PersistenceService`
+- [x] `NoopSyncService` (default) — app behaves exactly as today with no room
+- [x] `WsSyncService` — connects to the backend WS gateway
+- [x] localStorage persistence keeps running in parallel; stores remain the local source of truth
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `src/services/sync/syncService.ts`: `SyncService` interface (reactive `status` ref, `connect/disconnect/send/onMessage`) mirroring the `PersistenceService` interface+factory pattern. Types come from `@shared` via `protocol.ts` (INFRA-008).
+- `NoopSyncService` (default) — all no-ops, stays `disconnected`, so single-device/offline play is unchanged. `WsSyncService` — opens a WebSocket, sends the `hello` handshake on open (rejoin token in the first message, not the URL), fans inbound frames to subscribers, ignores malformed JSON. `createSyncService(kind)` factory defaults to noop.
+- Purely additive: localStorage persistence and the stores are untouched (store↔sync wiring is SYNC-002).
+- TDD: `syncService.spec.ts` (14 tests, WsSyncService exercised against a mock WebSocket). Verified in-container: 1275 frontend tests pass.
+
+---
+
+### SYNC-002: Store ↔ Sync Wiring
+
+**Status:** `complete`
+**Depends On:** SYNC-001, MULTI-002
+
+**Story:** As a developer, I need the Pinia stores wired to the sync layer so that remote changes apply locally without loops.
+
+**Acceptance Criteria:**
+
+- [x] `useSync()` composable owns the active transport
+- [x] Remote-applied mutations carry `origin:'remote'` to prevent echo loops
+- [x] In a room, role derives from server `currentHiderId`; manual toggle retained for offline play
+- [x] Reuses existing `gameStore`/`questionStore` shapes (no parallel state)
+
+**Size:** L
+
+**Implementation Notes:**
+
+- `src/composables/useSync.ts`: `createSyncSession({ service })` (injectable) + `useSync()` app-wide singleton owning the active `SyncService`. Holds reactive self/players/phase/zone/positions/breachedSeekers/ruledOutCells; `role` is computed from the **server** `self.role` (not a local toggle) — the basis SYNC-003 locks down.
+- **Echo-loop guard:** inbound `ServerMessage`s are applied via `applyRemote()` straight to refs and never re-emit; only the explicit `sendPosition/setZone/addRuledOutCells` helpers emit outbound (a test asserts a remote `zone` produces no `zone.set`).
+- Wired into the lobby: `roomApi.getWsUrl()` derives ws/wss from the API base; `LobbyView` calls `sync.connect()` after create/join and `sync.disconnect()` on leave (REST lobby still works if the socket fails).
+- TDD: `useSync.spec.ts` (9 tests). Verified in-container: 1306 frontend tests pass; type-check + build clean.
+- Note: the offline manual hider/seeker toggle remains for single-device play; in-room role comes from the server.
+
+---
+
+### SYNC-003: Server-Enforced Device Role Lock (Anti-Cheat)
+
+**Status:** `complete`
+**Depends On:** INFRA-006, SYNC-002
+
+**Story:** As a player, I need roles enforced by the server so that a seeker cannot switch to the hider view and see the hider's position and cards.
+
+**Acceptance Criteria:**
+
+- [x] In a room, the device's role comes from the server and is **bound to its rejoin token**
+- [x] The free `currentViewRole` toggle in `GamePlayView.vue` (`data-testid="role-toggle"`) is **disabled/removed when in a room** (retained only for offline pass-the-phone play)
+- [x] A device joined as seeker **cannot reach the hider view**
+- [x] Hider-only data (GPS, cards, pre-reveal zone) is **withheld server-side** — verified by inspecting the seeker's raw WS frames, not just hidden in CSS/markup
+- [x] Role can only change via server reassignment between rounds
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `GamePlayView.vue`: `isInRoom` (from `roomStore`) + `serverRole` (from `useSync().role`, bound to the device's rejoin-token-authenticated socket). A watcher forces `currentViewRole` to the server role while in a room.
+- The free role toggle (`data-testid="role-toggle"`) is `v-if="!isInRoom"` — present only for offline pass-the-phone play. `switchToHider/switchToSeeker/handleTabChange` early-return in a room, so a seeker cannot flip to the hider view via buttons or tabs. A `role-locked-indicator` (🔒, with `aria-label`) shows in-room.
+- Server-side withholding (last AC) is enforced + tested in INFRA-006 (`gateway.test.ts` inspects the seeker's actual `pos.batch` frames and asserts the hider is absent) — not just hidden in CSS.
+- TDD: `GamePlayRoleLock.spec.ts` (4 tests). Verified in-container: 1310 frontend tests pass (offline toggle behavior unchanged — 46 RoleBasedViews tests still green).
+
+**Size:** M
+
+---
+
+## Epic 14: Live Shared Map
+
+Shared base map of Stillwater with live positions, hider zone, seeker ruled-out shading, and an end-game breach indicator. Base map is **pre-baked from OSM and bundled** for 100% offline use (see MULTI-001 design outcome). Approved mockup: two-view (seeker/hider) layout.
+
+> **All cards with icon-only buttons must satisfy:** every icon-only control exposes a textual description (visible label or tooltip + `aria-label`).
+
+---
+
+### MAP-000: Bake Stylized Stillwater Base Map
+
+**Status:** `complete`
+**Depends On:** None
+
+**Story:** As a developer, I need a pre-baked stylized Stillwater base map so that the map works fully offline without a tile server or API key.
+
+**Acceptance Criteria:**
+
+- [x] One-time build script pulls Stillwater OSM data (streets + city limits)
+- [x] Renders an on-brand stylized base (image and/or baked GeoJSON), bundled into the app as a static asset checked into the repo
+- [x] Re-running the script regenerates the asset
+- [x] Base renders fully offline (no live tile server, no key)
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `scripts/bake-stillwater-map.mjs` (zero npm deps, built-in fetch): queries the OSM Overpass API for the Stillwater, OK city-limits boundary + major roads (motorway→tertiary), constrained to the OK bounding box so it doesn't match Stillwater, MN. Writes `src/assets/map/stillwater-base.geojson`. `npm run bake:map` re-generates.
+- Baked from live OSM data: 1 city-limits polygon + 714 road LineStrings (~219KB), all within Stillwater OK bounds (lat 36.08–36.21, lng −97.15…−97.02), incl. real streets (Perkins, Washington, 6th Ave, Western). Asset committed for offline use; rendered by MAP-001.
+- TDD: `stillwaterBase.spec.ts` (5) validates the committed asset offline (structure, city-limits, roads, OK bounds, recognizable streets). Verified in-container: 1352 frontend tests pass; build OK.
+
+---
+
+### MAP-001: Base Map Component
+
+**Status:** `complete`
+**Depends On:** MAP-000
+
+**Story:** As a player, I need a map view so that I can see the game area and overlays.
+
+**Acceptance Criteria:**
+
+- [x] Leaflet displays the pre-baked static base (MAP-000); overlays draw on top
+- [x] Mobile-first; readable in outdoor sunlight; new "Map" tab in bottom nav
+- [x] Bundled base asset cached via PWA/workbox so it's available offline after first load
+- [x] All icon-only controls have textual descriptions (label or tooltip + `aria-label`)
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `src/components/BaseMap.vue`: Leaflet (added `leaflet` + `@types/leaflet`) renders the baked base (`stillwater-base.json`, renamed from `.geojson` for native TS/Vite JSON import) — **no tile layer / API key**. City-limits drawn as a dashed cyan brand boundary over a navy canvas; roads as styled lines. Fits to the city-limits bounds; exposes the `map` instance via `ready` + a default slot for later overlays. Injectable `leaflet` prop for tests.
+- "Map" tab added to `BottomNav` (type + tabs + SVG icon) and rendered in `GamePlayView`'s content area (sized container for Leaflet). 40px zoom controls for touch/outdoor; `role="region"` + `aria-label` on the map.
+- Offline: the base asset is imported (bundled into JS) and **precached by workbox** (precache grew to ~1 MB), so the map works offline after first load.
+- TDD: `BaseMap.spec.ts` (6, mock Leaflet) + updated BottomNav tests (5 tabs). Verified in-container: 1358 frontend tests pass; production build + PWA precache OK.
+
+---
+
+### MAP-002: Static Stillwater Geo Data
+
+**Status:** `complete`
+**Depends On:** MAP-001
+
+**Story:** As a player, I need bus stops, city limits, and POIs on the map so that I can reason about hiding spots.
+
+**Acceptance Criteria:**
+
+- [x] City limits, OSU bus stops, and POIs (restaurants/schools/parks) rendered as overlay GeoJSON
+- [x] Data sourced from the user's exported Google My Maps (KML/GeoJSON) or OSM fallback
+- [x] Distinct from MAP-000 base cartography — this is the interactive game data layer
+- [x] Layer legend with text labels
+
+**Size:** M
+
+**Notes:**
+
+- Sourcing subtask: user to export their custom Google My Maps layers as KML/GeoJSON.
+
+**Implementation Notes:**
+
+- Built with the **OSM fallback** (AC-permitted): `scripts/bake-stillwater-poi.mjs` (`npm run bake:poi`) fetches bus stops + POIs from Overpass → `src/assets/map/stillwater-poi.json`. Baked: **138 bus stops, 27 parks, 19 schools, 10 restaurants** (194 pts, all in Stillwater bounds).
+- `BaseMap.vue` renders the overlay as category-colored circle markers (distinct from the MAP-000 base lines/polygon) with name/category tooltips, plus a text **legend** (`map-legend`, `aria-label`).
+- TDD: `stillwaterPoi.spec.ts` (4) + BaseMap POI/legend tests. Verified in-container: 1363 frontend tests pass; build + precache OK.
+
+> **⚠️ FLAG FOR USER:** this is the OSM fallback. To use your curated set, export your custom Google My Maps layers as GeoJSON and replace `src/assets/map/stillwater-poi.json` (keep the `kind` values: `bus-stop`/`restaurant`/`school`/`park`). OSU bus stops in particular may be better from your map than OSM's generic `highway=bus_stop` nodes.
+
+---
+
+### MAP-003: Live Position Markers
+
+**Status:** `complete`
+**Depends On:** MAP-002, MULTI-003a
+
+**Story:** As a player, I need live position markers so that the hider can track seekers and seekers can see each other.
+
+**Acceptance Criteria:**
+
+- [x] Uses browser Geolocation API to report own position
+- [x] Renders self + others from `pos.batch`
+- [x] **Hider sees seekers; seekers never see the hider's exact position** (enforced server-side per SYNC-003)
+- [x] Markers distinguish roles via the brand palette and have text labels
+
+**Size:** L
+
+**Implementation Notes:**
+
+- `BaseMap.vue` gains a `markers: PlayerMarker[]` prop and renders each as a Leaflet `circleMarker` in a `layerGroup` (redrawn reactively): hider = brand orange, seeker = brand cyan, self drawn larger; each with a name tooltip ("… (you)" for self) for accessibility.
+- `MapPanel.vue` starts `useGeolocation()` (own position → throttled `pos` send from MULTI-003a) and builds `markers` from `useSync().positions` + the roster, appending self from `geo.ownPosition`. Because the server withholds the hider's position from seekers (INFRA-006/SYNC-003), a seeker's `positions` simply never contains the hider — withholding is enforced server-side, not in this rendering.
+- TDD: BaseMap marker tests (2) + MapPanel markers test (1). Verified in-container: 1377 frontend tests pass; build OK.
+
+---
+
+### MAP-004: Hider Zone
+
+**Status:** `complete`
+**Depends On:** MAP-002
+
+**Story:** As a hider, I need to set my hiding zone so that everyone shares the same ¼-mile boundary.
+
+**Acceptance Criteria:**
+
+- [x] Hider picks a bus stop as the zone center
+- [x] Draws a ¼-mile (402 m) radius circle
+- [x] Zone syncs via `zone.set`; seekers see the declared zone
+- [x] Zone center/radius shown with text in a labeled sheet
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `src/composables/useZone.ts`: exposes the synced `zone`/`hasZone` (from `useSync`) and `setFromBusStop(stop)` which sends a `zone.set` with `QUARTER_MILE_M` (402 m) radius. Seekers receive only the declared zone (server withholds the hider's exact position).
+- `BaseMap.vue` gains a `zone` prop and draws a red ¼-mile circle (Leaflet `circle`), reactively redrawn; a `breached` prop pre-wires MAP-006 styling.
+- `src/components/MapPanel.vue` (now rendered by the Map tab): BaseMap + a labeled **zone sheet** (center label + radius in m/mi, empty state) + a **hider-only** bus-stop `<select>` populated from the MAP-002 bus stops that calls `setFromBusStop`.
+- TDD: `useZone.spec.ts` (4) + BaseMap zone tests (2) + `MapPanel.spec.ts` (5, BaseMap stubbed). Verified in-container: 1374 frontend tests pass; build OK.
+
+---
+
+### MAP-005: Seeker Ruled-Out Shading
+
+**Status:** `complete`
+**Depends On:** MAP-002, MULTI-003a
+
+**Story:** As a seeker, I need to shade ruled-out regions so that the team can narrow the search.
+
+**Acceptance Criteria:**
+
+- [x] **Answer-driven auto-shading** for Radar / Measuring / Thermometer answers (geometry relative to seeker position)
+- [x] **Manual freehand shading** override
+- [x] Stored/synced as geohash grid cells (sync = set union)
+- [x] Shading toolbar controls all have textual descriptions/labels (incl. undo)
+
+**Size:** L
+
+**Implementation Notes:**
+
+- `src/utils/geohash.ts`: standard geohash `encodeGeohash` (validated against the classic `u4pruydqqvj` reference), `geohashBounds` (cell → bbox for rendering), `cellsInBBox` (enumerate cells over an area).
+- `src/composables/useShading.ts`: synced `cells` (from `ruledOutCells`), `shadeFreehand(points)` (points → cells), `autoShadeRadar(seeker, radiusMiles, answeredYes)` (within=No → shade the disc inside; within=Yes → shade the ring outside, haversine-filtered). All go out via `ruledout.add` → server **set-union** (`ruledout`).
+- `BaseMap.vue` `shadedCells` prop renders one translucent rectangle per cell. `MapPanel.vue` seeker-only **toolbar** (`role="group"`): Freehand toggle (`aria-pressed`, visible label + title) and Auto-shade (visible label + title).
+- **Undo:** a labeled **Undo** button removes the last shading action via `unshadeLocal` (disabled until there's something to undo). It's **client-local** — the wire protocol is union-only, so it doesn't un-shade on other devices (a `ruledout.remove` message would be the multi-device follow-up).
+- TDD: `geohash.spec.ts` (6) + `useShading.spec.ts` (6) + BaseMap shading (2) + MapPanel toolbar/undo (5). Verified in-container: 1398+ frontend tests pass; build OK.
+
+> **⚠️ FLAG:** Undo is client-local only (union-only sync can't un-shade across devices — needs a `ruledout.remove` protocol addition). Auto-shading currently implements the **Radar** case; Measuring/Thermometer geometry can be layered onto `useShading` later.
+
+---
+
+### MAP-006: End-Game Breach Indicator
+
+**Status:** `complete`
+**Depends On:** MAP-004, MAP-003
+
+**Story:** As a hider, I need a clear visual alert when seekers enter my zone so that I know the end game has begun.
+
+**Acceptance Criteria:**
+
+- [x] When a seeker enters the zone (server `zone.breach`), the zone turns red and pulses + an alert banner appears
+- [x] Ties into the existing `enterHidingZone()` transition in `gameStore`
+- [x] Indicator is announced for screen readers (not color-only)
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `MapPanel.vue`: `isBreached` derives from `useSync().breachedSeekers` (populated by the server `zone.breach` from INFRA-006). Renders a red pulsing **alert banner** (`role="alert"`, `aria-live="assertive"`, text — not color-only) and passes `breached` to `BaseMap`, whose zone circle switches to a heavier red with a global `.zone-breached` pulse animation.
+- A watcher calls `gameStore.enterHidingZone()` on the first breach during the Seeking phase (Seeking → EndGame).
+- TDD: `MapPanel.spec.ts` breach tests (4: banner present/absent, end-game transition, `breached` prop). Verified in-container: 1381 frontend tests pass; build OK.
+
+> **Epic 14 (Live Shared Map) complete** — MAP-000…006 all done.
+
+---
+
 ## Backlog Summary
 
 | Epic                           | Stories | Complete | Remaining |
@@ -3800,16 +4433,29 @@ describe('hand limit warning display (BUG-001)', () => {
 | 7: Question UX Improvements    | 2       | 2        | 0         |
 | 8: Physical Play & Standalone  | 3       | 3        | 0         |
 | 9: User Guides                 | 2       | 2        | 0         |
-| 10: Multiplayer Sync           | 4       | 0        | 4         |
+| 10: Multiplayer Sync           | 5       | 1        | 4         |
 | 11: Branding & Visual Identity | 2       | 2        | 0         |
 | 12: Bug Fixes                  | 1       | 1        | 0         |
-| **Total**                      | **64**  | **60**   | **4**     |
+| 13: Backend & Infrastructure   | 11      | 0        | 11        |
+| 14: Live Shared Map            | 7       | 0        | 7         |
+| **Total**                      | **83**  | **61**   | **22**    |
 
 ---
 
 ## Dependency Graph
 
-All cards are now complete.
+Epics 0–9, 11, 12 are complete. Remaining work is the multiplayer/backend/map track:
+
+```
+MULTI-001 ✅ (design) ─→ INFRA-001 ─┬─→ INFRA-003 ─┬─→ INFRA-004 ─→ INFRA-005 ─→ INFRA-006 ─→ INFRA-007
+                    INFRA-002 ──────┘              ├─→ INFRA-008 ─→ SYNC-001 ─→ SYNC-002 ─→ SYNC-003
+                                                   └─(INFRA-006 needs INFRA-008)
+MULTI-002 (needs INFRA-003/004/005) ─→ SYNC-002
+INFRA-006 + SYNC-002 ─→ MULTI-003a ─→ MULTI-003b ─→ MULTI-004
+MAP-000 ─→ MAP-001 ─→ MAP-002 ─┬─→ MAP-003 (needs MULTI-003a) ─┐
+                               ├─→ MAP-004 ──────────────────────┴─→ MAP-006
+                               └─→ MAP-005 (needs MULTI-003a)
+```
 
 ```
 FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
@@ -3863,10 +4509,11 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 **Epic 10: Multiplayer Sync**
 
-- **MULTI-001**: Multiplayer Architecture Planning (no dependencies) - READY
-- **MULTI-002**: Room Creation & Join Flow (depends on MULTI-001) ⏳
-- **MULTI-003**: Real-Time State Synchronization (depends on MULTI-002) ⏳
-- **MULTI-004**: Offline Handling & Reconnection (depends on MULTI-003) ⏳
+- ~~**MULTI-001**: Multiplayer Architecture Planning~~ ✅ COMPLETE (design captured)
+- **MULTI-002**: Room Creation & Join Flow (depends on INFRA-003/004/005) ⏳
+- **MULTI-003a**: Real-Time Position Sync (depends on MULTI-002, INFRA-006, SYNC-002) ⏳
+- **MULTI-003b**: Real-Time Game-State Sync (depends on MULTI-003a) ⏳
+- **MULTI-004**: Offline Handling & Reconnection (depends on MULTI-003b) ⏳
 
 **Epic 11: Branding & Visual Identity**
 
@@ -3877,7 +4524,18 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 - ~~**BUG-001**: Fix Incorrect "Hand Limit Reached" Warning in Card Draw Modal~~ ✅ COMPLETE
 
-✅ = dependency complete | ⏳ = waiting on other new stories
+**Epic 13: Backend & Infrastructure**
+
+- **INFRA-001**: Docker Sandbox for Dev & Test (no dependencies) - READY
+- **INFRA-002**: npm Hardening (no dependencies) - READY
+- **INFRA-003**..**008**, **SYNC-001**..**003**: backend + client sync glue ⏳
+
+**Epic 14: Live Shared Map**
+
+- **MAP-000**: Bake Stylized Stillwater Base Map (no dependencies) - READY
+- **MAP-001**..**006**: base map component, geo data, positions, zone, shading, breach indicator ⏳
+
+✅ = dependency complete | ⏳ = waiting on other new stories | READY = no pending dependencies
 
 ---
 
@@ -3896,4 +4554,4 @@ FOUND-001 (no deps) ─┬─→ FOUND-002 ─┬─→ FOUND-003 ─→ ...
 
 ---
 
-_Last updated: January 17, 2026 - Completed UX-005_
+_Last updated: June 26, 2026 - Completed MULTI-001 (multiplayer architecture design); added Epic 13 (Backend & Infrastructure) and Epic 14 (Live Shared Map); split MULTI-003 into 003a/003b_

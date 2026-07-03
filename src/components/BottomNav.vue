@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export type NavTab = 'questions' | 'timers' | 'cards' | 'history'
+export type NavTab = 'questions' | 'timers' | 'cards' | 'history' | 'map'
 
 interface Props {
   currentTab: NavTab
@@ -18,6 +18,7 @@ interface TabConfig {
 
 const tabs: TabConfig[] = [
   { id: 'questions', label: 'Questions' },
+  { id: 'map', label: 'Map' },
   { id: 'timers', label: 'Timers' },
   { id: 'cards', label: 'Cards' },
   { id: 'history', label: 'History' },
@@ -98,6 +99,19 @@ function isActive(tabId: NavTab): boolean {
       >
         <path
           d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+        />
+      </svg>
+
+      <!-- Map Icon -->
+      <svg
+        v-else-if="tab.id === 'map'"
+        :data-testid="`nav-tab-${tab.id}-icon`"
+        class="bottom-nav-icon"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path
+          d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"
         />
       </svg>
 

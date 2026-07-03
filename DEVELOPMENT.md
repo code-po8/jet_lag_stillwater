@@ -95,6 +95,135 @@ npm run dev
 
 ---
 
+## npm Hardening (Supply-Chain Defense)
+
+The repo ships an `.npmrc` (INFRA-002) that hardens installs as defense-in-depth
+alongside the Docker sandbox:
+
+| Setting               | Effect                                                                                                                      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `ignore-scripts=true` | Package lifecycle scripts (pre/post-install, prepare) do **not** run on install — blocks the most common npm attack vector. |
+| `save-exact=true`     | Adding a dep pins an exact version (no `^`/`~`), so a compromised patch release can't slip in on the next install.          |
+| `engine-strict=true`  | Install fails if Node/npm don't satisfy `engines`.                                                                          |
+
+Two consequences to be aware of:
+
+- **Native deps need an explicit rebuild.** Because install scripts are skipped,
+  native modules aren't built automatically. The current allowlist is **`sharp`**
+  (used by `scripts/generate-pwa-icons.mjs`). The `install` compose service runs
+  `npm rebuild sharp` after `npm ci`. If you add a native dependency, add it to
+  that rebuild command.
+- **Husky git hooks don't auto-install.** `prepare: husky` is a lifecycle script,
+  so it's skipped on install. After a fresh clone/install, set up the git hooks
+  once:
+
+  ```bash
+  npm run prepare    # installs the .husky/_ hook wrappers (safe: just husky)
+  ```
+
+  CI does not need this (it invokes lint/type-check/test directly via `npm run`).
+
+---
+
+## Sandboxed Development & Testing (Docker)
+
+> **Why:** installing or running npm dependencies executes untrusted third‑party
+> code (pre/post‑install scripts, the dev server, the test runner). Running that
+> directly on your host user exposes `~/.ssh`, `~/.npmrc` tokens, cloud
+> credentials, and your entire home directory to a compromised package. The
+> Docker sandbox runs all of that **inside containers that bind‑mount only the
+> repo source** — never `$HOME`, never `~/.ssh`, with no git credentials and as
+> a non‑root user. (INFRA‑001)
+
+**You still edit files and run `git` on the host as usual.** Only commands that
+execute dependency code are moved into containers.
+
+### Prerequisites
+
+- Docker Engine + Docker Compose v2 (`docker compose version`)
+
+### Everyday commands
+
+```bash
+# Frontend ------------------------------------------------------------------
+# Install frontend deps into the container's node_modules volume
+# (run once, and any time package.json / package-lock.json changes)
+docker compose run --rm install
+
+# Run the frontend dev server (http://localhost:5173)
+docker compose up frontend
+
+# Run frontend type-check + the full unit suite (network-isolated)
+docker compose run --rm test
+
+# Backend (server/) ---------------------------------------------------------
+# Install backend deps (separate package + lockfile, own volume)
+docker compose run --rm install-server
+
+# Run the backend dev server + Postgres (http://localhost:3000/health)
+# On startup it waits for Postgres and applies pending migrations automatically.
+# If host port 5432 is taken: POSTGRES_HOST_PORT=5433 docker compose up backend
+docker compose up backend
+
+# Run backend type-check + unit tests (network-isolated, no DB)
+docker compose run --rm test-server
+
+# Run backend integration tests against a real Postgres (room REST endpoints)
+POSTGRES_HOST_PORT=5433 docker compose run --rm itest-server
+
+# Run / roll back DB migrations manually (against the compose Postgres)
+docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:up"
+docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:down"
+```
+
+**Database schema (INFRA-004):** `sessions` (rooms) and `players`, managed by
+`node-pg-migrate` (SQL migrations in `server/migrations/`). Room codes recycle
+via a partial unique index (`UNIQUE (code) WHERE status <> 'ended'`). An expiry
+sweeper (`server/src/db/sweeper.ts`) evicts rooms past their `expires_at`.
+
+### How the isolation works
+
+- **No home/SSH mount.** `docker-compose.yml` bind-mounts only `./:/app`. There
+  is no `$HOME` or `~/.ssh` mount anywhere, so package scripts cannot read your
+  credentials.
+- **Non-root.** Containers run as the unprivileged `node` user.
+- **node_modules in a named volume.** Dependencies install into the
+  `frontend_node_modules` volume, never the host's `node_modules`, so
+  host-incompatible native builds and install-script side effects stay contained.
+- **No network for tests.** The `test` and `sentinel` services use
+  `network_mode: "none"`, which kills the common postinstall exfiltration /
+  second-stage download path.
+
+### Verifying the sandbox (sentinel)
+
+A sentinel proves the two guarantees — host home unreadable, no network:
+
+```bash
+./scripts/run-sandbox-sentinel.sh
+```
+
+It writes a marker file into your real `$HOME`, runs the network-isolated
+`sentinel` container, and asserts the container **cannot** read the marker and
+**cannot** reach the network. Exit code `0` means the sandbox is sound.
+
+> The `backend` and `postgres` services in `docker-compose.yml` are scaffolded
+> here but only become active from INFRA‑003/004 onward (they live behind the
+> `backend` compose profile).
+
+### Pre-commit hooks run in the sandbox too
+
+The Husky `pre-commit` hook does **not** run eslint / prettier / type-check /
+vitest / gitleaks on your host. It calls `scripts/run-hooks.sh`, which runs the
+`hooks` compose service — the same isolated container (no `$HOME`/`~/.ssh`,
+non-root, no network; the gitleaks binary is baked into the image at build
+time). Auto-fixes from `lint-staged` land on your working tree and are
+re-staged automatically.
+
+- First commit after changing `Dockerfile.dev` rebuilds the image (cached after).
+- Emergency bypass (accepts the supply-chain risk): `git commit --no-verify`.
+
+---
+
 ## NPM Scripts Reference
 
 All commands are run from the project root directory.
@@ -402,9 +531,36 @@ For secrets your app needs:
 
 ## Deployment
 
-### How It Works
+### Railway (multiplayer build — INFRA-007)
 
-The app is a static site (just HTML/CSS/JS files). No server-side code runs in production.
+The multiplayer build deploys to **Railway** as one project with three services:
+
+| Railway service | Build               | Role                              |
+| --------------- | ------------------- | --------------------------------- |
+| `web`           | `Dockerfile.web`    | static PWA (`serve -s dist`)      |
+| `api`           | `server/Dockerfile` | Fastify + WebSocket gateway       |
+| Postgres        | Railway plugin      | sessions/players (`DATABASE_URL`) |
+
+Key env vars:
+
+- `api`: `DATABASE_URL` (from the Postgres plugin), `WEB_ORIGIN` = the `web`
+  public URL (locks CORS **and** the WS upgrade origin), `PORT`/`HOST` (Railway
+  sets `PORT`; server binds `0.0.0.0`).
+- `web`: `VITE_API_URL` = the `api` public URL (the client derives `wss://`
+  from it).
+
+**Single-instance constraint:** the `RoomHub` is in-memory, so keep `api` at 1
+replica for v1 (Redis fan-out is future work).
+
+Full step-by-step (account-linked actions are yours to run): see
+[`deploy/railway.md`](deploy/railway.md).
+
+These map 1:1 to the local `docker compose` services (`frontend`/`backend`/
+`postgres`), so local and Railway stay in parity.
+
+### Static-only deploy (single-device build)
+
+The single-device build is a static site (just HTML/CSS/JS files). No server-side code runs in production.
 
 ```
 npm run build

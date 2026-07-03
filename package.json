@@ -20,12 +20,15 @@
     "format": "prettier --write --experimental-cli src/",
     "prepare": "husky",
     "secrets:scan": "gitleaks-secret-scanner --diff-mode history",
-    "secrets:scan:staged": "gitleaks-secret-scanner --diff-mode staged"
+    "secrets:scan:staged": "gitleaks-secret-scanner --diff-mode staged",
+    "bake:map": "node scripts/bake-stillwater-map.mjs",
+    "bake:poi": "node scripts/bake-stillwater-poi.mjs"
   },
   "dependencies": {
     "pinia": "^3.0.4",
     "vue": "^3.5.26",
-    "vue-router": "^4.6.4"
+    "vue-router": "^4.6.4",
+    "leaflet": "1.9.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
@@ -59,7 +62,8 @@
     "vite-plugin-pwa": "^1.2.0",
     "vite-plugin-vue-devtools": "^8.0.5",
     "vitest": "^4.0.16",
-    "vue-tsc": "^3.2.2"
+    "vue-tsc": "^3.2.2",
+    "@types/leaflet": "1.9.16"
   },
   "lint-staged": {
     "*.{js,ts,vue}": [
