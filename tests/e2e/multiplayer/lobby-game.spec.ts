@@ -27,14 +27,33 @@ async function createHost(
   return { page, code }
 }
 
-async function joinRoom(context: BrowserContext, code: string, name: string): Promise<Page> {
+/**
+ * TEMP diagnostic (joiner misses set-hider roster on CI): capture every inbound
+ * WS frame so we can see whether the `roster` message actually arrived.
+ */
+function captureWsFrames(page: Page): string[] {
+  const frames: string[] = []
+  page.on('websocket', (ws) => {
+    ws.on('framereceived', (f) => {
+      if (typeof f.payload === 'string') frames.push(f.payload)
+    })
+  })
+  return frames
+}
+
+async function joinRoom(
+  context: BrowserContext,
+  code: string,
+  name: string,
+): Promise<{ page: Page; frames: string[] }> {
   const page = await context.newPage()
+  const frames = captureWsFrames(page) // attach before the WS opens
   await page.goto('/lobby')
   await page.getByTestId('join-code-input').fill(code)
   await page.getByTestId('join-name-input').fill(name)
   await page.getByTestId('join-submit-btn').click()
   await expect(page.getByTestId('room-code-display')).toHaveText(code)
-  return page
+  return { page, frames }
 }
 
 test.describe('multiplayer lobby → game (2 browsers)', () => {
@@ -46,7 +65,7 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
 
     // 1. Host creates a room; joiner joins with the code.
     const { page: host, code } = await createHost(hostCtx, 'Hank')
-    const joiner = await joinRoom(joinCtx, code, 'Sam')
+    const { page: joiner, frames: joinerFrames } = await joinRoom(joinCtx, code, 'Sam')
 
     // 2. Host sees the joiner appear in the live roster (WS player.joined).
     await expect(host.getByTestId('lobby-roster')).toContainText('Sam')
@@ -60,7 +79,16 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
     // Wait until the JOINER has received the roster update (their own row shows
     // the HIDER badge) before starting — otherwise starting can race the role
     // broadcast and the joiner would enter the game still shown as a seeker.
-    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER')
+    try {
+      await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER')
+    } catch (e) {
+      // Diagnostic: what did the joiner's socket actually receive?
+      console.log('=== JOINER WS FRAMES (received) ===')
+      for (const f of joinerFrames) console.log(f)
+      console.log('=== JOINER lobby roster DOM ===')
+      console.log(await joiner.getByTestId('lobby-roster').textContent())
+      throw e
+    }
 
     // 4. Host starts — BOTH clients navigate to the game (bridge-driven nav).
     await host.getByTestId('start-game-btn').click()
