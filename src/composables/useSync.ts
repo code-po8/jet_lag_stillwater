@@ -38,6 +38,8 @@ export interface SyncSession {
   self: Ref<PublicPlayer | null>
   players: Ref<PublicPlayer[]>
   phase: Ref<GamePhase>
+  /** Server epoch ms when the current phase began (null in setup). */
+  phaseStartedAt: Ref<number | null>
   zone: Ref<Zone | null>
   positions: Ref<Map<string, Position>>
   breachedSeekers: Ref<string[]>
@@ -60,6 +62,8 @@ export interface SyncSession {
   onGameEvent(handler: GameEventHandler): () => void
   /** Send a clock-sync probe; the reply updates `clockOffset`. */
   syncClock(): void
+  /** Best estimate of the server's current epoch ms (local time + offset). */
+  serverNow(): number
 }
 
 /** Host-only phase/control actions (MULTI-003b-1). */
@@ -77,6 +81,10 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   const self = ref<PublicPlayer | null>(null)
   const players = ref<PublicPlayer[]>([])
   const phase = ref<GamePhase>('setup')
+  // Server epoch ms when the current phase began — timers align to this shared
+  // instant (converted to local time via clockOffset) rather than each device's
+  // own start moment.
+  const phaseStartedAt = ref<number | null>(null)
   const zone = ref<Zone | null>(null)
   const positions = ref<Map<string, Position>>(new Map())
   const breachedSeekers = ref<string[]>([])
@@ -88,6 +96,9 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   // t1 of the most recent in-flight clock probe; replies must echo it, so a
   // stale/out-of-order reply can't corrupt the offset (no matched round trip).
   let pendingProbeT1: number | null = null
+  // Periodic clock-sync probe while connected, so clockOffset stays fresh for
+  // timer alignment. Cleared on disconnect.
+  let clockTimer: ReturnType<typeof setInterval> | null = null
 
   const gameEventHandlers = new Set<GameEventHandler>()
   let unsubscribe: (() => void) | null = null
@@ -99,6 +110,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
         self.value = msg.you
         players.value = msg.players
         phase.value = msg.phase
+        phaseStartedAt.value = msg.phaseStartedAt
         zone.value = msg.zone
         break
       case 'player.joined':
@@ -125,6 +137,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
         break
       case 'phase':
         phase.value = msg.phase
+        phaseStartedAt.value = msg.startedAt
         break
       case 'paused':
         paused.value = msg.paused
@@ -165,15 +178,26 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     }
   }
 
+  /** Clock-sync probe cadence (ms) — keeps clockOffset fresh for timers. */
+  const CLOCK_SYNC_INTERVAL_MS = 30_000
+
   async function connect(opts: ConnectOptions): Promise<void> {
     unsubscribe?.()
     unsubscribe = service.onMessage(applyRemote)
     await service.connect(opts)
+    // Probe once now, then periodically, so timers can align to server time.
+    syncClock()
+    if (clockTimer) clearInterval(clockTimer)
+    clockTimer = setInterval(syncClock, CLOCK_SYNC_INTERVAL_MS)
   }
 
   function disconnect(): void {
     unsubscribe?.()
     unsubscribe = null
+    if (clockTimer) {
+      clearInterval(clockTimer)
+      clockTimer = null
+    }
     service.disconnect()
     self.value = null
     players.value = []
@@ -181,6 +205,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     breachedSeekers.value = []
     ruledOutCells.value = []
     paused.value = false
+    phaseStartedAt.value = null
     pendingProbeT1 = null
   }
 
@@ -213,12 +238,17 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     pendingProbeT1 = t1
     service.send({ t: 'time.sync', t1 })
   }
+  /** Best estimate of the server's current epoch ms (local time + offset). */
+  function serverNow(): number {
+    return Date.now() + clockOffset.value
+  }
 
   return {
     status: service.status,
     self,
     players,
     phase,
+    phaseStartedAt,
     zone,
     positions,
     breachedSeekers,
@@ -235,6 +265,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     sendGameEvent,
     onGameEvent,
     syncClock,
+    serverNow,
     clockOffset,
   }
 }

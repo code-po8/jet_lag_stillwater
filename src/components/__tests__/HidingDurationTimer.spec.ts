@@ -4,6 +4,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import HidingDurationTimer from '../HidingDurationTimer.vue'
 import { useGameStore } from '@/stores/gameStore'
+import { useRoomStore } from '@/stores/roomStore'
+import { useSync, __resetSyncSession } from '@/composables/useSync'
 
 /**
  * Helper to set up a game in seeking phase
@@ -39,6 +41,27 @@ describe('HidingDurationTimer', () => {
     cleanup()
     vi.useRealTimers()
     localStorage.clear()
+  })
+
+  describe('multiplayer server alignment', () => {
+    afterEach(() => __resetSyncSession())
+
+    it('seeds elapsed from the shared server phase-start (not local zero)', async () => {
+      // In a room, with the seeking phase having started 40s ago on the server.
+      const room = useRoomStore()
+      room.code = 'ABCD'
+      room.rejoinToken = 'tok'
+      room.self = { id: 's1', name: 'Sam', role: 'seeker', isHost: false, connected: true }
+      const sync = useSync()
+      sync.phaseStartedAt.value = Date.now() - 40_000 // offset 0 → serverNow = Date.now()
+
+      render(HidingDurationTimer)
+      setupGameInSeekingPhase()
+      await nextTick()
+
+      // A late joiner's timer should already read ~40s, not 00:00:00.
+      expect(screen.getByTestId('timer-display')).toHaveTextContent('00:00:40')
+    })
   })
 
   describe('timer display', () => {

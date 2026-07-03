@@ -492,10 +492,14 @@ describe('GamePlayView (role toggle)', () => {
   describe('hiding period timer integration', () => {
     beforeEach(() => {
       vi.useFakeTimers()
+      // Timers persist to localStorage; clear so each test starts fresh and one
+      // test's persisted timer state doesn't rehydrate into the next.
+      localStorage.clear()
     })
 
     afterEach(() => {
       vi.useRealTimers()
+      localStorage.clear()
     })
 
     it('should display and auto-start HidingPeriodTimer when game starts', async () => {
@@ -520,9 +524,9 @@ describe('GamePlayView (role toggle)', () => {
       // Timer should be displayed during hiding-period phase
       expect(screen.getByTestId('hiding-period-timer')).toBeInTheDocument()
 
-      // Timer should show approximately 30:00 (may have ticked a few times due to timing)
+      // Timer starts at 30:00 (elapsed seeded to 0 on start); allow a tick or two.
       const timerText = screen.getByTestId('timer-display').textContent
-      expect(timerText).toMatch(/^29:5\d$/)
+      expect(timerText).toMatch(/^(30:00|29:5\d)$/)
     })
 
     it('should count down the hiding period timer automatically', async () => {

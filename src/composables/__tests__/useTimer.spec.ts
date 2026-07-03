@@ -57,6 +57,16 @@ describe('useTimer', () => {
       expect(elapsed.value).toBe(5000)
     })
 
+    it('seeds elapsed from fromElapsed and continues from there (server alignment)', () => {
+      const { start, elapsed } = useTimer()
+
+      // A device joining a phase that started 10s ago on the server.
+      start(10_000)
+      expect(elapsed.value).toBe(10_000)
+      vi.advanceTimersByTime(2000)
+      expect(elapsed.value).toBe(12_000)
+    })
+
     it('should not restart if already running', () => {
       const { start, elapsed } = useTimer()
 
