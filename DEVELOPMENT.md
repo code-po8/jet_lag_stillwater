@@ -171,6 +171,19 @@ docker compose run --rm test-server
 # Run backend integration tests against a real Postgres (room REST endpoints)
 POSTGRES_HOST_PORT=5433 docker compose run --rm itest-server
 
+# E2E (Playwright) --------------------------------------------------------
+# Offline E2E suite (no server/DB), chromium baked into the Playwright image
+docker compose run --rm e2e
+
+# Full-stack MULTIPLAYER E2E: 2 browsers vs a real WS server + Postgres, all
+# inside one container. playwright.config.ts's webServer boots the API server
+# (auto-migrates) + Vite; the container reaches Postgres over the compose
+# network. If host 5432 is taken, set POSTGRES_HOST_PORT to a free port.
+POSTGRES_HOST_PORT=55434 docker compose run --rm e2e-multiplayer
+# Scope to a single test:
+POSTGRES_HOST_PORT=55434 docker compose run --rm e2e-multiplayer \
+  npx playwright test --project=multiplayer --grep "mid-game refresh"
+
 # Run / roll back DB migrations manually (against the compose Postgres)
 docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:up"
 docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:down"

@@ -71,6 +71,7 @@ Do NOT simply follow the order cards were added to STORIES.md.
 ### Card Size Guidelines
 
 Cards should be small enough to:
+
 - Complete in a single iteration without context overflow
 - Have clear, testable acceptance criteria
 - Result in a single logical commit
@@ -100,13 +101,13 @@ chore(deps): configure vitest and vue test utils
 
 ### Files to Reference
 
-| File | Purpose |
-|------|---------|
-| `RESEARCH_NOTES.md` | Game rules, tech decisions, UI design specs, icon reference |
-| `GAME_RULES.md` | Official question formats, card costs, Stillwater adaptations |
-| `STORIES.md` | Backlog of cards with acceptance criteria |
-| `DEVELOPMENT.md` | Setup, scripts, deployment guide |
-| `CLAUDE.md` | This file - workflow instructions |
+| File                | Purpose                                                       |
+| ------------------- | ------------------------------------------------------------- |
+| `RESEARCH_NOTES.md` | Game rules, tech decisions, UI design specs, icon reference   |
+| `GAME_RULES.md`     | Official question formats, card costs, Stillwater adaptations |
+| `STORIES.md`        | Backlog of cards with acceptance criteria                     |
+| `DEVELOPMENT.md`    | Setup, scripts, deployment guide                              |
+| `CLAUDE.md`         | This file - workflow instructions                             |
 
 ### Starting an Iteration
 
@@ -171,12 +172,42 @@ tests/
 
 ## Testing Commands
 
+**Run tests in Docker containers, not on the host.** Installing/running npm
+dependencies executes untrusted third-party code; the compose sandbox bind-mounts
+only the repo source (no `$HOME`/`~/.ssh`), runs as non-root, and keeps
+`node_modules` in named volumes. See `DEVELOPMENT.md` → "Sandboxed Development &
+Testing (Docker)" for the full rationale and command list.
+
 ```bash
-npm run test:unit           # Run unit tests
-npm run test:unit:watch     # TDD mode
-npm run test:e2e            # Run E2E tests
-npm run lint                # Check code quality
+# Frontend: type-check + full unit suite (network-isolated)
+docker compose run --rm test
+
+# Backend: type-check + unit tests (network-isolated, no DB)
+docker compose run --rm test-server
+
+# Backend integration tests against a real Postgres (*.itest.ts)
+POSTGRES_HOST_PORT=5433 docker compose run --rm itest-server
+
+# Offline E2E (Playwright, no server/DB)
+docker compose run --rm e2e
+
+# Full-stack MULTIPLAYER E2E: 2 browsers + WS server + Postgres, all in one
+# container. Boots the API server (auto-migrates) + Vite via playwright webServer.
+# Use POSTGRES_HOST_PORT if host 5432 is taken (a common clash).
+POSTGRES_HOST_PORT=55434 docker compose run --rm e2e-multiplayer
+# Scope to one test:
+POSTGRES_HOST_PORT=55434 docker compose run --rm e2e-multiplayer \
+  npx playwright test --project=multiplayer --grep "mid-game refresh"
 ```
+
+The raw `npm run test:unit` / `test:e2e` / `lint` scripts still exist and work,
+but prefer the containerized commands above so dependency code never runs on your
+host user. The pre-commit hook runs the same checks in the `hooks` container.
+
+The multiplayer E2E is the only layer that catches reconnect/roster/timer sync
+bugs across two real clients (the unit suite mocks the transport). Run it after
+any change to the WS gateway, `useSync`, the multiplayer bridge, `roomStore`, or
+the timer components.
 
 ## Important Notes
 
@@ -190,22 +221,26 @@ npm run lint                # Check code quality
 This is a **public repository**. Never commit secrets or credentials.
 
 **DO NOT commit:**
+
 - API keys or tokens
 - Database connection strings
-- Private keys (*.pem, *.key)
+- Private keys (_.pem, _.key)
 - Credential files
 - .env files (except .env.example with placeholder values)
 
 **For environment variables:**
+
 1. Create `.env.example` with placeholder values (committed)
 2. Create `.env` with real values (gitignored)
 3. Document required variables in DEVELOPMENT.md
 
 **For CI/CD secrets:**
+
 - Use GitHub repository secrets (Settings → Secrets and variables → Actions)
 - Reference in workflows as `${{ secrets.SECRET_NAME }}`
 
 **Supabase (future):**
+
 - The `anon` key is designed to be public (client-side use)
 - The `service_role` key must NEVER be committed or exposed
 - Row-level security policies protect data, not the anon key
