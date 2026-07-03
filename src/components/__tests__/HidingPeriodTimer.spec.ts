@@ -441,4 +441,53 @@ describe('HidingPeriodTimer', () => {
       expect(timerDisplay.textContent).toMatch(/^(30:00|29:59)$/)
     })
   })
+
+  describe('host: end hiding period early', () => {
+    it('shows the end-early control offline (single device is the host)', async () => {
+      render(HidingPeriodTimer)
+      setupGameInHidingPeriod()
+      await nextTick()
+
+      expect(screen.getByTestId('end-hiding-early-btn')).toBeInTheDocument()
+    })
+
+    it('requires a confirm before transitioning to seeking', async () => {
+      render(HidingPeriodTimer)
+      const gameStore = setupGameInHidingPeriod()
+      await nextTick()
+
+      // First tap only reveals the confirm step — phase is unchanged.
+      await fireEvent.click(screen.getByTestId('end-hiding-early-btn'))
+      await nextTick()
+      expect(gameStore.currentPhase).toBe('hiding-period')
+      expect(screen.getByTestId('end-hiding-early-confirm')).toBeInTheDocument()
+    })
+
+    it('cancel returns to the button without changing phase', async () => {
+      render(HidingPeriodTimer)
+      const gameStore = setupGameInHidingPeriod()
+      await nextTick()
+
+      await fireEvent.click(screen.getByTestId('end-hiding-early-btn'))
+      await nextTick()
+      await fireEvent.click(screen.getByTestId('end-hiding-early-cancel'))
+      await nextTick()
+
+      expect(gameStore.currentPhase).toBe('hiding-period')
+      expect(screen.getByTestId('end-hiding-early-btn')).toBeInTheDocument()
+    })
+
+    it('confirming offline transitions the local game to seeking', async () => {
+      render(HidingPeriodTimer)
+      const gameStore = setupGameInHidingPeriod()
+      await nextTick()
+
+      await fireEvent.click(screen.getByTestId('end-hiding-early-btn'))
+      await nextTick()
+      await fireEvent.click(screen.getByTestId('end-hiding-early-confirm'))
+      await nextTick()
+
+      expect(gameStore.currentPhase).toBe('seeking')
+    })
+  })
 })

@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSync } from '@/composables/useSync'
+import { useGameSync } from '@/composables/useGameSync'
 import { useTimer } from '@/composables/useTimer'
 import { useNotifications } from '@/composables/useNotifications'
 import { formatTimeShort } from '@/utils/formatTime'
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 const gameStore = useGameStore()
 const room = useRoomStore()
 const sync = useSync()
+const { hostAction } = useGameSync()
 const persistenceService = createPersistenceService()
 const notifications = useNotifications()
 
@@ -162,6 +164,38 @@ watch(activeRemaining, (remaining) => {
     handleComplete()
   }
 })
+
+/**
+ * Host-only control: end the hiding period early. Only the host may do this
+ * (offline the single device is the de-facto host). Requires a confirm click
+ * so an accidental tap can't skip everyone straight to seeking — the transition
+ * is irreversible. In a room it reuses the server-authoritative `start-seeking`
+ * host action so every device transitions together; offline it drives the local
+ * store directly.
+ */
+const canEndHiding = computed(() => !room.inRoom || room.isHost)
+const showEndEarly = computed(
+  () => canEndHiding.value && isHidingPeriod.value && !isExpired.value && !isPausedDisplay.value,
+)
+const confirmingEndEarly = ref(false)
+
+function requestEndEarly() {
+  confirmingEndEarly.value = true
+}
+
+function cancelEndEarly() {
+  confirmingEndEarly.value = false
+}
+
+function confirmEndEarly() {
+  confirmingEndEarly.value = false
+  if (room.inRoom) {
+    // Server-authoritative: broadcasts a `phase` to every client (incl. us).
+    hostAction('start-seeking', GamePhase.Seeking)
+  } else {
+    gameStore.startSeeking()
+  }
+}
 
 /**
  * Handle timer completion
@@ -415,6 +449,45 @@ onUnmounted(() => {
         Resume
       </button>
     </div>
+
+    <!-- Host control: end the hiding period early (host-only; two-step confirm). -->
+    <div v-if="showEndEarly" data-testid="end-hiding-early" class="timer-host-controls">
+      <button
+        v-if="!confirmingEndEarly"
+        class="btn-show btn-show-secondary"
+        data-testid="end-hiding-early-btn"
+        aria-label="End hiding period now"
+        @click="requestEndEarly"
+      >
+        <svg class="timer-btn-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5z"
+          />
+        </svg>
+        End hiding period now
+      </button>
+      <template v-else>
+        <p class="timer-host-confirm-text">End the hiding period and start seeking?</p>
+        <div class="timer-host-confirm-actions">
+          <button
+            class="btn-show btn-show-danger"
+            data-testid="end-hiding-early-confirm"
+            aria-label="Confirm end hiding period"
+            @click="confirmEndEarly"
+          >
+            Start seeking
+          </button>
+          <button
+            class="btn-show btn-show-secondary"
+            data-testid="end-hiding-early-cancel"
+            aria-label="Cancel"
+            @click="cancelEndEarly"
+          >
+            Cancel
+          </button>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -523,6 +596,36 @@ onUnmounted(() => {
 .timer-controls {
   display: flex;
   gap: 0.75rem;
+}
+
+.timer-host-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.timer-host-confirm-text {
+  font-size: 0.875rem;
+  color: var(--color-ui-text-secondary);
+  text-align: center;
+}
+
+.timer-host-confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-show-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.btn-show-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
 }
 
 .timer-btn-icon {
