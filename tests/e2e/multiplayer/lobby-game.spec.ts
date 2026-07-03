@@ -34,9 +34,14 @@ async function createHost(
 function captureWsFrames(page: Page): string[] {
   const frames: string[] = []
   page.on('websocket', (ws) => {
-    ws.on('framereceived', (f) => {
-      if (typeof f.payload === 'string') frames.push(f.payload)
+    frames.push(`>> OPEN ${ws.url()}`)
+    ws.on('framesent', (f) => {
+      if (typeof f.payload === 'string') frames.push(`SENT ${f.payload}`)
     })
+    ws.on('framereceived', (f) => {
+      if (typeof f.payload === 'string') frames.push(`RECV ${f.payload}`)
+    })
+    ws.on('close', () => frames.push(`<< CLOSE ${ws.url()}`))
   })
   return frames
 }
