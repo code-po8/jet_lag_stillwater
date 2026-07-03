@@ -57,6 +57,11 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
     await host.getByTestId('lobby-roster').getByRole('button', { name: 'Sam' }).click()
     await expect(host.getByTestId('start-game-btn')).toBeEnabled()
 
+    // Wait until the JOINER has received the roster update (their own row shows
+    // the HIDER badge) before starting — otherwise starting can race the role
+    // broadcast and the joiner would enter the game still shown as a seeker.
+    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER')
+
     // 4. Host starts — BOTH clients navigate to the game (bridge-driven nav).
     await host.getByTestId('start-game-btn').click()
     await expect(host).toHaveURL(/\/game/)
