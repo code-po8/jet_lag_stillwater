@@ -125,6 +125,7 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
           you: resolved.player,
           players: hub.publicMembers(),
           phase: hub.getPhase(),
+          phaseStartedAt: hub.getPhaseStartedAt(),
           zone: hub.getZone(),
         })
         // New player → joined; returning player → presence reconnected.
@@ -245,7 +246,7 @@ function handleMessage(
         if (paused !== null) broadcast(code, { t: 'paused', paused })
       } else {
         const phase = hub.applyHostAction(playerId, msg.action)
-        if (phase) broadcast(code, { t: 'phase', phase })
+        if (phase) broadcast(code, { t: 'phase', phase, startedAt: hub.getPhaseStartedAt()! })
       }
       break
     }

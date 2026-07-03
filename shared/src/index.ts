@@ -133,6 +133,8 @@ export interface WelcomeMessage {
   you: PublicPlayer
   players: PublicPlayer[]
   phase: GamePhase
+  /** Server epoch ms when the current phase began (null in setup / no round). */
+  phaseStartedAt: number | null
   zone: Zone | null
 }
 
@@ -189,6 +191,12 @@ export interface ZoneBreachMessage {
 export interface PhaseMessage {
   t: 'phase'
   phase: GamePhase
+  /**
+   * Server epoch ms when this phase began. Clients align timers to this shared
+   * instant (via the clock offset) instead of each device's local start, so
+   * countdowns/durations agree across devices.
+   */
+  startedAt: number
 }
 
 /**

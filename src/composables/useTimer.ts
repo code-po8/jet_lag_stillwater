@@ -29,7 +29,12 @@ export function useTimer(options: UseTimerOptions = {}) {
     return Math.max(0, initialTime - elapsed.value)
   })
 
-  function start() {
+  /**
+   * Start the timer. `fromElapsed` seeds how much time has already passed (ms) —
+   * used to align a multiplayer timer to a shared server start instant, so the
+   * count continues from there instead of zero.
+   */
+  function start(fromElapsed = 0) {
     if (isRunning.value && !isPaused.value) {
       return // Already running
     }
@@ -43,7 +48,8 @@ export function useTimer(options: UseTimerOptions = {}) {
     isRunning.value = true
     isPaused.value = false
     startTimestamp = Date.now()
-    pausedElapsed = 0
+    pausedElapsed = fromElapsed
+    elapsed.value = fromElapsed
 
     intervalId = setInterval(() => {
       if (!isPaused.value && startTimestamp !== null) {
