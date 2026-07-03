@@ -1,13 +1,15 @@
 /**
  * Persistence Service Abstraction
  *
- * Provides a swappable storage layer. Currently uses localStorage,
- * but can be replaced with Supabase or other backends later.
+ * Provides a swappable storage layer for SINGLE-DEVICE state. Currently uses
+ * localStorage, but can be replaced with another client-side backend later.
+ * (Multiplayer state is server-authoritative — Postgres via the server/ API,
+ * synced over WebSocket — and does NOT go through this interface.)
  */
 
 /**
  * Generic persistence interface for storing and retrieving data.
- * Implementations can use localStorage, IndexedDB, Supabase, etc.
+ * Implementations can use localStorage, IndexedDB, etc.
  */
 export interface PersistenceService {
   /**

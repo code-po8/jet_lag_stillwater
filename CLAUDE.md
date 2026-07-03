@@ -13,7 +13,10 @@ Mobile-friendly PWA for playing Jet Lag: Hide and Seek adapted for Stillwater, O
 - **Styling:** Tailwind CSS
 - **Testing:** Vitest (unit/integration), Playwright (E2E)
 - **Build:** Vite
-- **Deployment:** Netlify or Vercel (static files)
+- **Backend:** Fastify + WebSocket gateway (`server/`), Postgres for rooms/players
+- **Deployment:** Railway — `web` (static PWA) + `api` (Fastify/WS) + Postgres. The
+  single-device build is also deployable as static files to any static host. See
+  `DEVELOPMENT.md` → Deployment and `deploy/railway.md`.
 
 ## Development Workflow: Ralph Wiggum Technique (Human-in-the-Loop)
 
@@ -214,7 +217,9 @@ the timer components.
 - Mobile-first design (test on 320px+ widths)
 - PWA must work offline after initial load
 - All game logic must match rules in RESEARCH_NOTES.md
-- Persistence layer must be swappable (localStorage now, Supabase later)
+- Single-device persistence must stay swappable behind `PersistenceService`
+  (localStorage now; IndexedDB/other later). Multiplayer state is server-authoritative
+  (Fastify + Postgres in `server/`), synced over WebSocket — not stored client-side.
 
 ## Security: Public Repository
 
@@ -239,8 +244,11 @@ This is a **public repository**. Never commit secrets or credentials.
 - Use GitHub repository secrets (Settings → Secrets and variables → Actions)
 - Reference in workflows as `${{ secrets.SECRET_NAME }}`
 
-**Supabase (future):**
+**Backend (`server/` — Fastify + Postgres):**
 
-- The `anon` key is designed to be public (client-side use)
-- The `service_role` key must NEVER be committed or exposed
-- Row-level security policies protect data, not the anon key
+- `DATABASE_URL` (Postgres connection string) must NEVER be committed — it's
+  injected via Railway / the environment, not the repo.
+- Rejoin tokens are stored **hashed** (`server/src/rooms/token.ts`); never log or
+  expose the raw token beyond the one-time issue to the client.
+- `WEB_ORIGIN` locks CORS and the WS upgrade origin — set it to the deployed web
+  URL in production.
