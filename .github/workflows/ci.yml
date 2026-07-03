@@ -92,8 +92,8 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies (root + shared + server)
-        # shared + server are separate packages the E2E stack needs. globalSetup
-        # builds shared; the server auto-migrates Postgres on boot.
+        # shared + server are separate packages the E2E stack needs. The server
+        # auto-migrates Postgres on boot.
         run: |
           npm ci
           npm --prefix shared ci
@@ -101,6 +101,14 @@ jobs:
 
       - name: Rebuild allow-listed native deps
         run: npm rebuild sharp
+
+      - name: Build shared package
+        # The API server imports @jet-lag-stillwater/shared as a real package
+        # (file:../shared → shared/dist), resolved at runtime. The E2E webServer
+        # command also builds it, but doing it here too keeps that build out of
+        # the webServer's start-up timeout window. (--force in the build script
+        # defeats stale incremental buildinfo skipping emit.)
+        run: npm --prefix shared run build
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

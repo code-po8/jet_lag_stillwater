@@ -18,10 +18,6 @@ export default defineConfig({
   // Directory for test files
   testDir: './tests/e2e',
 
-  // Multiplayer E2E: build the shared package once before the API server starts
-  // (it resolves @jet-lag-stillwater/shared to shared/dist at runtime).
-  globalSetup: MULTIPLAYER ? './tests/e2e/multiplayer/global-setup.ts' : undefined,
-
   // Run tests in parallel
   fullyParallel: true,
 
@@ -80,9 +76,12 @@ export default defineConfig({
     ? [
         {
           // The API server imports @jet-lag-stillwater/shared as a real package
-          // (file:../shared → shared/dist), so it must be built first — done by
-          // globalSetup below. DATABASE_URL is provided by the environment.
-          command: 'npm --prefix server run dev',
+          // (file:../shared → shared/dist), resolved at runtime — so shared MUST
+          // be built before the server process boots. Build it in THIS command
+          // (sequential &&) rather than globalSetup, which races the webServer
+          // startup. --force (in the shared build script) defeats stale
+          // incremental buildinfo skipping emit. DATABASE_URL is from the env.
+          command: 'npm --prefix shared run build && npm --prefix server run dev',
           url: `${API_URL}/health`,
           reuseExistingServer: !process.env.CI,
           timeout: 120 * 1000,
