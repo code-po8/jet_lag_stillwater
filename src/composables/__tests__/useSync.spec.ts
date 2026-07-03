@@ -199,11 +199,23 @@ describe('createSyncSession', () => {
     expect(session.phaseStartedAt.value).toBe(1_700_000_000_000)
   })
 
-  it('probes the clock on connect and periodically', async () => {
+  it('does NOT probe the clock until welcome (avoids racing the hello handshake)', async () => {
     vi.useFakeTimers()
     const session = createSyncSession({ service: f.svc })
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
-    // One probe sent immediately on connect.
+    // No probe before welcome: a time.sync here races hello → server closes the
+    // socket ("expected hello").
+    expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(0)
+
+    // welcome acknowledges the handshake → first probe fires, then periodically.
+    f.emit({
+      t: 'welcome',
+      you: { id: 'p1', name: 'A', role: 'seeker', isHost: false, connected: true },
+      players: [],
+      phase: 'setup',
+      phaseStartedAt: null,
+      zone: null,
+    })
     expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(1)
     vi.advanceTimersByTime(30_000)
     expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(2)
