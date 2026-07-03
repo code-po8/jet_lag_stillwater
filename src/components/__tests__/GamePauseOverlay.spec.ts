@@ -3,6 +3,8 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/vue'
 import { setActivePinia, createPinia } from 'pinia'
 import GamePauseOverlay from '../GamePauseOverlay.vue'
 import { useGameStore } from '@/stores/gameStore'
+import { useRoomStore } from '@/stores/roomStore'
+import { useSync, __resetSyncSession } from '@/composables/useSync'
 
 describe('GamePauseOverlay', () => {
   beforeEach(() => {
@@ -261,6 +263,63 @@ describe('GamePauseOverlay', () => {
       expect(overlay).toHaveClass('flex')
       expect(overlay).toHaveClass('items-center')
       expect(overlay).toHaveClass('justify-center')
+    })
+  })
+
+  describe('multiplayer (host-authoritative pause)', () => {
+    afterEach(() => __resetSyncSession())
+
+    function enterRoomAs(isHost: boolean) {
+      const store = setupGameInProgress()
+      const room = useRoomStore()
+      room.code = 'ABCD'
+      room.rejoinToken = 'tok'
+      room.self = {
+        id: isHost ? 'h1' : 's1',
+        name: isHost ? 'Host' : 'Sam',
+        role: 'seeker',
+        isHost,
+        connected: true,
+      }
+      return store
+    }
+
+    it('host pausing broadcasts a pause host-action', async () => {
+      enterRoomAs(true)
+      const sync = useSync()
+      const sendHostAction = vi.fn()
+      sync.sendHostAction = sendHostAction
+
+      render(GamePauseOverlay)
+      await fireEvent.click(screen.getByLabelText('Pause game'))
+      expect(sendHostAction).toHaveBeenCalledWith('pause')
+    })
+
+    it('hides the pause button from a non-host in a room', () => {
+      enterRoomAs(false)
+      render(GamePauseOverlay)
+      expect(screen.queryByLabelText('Pause game')).not.toBeInTheDocument()
+    })
+
+    it('non-host sees the paused overlay but no resume button', () => {
+      const store = enterRoomAs(false)
+      store.pauseGame()
+      render(GamePauseOverlay)
+      expect(screen.getByTestId('game-pause-overlay')).toBeInTheDocument()
+      expect(screen.queryByLabelText('Resume game')).not.toBeInTheDocument()
+      expect(screen.getByTestId('pause-waiting')).toBeInTheDocument()
+    })
+
+    it('host resuming broadcasts a resume host-action', async () => {
+      const store = enterRoomAs(true)
+      store.pauseGame()
+      const sync = useSync()
+      const sendHostAction = vi.fn()
+      sync.sendHostAction = sendHostAction
+
+      render(GamePauseOverlay)
+      await fireEvent.click(screen.getByLabelText('Resume game'))
+      expect(sendHostAction).toHaveBeenCalledWith('resume')
     })
   })
 })

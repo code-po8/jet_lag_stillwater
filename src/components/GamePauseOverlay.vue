@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import { useRoomStore } from '@/stores/roomStore'
+import { useGameSync } from '@/composables/useGameSync'
 import { useNotifications } from '@/composables/useNotifications'
 
 interface Props {
@@ -12,10 +14,16 @@ withDefaults(defineProps<Props>(), {
 })
 
 const gameStore = useGameStore()
+const room = useRoomStore()
+const { hostAction } = useGameSync()
 const notifications = useNotifications()
 
+// In a multiplayer room pause/resume is host-authoritative (server enforces it),
+// so only the host drives it; offline, anyone on the device can.
+const canControl = computed(() => !room.inRoom || room.isHost)
+
 const showPauseButton = computed(() => {
-  return gameStore.canPauseGame && !gameStore.isGamePaused
+  return canControl.value && gameStore.canPauseGame && !gameStore.isGamePaused
 })
 
 const showOverlay = computed(() => {
@@ -25,11 +33,15 @@ const showOverlay = computed(() => {
 function handlePause() {
   gameStore.pauseGame()
   notifications.notifyGamePaused()
+  // Broadcast so every device pauses. The inbound bridge applies it on others;
+  // hostAction is a no-op for non-hosts (and the button is hidden for them).
+  if (room.inRoom) hostAction('pause')
 }
 
 function handleResume() {
   gameStore.resumeGame()
   notifications.notifyGameResumed()
+  if (room.inRoom) hostAction('resume')
 }
 </script>
 
@@ -58,12 +70,16 @@ function handleResume() {
         <h2 class="text-3xl font-bold text-white">Game Paused</h2>
         <p class="text-slate-400">All timers stopped</p>
         <button
+          v-if="canControl"
           class="min-h-11 min-w-32 rounded-lg bg-green-600 px-6 py-3 text-lg font-semibold text-white transition-colors hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-slate-800"
           aria-label="Resume game"
           @click="handleResume"
         >
           Resume Game
         </button>
+        <p v-else data-testid="pause-waiting" class="text-slate-400">
+          Waiting for the host to resume…
+        </p>
       </div>
     </div>
   </Teleport>

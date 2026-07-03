@@ -113,4 +113,32 @@ describe('useMultiplayerBridge', () => {
     await nextTick()
     expect(game.currentPhase).toBe(GamePhase.Seeking)
   })
+
+  it('applies a synced pause/resume to the local game state', async () => {
+    enterRoom()
+    const game = useGameStore()
+    const sync = useSync()
+    useMultiplayerBridge()
+    // Get into a pausable phase so pauseGame succeeds.
+    game.currentPhase = GamePhase.Seeking
+
+    sync.paused.value = true
+    await nextTick()
+    expect(game.isGamePaused).toBe(true)
+
+    sync.paused.value = false
+    await nextTick()
+    expect(game.isGamePaused).toBe(false)
+  })
+
+  it('does not apply pause when offline (no room)', async () => {
+    const game = useGameStore()
+    const sync = useSync()
+    useMultiplayerBridge()
+    game.currentPhase = GamePhase.Seeking
+
+    sync.paused.value = true
+    await nextTick()
+    expect(game.isGamePaused).toBe(false)
+  })
 })

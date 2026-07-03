@@ -64,10 +64,23 @@ export function useMultiplayerBridge() {
     { immediate: true },
   )
 
+  // 3. Paused → gameStore. The host's pause/resume is broadcast by the server
+  // as `paused`; apply it locally so every device stops/starts its timers (the
+  // store actions are guarded, so this is a no-op on the device that initiated).
+  const stopPaused = watch(
+    () => sync.paused.value,
+    (paused) => {
+      if (!inRoom.value) return
+      if (paused && !game.isGamePaused) game.pauseGame()
+      else if (!paused && game.isGamePaused) game.resumeGame()
+    },
+  )
+
   return {
     stopMultiplayerBridge: () => {
       stopRoster()
       stopPhase()
+      stopPaused()
     },
   }
 }
