@@ -1,0 +1,19 @@
+# Railway config-as-code for the `web` service (static PWA).
+#
+# Point the Railway `web` service at this file: Service → Settings →
+# Config-as-code → Path = `railway.web.toml`. That pins the build/deploy
+# settings below so they don't drift or need re-clicking on each deploy.
+#
+# NOT codifiable here (set once in the dashboard, they're environment-specific):
+#   - the VITE_API_URL *value* (the api service URL — baked in at BUILD time;
+#     changing it requires a rebuild, not just a restart). See deploy/railway.md.
+#   - the generated public domain.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.web"
+
+[deploy]
+# `serve` (see Dockerfile.web) restarts cleanly; recover from crashes.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

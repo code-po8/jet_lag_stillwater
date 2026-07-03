@@ -16,43 +16,84 @@ services map 1:1 to the local `docker-compose.yml` services (`web` ↔ `frontend
 | `api`           | `backend`         | `server/Dockerfile` | Fastify + WS        |
 | Postgres        | `postgres`        | Railway plugin      | DB (`DATABASE_URL`) |
 
-## Setup (Railway dashboard or CLI)
+## Config-as-code
 
-1. **Create project** and connect this GitHub repo.
-2. **Add the Postgres plugin** — it injects `DATABASE_URL` into services you
-   attach it to. Attach it to `api`.
-3. **`api` service:**
-   - Root directory: repo root (the `server/Dockerfile` build context needs
-     `shared/` + `server/`).
-   - Dockerfile path: `server/Dockerfile`.
-   - Variables:
-     - `DATABASE_URL` — from the Postgres plugin (reference variable).
-     - `WEB_ORIGIN` — the `web` service's public URL, e.g.
-       `https://<web>.up.railway.app` (locks CORS **and** the WS origin).
-     - `PORT` / `HOST` — Railway sets `PORT`; the server binds `0.0.0.0`.
-   - **Single instance only (v1):** the `RoomHub` is in-memory, so do **not**
-     scale `api` past 1 replica until a Redis fan-out is added. Set
-     replicas/horizontal scaling = 1. (With the auto-migrate-on-boot below, a
-     second replica would also race to apply migrations — another reason to keep
-     it at 1 for now.)
-   - Migrations: **automatic** — on boot the server applies any pending SQL
-     migrations from `server/migrations` (via node-pg-migrate's programmatic
-     runner) before it starts listening. A fresh Railway Postgres is migrated on
-     the first deploy with no manual step. It's idempotent, so restarts/redeploys
-     are safe. (No `WEB_ORIGIN` / manual `migrate:up` needed.)
-   - Health check path: `/health`.
-4. **`web` service:**
-   - Dockerfile path: `Dockerfile.web`.
-   - **Build-time variable** `VITE_API_URL` = the `api` service public URL
-     (e.g. `https://<api>.up.railway.app`). Vite inlines this into the bundle at
-     BUILD time (`import.meta.env`), and `Dockerfile.web` receives it via
-     `ARG VITE_API_URL`. It is **not** read at runtime — if it is missing or
-     changed, you must **rebuild** `web`, not just restart it. When it's unset,
-     the client falls back to same-origin and POSTs room requests to this static
-     server → **405** (multiplayer won't start). The client derives the `wss://`
-     URL from the same value (`getWsUrl()`), so this one variable fixes both REST
-     and WebSocket connectivity.
-5. **Deploy** both services. Open the `web` URL on a phone to play.
+Per-service build/deploy settings are pinned in the repo so they don't drift or
+need re-clicking each deploy:
+
+- `railway.web.toml` — the `web` service (builder, `Dockerfile.web`).
+- `railway.api.toml` — the `api` service (builder, `server/Dockerfile`, health
+  check, `numReplicas = 1`).
+
+To activate each, point the service at its file **once**: Service → Settings →
+**Config-as-code** → Path = `railway.web.toml` (resp. `railway.api.toml`).
+
+What these files **can't** hold (environment-specific / account-scoped — set in
+the dashboard): the `DATABASE_URL` reference, `WEB_ORIGIN`, `VITE_API_URL`
+_values_, and the generated public domains.
+
+## Setup — from an empty project (ordered)
+
+Do these in order; later steps need URLs from earlier ones.
+
+### 1. Create the project + Postgres
+
+1. New Railway project → connect this GitHub repo (this becomes the **`web`**
+   service by default).
+2. **+ Add → Database → PostgreSQL.** (Nothing else is needed for the DB — the
+   `api` migrates it on first boot.)
+
+### 2. `api` service (Fastify backend)
+
+1. **+ Add → GitHub Repo →** this same repo. This creates a **second** service.
+2. Service → **Settings → Config-as-code → Path** = `railway.api.toml`. That
+   pins the builder = Dockerfile, `dockerfilePath = server/Dockerfile`, the
+   `/health` check, and `numReplicas = 1`.
+   - ⚠️ **New services default to the "Railpack" builder.** If you don't set the
+     config path (or set the builder to Dockerfile manually), Railpack will
+     auto-guess the build and ignore `server/Dockerfile`. The `.toml` fixes this.
+   - Leave **Root Directory** empty (repo root): the `server/Dockerfile` context
+     needs `shared/` + `server/`.
+3. **Settings → Networking → Generate Domain** (gives it a public URL, e.g.
+   `https://<api>.up.railway.app`).
+4. **Variables:**
+   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (use your Postgres service's
+     actual name) — links the DB.
+   - `WEB_ORIGIN` = the `web` service's public URL, e.g.
+     `https://<web>.up.railway.app` (locks CORS **and** the WS origin; exact,
+     `https://`, no trailing slash).
+   - (Railway sets `PORT`; the server binds `0.0.0.0` and reads it.)
+5. Deploy, then **verify**: open `https://<api>.up.railway.app/health` → it must
+   return JSON `{"status":"ok",...}`. If you instead see the navy app shell,
+   you're hitting the `web` service — check the domain.
+
+Migrations are **automatic**: on boot the server applies pending SQL migrations
+from `server/migrations` before it listens (idempotent, safe on every restart).
+No manual `migrate:up`.
+
+### 3. `web` service (static PWA)
+
+1. Service → **Settings → Config-as-code → Path** = `railway.web.toml` (pins
+   builder = Dockerfile, `dockerfilePath = Dockerfile.web`).
+2. **Variables → `VITE_API_URL`** = the **api** service URL from step 2 (e.g.
+   `https://<api>.up.railway.app`; `https://`, no trailing slash, **not** the web
+   URL). This is a **build-time** value — Vite inlines it (`import.meta.env`),
+   and `Dockerfile.web` receives it via `ARG VITE_API_URL`.
+3. **Redeploy** the web service (a fresh **build** — not a restart; a restart
+   reuses the old bundle with the old/empty URL baked in).
+
+### 4. Verify multiplayer
+
+Open the `web` URL, **hard-reload** (`Ctrl+Shift+R` — the old bundle may be
+cached), DevTools → Network → click **Create Room**. The `POST /rooms` request
+**Host** should be the **api** domain and return **201**. If it's still the web
+domain (405, or 200 returning HTML), `VITE_API_URL` didn't bake in — recheck
+step 3 (set on the _web_ service, then _rebuilt_).
+
+> If `VITE_API_URL` is missing from a production build, the client now fails
+> loudly with a clear "Server not configured" error instead of a silent
+> same-origin 405 (see `getApiBaseUrl` in `src/services/sync/roomApi.ts`,
+> issue #3).
 
 ## WebSockets
 

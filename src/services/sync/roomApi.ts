@@ -51,6 +51,11 @@ export class RoomApi {
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
+    // Fail loudly on a production build with no API base (issue #3) rather than
+    // POSTing same-origin to the static server → 405 / HTML parsed as JSON.
+    if (isApiBaseMisconfigured()) {
+      throw new RoomApiError(0, API_MISCONFIGURED_MESSAGE)
+    }
     const res = await fetch(`${this.base}${path}`, {
       headers: { 'content-type': 'application/json' },
       ...init,
@@ -100,6 +105,20 @@ export function getApiBaseUrl(): string {
   return fromEnv ?? ''
 }
 
+/** True when the client is missing its API base in a production build. */
+export function isApiBaseMisconfigured(): boolean {
+  return import.meta.env.PROD && !getApiBaseUrl()
+}
+
+/**
+ * Message for the VITE_API_URL misconfiguration (issue #3). Shown to the user
+ * and thrown before any room request, so an empty base surfaces as a clear
+ * error instead of a same-origin 405 / HTML-parsed-as-JSON.
+ */
+export const API_MISCONFIGURED_MESSAGE =
+  'Server not configured: VITE_API_URL is missing from this build. Set it on ' +
+  'the web service to the API URL and rebuild (see deploy/railway.md, issue #3).'
+
 /**
  * WebSocket URL for the gateway, derived from the API base (http→ws, https→wss).
  * Falls back to same-origin `/ws` when no API base is configured.
@@ -107,6 +126,9 @@ export function getApiBaseUrl(): string {
 export function getWsUrl(): string {
   const base = getApiBaseUrl()
   if (!base) {
+    // Same misconfiguration as the REST base (issue #3): a prod build must have
+    // an API base — don't silently point the socket at the static origin.
+    if (isApiBaseMisconfigured()) throw new Error(API_MISCONFIGURED_MESSAGE)
     if (typeof window === 'undefined') return '/ws'
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     return `${proto}//${window.location.host}/ws`
