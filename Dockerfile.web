@@ -13,6 +13,14 @@ RUN npm ci --ignore-scripts && npm rebuild sharp
 
 # Bring in the source needed for the build.
 COPY . .
+
+# API base URL for the client, inlined at BUILD time by Vite (import.meta.env).
+# Railway passes it as a --build-arg; it must be exported to the environment
+# BEFORE `npm run build` or the bundle ships with an empty base and the client
+# POSTs room requests same-origin (to this static server) → 405. Set the
+# `VITE_API_URL` build variable on the Railway `web` service to the `api` URL.
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 # ---- runtime stage --------------------------------------------------------

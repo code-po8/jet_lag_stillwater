@@ -43,9 +43,15 @@ services map 1:1 to the local `docker-compose.yml` services (`web` ↔ `frontend
    - Health check path: `/health`.
 4. **`web` service:**
    - Dockerfile path: `Dockerfile.web`.
-   - Build-time variable: `VITE_API_URL` = the `api` service public URL
-     (e.g. `https://<api>.up.railway.app`). The client derives the `wss://` URL
-     from it (`getWsUrl()`), so `wss://` connects to `api`.
+   - **Build-time variable** `VITE_API_URL` = the `api` service public URL
+     (e.g. `https://<api>.up.railway.app`). Vite inlines this into the bundle at
+     BUILD time (`import.meta.env`), and `Dockerfile.web` receives it via
+     `ARG VITE_API_URL`. It is **not** read at runtime — if it is missing or
+     changed, you must **rebuild** `web`, not just restart it. When it's unset,
+     the client falls back to same-origin and POSTs room requests to this static
+     server → **405** (multiplayer won't start). The client derives the `wss://`
+     URL from the same value (`getWsUrl()`), so this one variable fixes both REST
+     and WebSocket connectivity.
 5. **Deploy** both services. Open the `web` URL on a phone to play.
 
 ## WebSockets
