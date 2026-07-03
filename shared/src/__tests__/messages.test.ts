@@ -102,6 +102,9 @@ describe('DTO shapes (compile-time, asserted structurally)', () => {
       phase: 'setup',
       phaseStartedAt: null,
       zone: null,
+      paused: false,
+      pausedAccumMs: 0,
+      pausedAt: null,
     }
     expect(msg.t).toBe('welcome')
   })

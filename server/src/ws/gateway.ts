@@ -127,6 +127,11 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
           phase: hub.getPhase(),
           phaseStartedAt: hub.getPhaseStartedAt(),
           zone: hub.getZone(),
+          // Reconcile pause state on (re)connect so a client that joined mid-pause
+          // doesn't miss the edge-triggered `paused` broadcast it never saw.
+          paused: hub.isPaused(),
+          pausedAccumMs: hub.getPausedAccumMs(),
+          pausedAt: hub.getPausedAt(),
         })
         // New player → joined; returning player → presence reconnected.
         if (wasMember) {
@@ -243,7 +248,14 @@ function handleMessage(
       // so they route to applyHostPause and broadcast a `paused` message.
       if (msg.action === 'pause' || msg.action === 'resume') {
         const paused = hub.applyHostPause(playerId, msg.action === 'pause')
-        if (paused !== null) broadcast(code, { t: 'paused', paused })
+        if (paused !== null) {
+          broadcast(code, {
+            t: 'paused',
+            paused,
+            pausedAccumMs: hub.getPausedAccumMs(),
+            pausedAt: hub.getPausedAt(),
+          })
+        }
       } else {
         const phase = hub.applyHostAction(playerId, msg.action)
         if (phase) broadcast(code, { t: 'phase', phase, startedAt: hub.getPhaseStartedAt()! })

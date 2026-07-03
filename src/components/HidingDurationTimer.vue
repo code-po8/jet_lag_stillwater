@@ -19,18 +19,43 @@ const sync = useSync()
 const persistenceService = createPersistenceService()
 
 /**
- * In a multiplayer room, measure elapsed from the SERVER's shared phase-start
- * instant (via the clock offset) so every device shows the same duration.
- * Returns null offline / before the start is known (start locally as before).
+ * In a multiplayer room the duration is SERVER-authoritative: elapsed is
+ * re-derived every tick from the shared phase-start instant (via the clock
+ * offset) minus paused time, so every device agrees and self-corrects as the
+ * clock offset refines. Offline, the local `useTimer` drives everything.
  */
+const roomElapsedMs = ref(0)
+let roomTick: ReturnType<typeof setInterval> | null = null
+
+const useRoomTimer = computed(() => room.inRoom && sync.phaseStartedAt.value !== null)
+
+function pollRoomElapsed() {
+  const e = sync.effectiveElapsedMs()
+  if (e !== null) roomElapsedMs.value = e
+}
+
+function startRoomTick() {
+  pollRoomElapsed()
+  if (roomTick) clearInterval(roomTick)
+  roomTick = setInterval(pollRoomElapsed, 200)
+}
+
+function stopRoomTick() {
+  if (roomTick) {
+    clearInterval(roomTick)
+    roomTick = null
+  }
+}
+
+/** In a room, elapsed to seed the local timer from the shared server instant. */
 function serverElapsedMs(): number | null {
-  if (!room.inRoom || sync.phaseStartedAt.value === null) return null
-  return Math.max(0, sync.serverNow() - sync.phaseStartedAt.value)
+  return useRoomTimer.value ? sync.effectiveElapsedMs() : null
 }
 
 /** Start the timer, seeding elapsed from server time when in a room. */
 function startAligned() {
   timer.start(serverElapsedMs() ?? 0)
+  if (room.inRoom) startRoomTick()
 }
 
 // Track if timer has been stopped (hider found)
@@ -69,9 +94,14 @@ const isSeeking = computed(() => {
   return gameStore.currentPhase === GamePhase.Seeking
 })
 
+/** Active elapsed: server-derived in a room, local timer otherwise. */
+const activeElapsed = computed(() =>
+  useRoomTimer.value && !isStopped.value ? roomElapsedMs.value : timer.elapsed.value,
+)
+
 // Display time - show final time if stopped, otherwise current elapsed
 const displayTime = computed(() => {
-  const timeMs = finalTimeMs.value !== null ? finalTimeMs.value : timer.elapsed.value
+  const timeMs = finalTimeMs.value !== null ? finalTimeMs.value : activeElapsed.value
   return formatTime(timeMs)
 })
 
@@ -125,8 +155,10 @@ function stop() {
   if (isStopped.value) return
 
   isStopped.value = true
-  finalTimeMs.value = timer.elapsed.value
+  // In a room the authoritative duration is server-derived, not the local timer.
+  finalTimeMs.value = useRoomTimer.value ? roomElapsedMs.value : timer.elapsed.value
   timer.pause() // Stop tracking but don't reset
+  stopRoomTick()
 
   emit('finalTime', finalTimeMs.value)
   persist()
@@ -227,6 +259,7 @@ watch(
     // Reset when returning to setup
     if (newPhase === GamePhase.Setup) {
       timer.reset()
+      stopRoomTick()
       isStopped.value = false
       finalTimeMs.value = null
       persistenceService.remove(STORAGE_KEY)
@@ -234,6 +267,13 @@ watch(
   },
   { immediate: false },
 )
+
+// Start the server-driven tick as soon as the room timer becomes drivable —
+// phaseStartedAt often arrives (via welcome/phase) after this component mounts.
+watch(useRoomTimer, (drivable) => {
+  if (drivable && isActivePhase.value && !isStopped.value && !roomTick) startRoomTick()
+  else if (!drivable) stopRoomTick()
+})
 
 // Watch for game-level pause/resume
 watch(isGamePaused, (paused) => {
@@ -268,11 +308,14 @@ onMounted(() => {
     startAligned()
     persist()
   }
+  // After a rehydrate (mid-game refresh) in a room, ensure the server tick runs.
+  if (isActivePhase.value && !isStopped.value && useRoomTimer.value && !roomTick) startRoomTick()
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
+  stopRoomTick()
   persist()
 })
 </script>

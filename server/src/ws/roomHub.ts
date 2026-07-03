@@ -48,6 +48,12 @@ export class RoomHub {
   private phase: GamePhase = 'setup'
   private phaseStartedAt: number | null = null
   private paused = false
+  // Server-authoritative pause accounting for the CURRENT phase. `pausedAccumMs`
+  // is the sum of completed pause spans; `pausedAt` marks when the live pause
+  // began (null when running). Both reset on every phase transition so timers
+  // that key off `phaseStartedAt` measure only in-phase, un-paused time.
+  private pausedAccumMs = 0
+  private pausedAt: number | null = null
 
   constructor(code: string) {
     this.code = code
@@ -75,6 +81,10 @@ export class RoomHub {
     if (!next) return null
     this.phase = next
     this.phaseStartedAt = now
+    // A new phase starts un-paused with a fresh clock — clear pause accounting.
+    this.paused = false
+    this.pausedAccumMs = 0
+    this.pausedAt = null
     return next
   }
 
@@ -82,16 +92,34 @@ export class RoomHub {
     return this.paused
   }
 
+  /** Completed paused ms this phase (excludes any live pause span). */
+  getPausedAccumMs(): number {
+    return this.pausedAccumMs
+  }
+
+  /** Server ms the current pause began, or null if running. */
+  getPausedAt(): number | null {
+    return this.pausedAt
+  }
+
   /**
    * Apply a host pause/resume. Pause is orthogonal to the phase machine, so it
-   * is tracked separately. Returns the new paused state if the actor is the host
-   * and the state actually changed, else null (ignored — no broadcast needed).
+   * is tracked separately. On pause we record the instant; on resume we fold the
+   * elapsed pause span into `pausedAccumMs`, so clients can freeze then continue
+   * their timers server-authoritatively. Returns the new paused state if the
+   * actor is the host and the state actually changed, else null (ignored).
    */
-  applyHostPause(actorId: string, paused: boolean): boolean | null {
+  applyHostPause(actorId: string, paused: boolean, now: number = Date.now()): boolean | null {
     const actor = this.membersById.get(actorId)
     if (!actor || !actor.isHost) return null
     if (this.paused === paused) return null
     this.paused = paused
+    if (paused) {
+      this.pausedAt = now
+    } else if (this.pausedAt !== null) {
+      this.pausedAccumMs += now - this.pausedAt
+      this.pausedAt = null
+    }
     return paused
   }
 

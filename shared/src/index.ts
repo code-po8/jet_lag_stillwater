@@ -136,6 +136,23 @@ export interface WelcomeMessage {
   /** Server epoch ms when the current phase began (null in setup / no round). */
   phaseStartedAt: number | null
   zone: Zone | null
+  /**
+   * Whether the game is currently paused. Sent in `welcome` so a client that
+   * connects (or reconnects) mid-pause reconciles the paused state immediately,
+   * instead of missing the (edge-triggered) `paused` broadcast it never saw.
+   */
+  paused: boolean
+  /**
+   * Total ms the current phase has spent paused BEFORE the current pause window
+   * (i.e. sum of completed pause spans this phase). Clients subtract this from
+   * `serverNow − phaseStartedAt` to get true elapsed. 0 if never paused.
+   */
+  pausedAccumMs: number
+  /**
+   * Server epoch ms when the CURRENT pause began, or null if not paused. While
+   * paused, clients also subtract `serverNow − pausedAt` so the timer freezes.
+   */
+  pausedAt: number | null
 }
 
 export interface PlayerJoinedMessage {
@@ -206,6 +223,13 @@ export interface PhaseMessage {
 export interface PausedMessage {
   t: 'paused'
   paused: boolean
+  /**
+   * Server-authoritative pause accounting so every device's timer freezes/resumes
+   * to the same instant. `pausedAccumMs` is the completed paused time this phase;
+   * `pausedAt` is the server ms the current pause began (null when resuming).
+   */
+  pausedAccumMs: number
+  pausedAt: number | null
 }
 
 /** A game event relayed from another device (the server echoes it on). */

@@ -26,6 +26,24 @@ function fakeService() {
   return { svc, sent, emit: (m: ServerMessage) => handlers.forEach((h) => h(m)) }
 }
 
+/** Build a welcome message, defaulting the pause-accounting fields. */
+function makeWelcome(
+  over: Partial<Extract<ServerMessage, { t: 'welcome' }>> = {},
+): Extract<ServerMessage, { t: 'welcome' }> {
+  return {
+    t: 'welcome',
+    you: { id: 'p1', name: 'A', role: 'hider', isHost: true, connected: true },
+    players: [{ id: 'p1', name: 'A', role: 'hider', isHost: true, connected: true }],
+    phase: 'setup',
+    phaseStartedAt: null,
+    zone: null,
+    paused: false,
+    pausedAccumMs: 0,
+    pausedAt: null,
+    ...over,
+  }
+}
+
 describe('createSyncSession', () => {
   let f: ReturnType<typeof fakeService>
 
@@ -50,14 +68,7 @@ describe('createSyncSession', () => {
   it('applies an inbound roster (welcome) to local state', async () => {
     const session = createSyncSession({ service: f.svc })
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
-    f.emit({
-      t: 'welcome',
-      you: { id: 'p1', name: 'A', role: 'hider', isHost: true, connected: true },
-      players: [{ id: 'p1', name: 'A', role: 'hider', isHost: true, connected: true }],
-      phase: 'setup',
-      phaseStartedAt: null,
-      zone: null,
-    })
+    f.emit(makeWelcome())
     expect(session.players.value.map((p) => p.id)).toEqual(['p1'])
     expect(session.self.value?.id).toBe('p1')
   })
@@ -65,14 +76,12 @@ describe('createSyncSession', () => {
   it('derives role from the server self (not a local toggle)', async () => {
     const session = createSyncSession({ service: f.svc })
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
-    f.emit({
-      t: 'welcome',
-      you: { id: 's1', name: 'S', role: 'seeker', isHost: false, connected: true },
-      players: [],
-      phase: 'setup',
-      phaseStartedAt: null,
-      zone: null,
-    })
+    f.emit(
+      makeWelcome({
+        you: { id: 's1', name: 'S', role: 'seeker', isHost: false, connected: true },
+        players: [],
+      }),
+    )
     expect(session.role.value).toBe('seeker')
   })
 
@@ -154,23 +163,21 @@ describe('createSyncSession', () => {
     const session = createSyncSession({ service: f.svc })
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
     expect(session.paused.value).toBe(false)
-    f.emit({ t: 'paused', paused: true })
+    f.emit({ t: 'paused', paused: true, pausedAccumMs: 0, pausedAt: 5_000 })
     expect(session.paused.value).toBe(true)
-    f.emit({ t: 'paused', paused: false })
+    f.emit({ t: 'paused', paused: false, pausedAccumMs: 1_200, pausedAt: null })
     expect(session.paused.value).toBe(false)
   })
 
   it('applies a roster broadcast, updating players and own role', async () => {
     const session = createSyncSession({ service: f.svc })
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
-    f.emit({
-      t: 'welcome',
-      you: { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true },
-      players: [{ id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true }],
-      phase: 'setup',
-      phaseStartedAt: null,
-      zone: null,
-    })
+    f.emit(
+      makeWelcome({
+        you: { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true },
+        players: [{ id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true }],
+      }),
+    )
     expect(session.role.value).toBe('hider')
 
     // Host picked s1 as hider → host is now a seeker.
@@ -208,14 +215,12 @@ describe('createSyncSession', () => {
     expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(0)
 
     // welcome acknowledges the handshake → first probe fires, then periodically.
-    f.emit({
-      t: 'welcome',
-      you: { id: 'p1', name: 'A', role: 'seeker', isHost: false, connected: true },
-      players: [],
-      phase: 'setup',
-      phaseStartedAt: null,
-      zone: null,
-    })
+    f.emit(
+      makeWelcome({
+        you: { id: 'p1', name: 'A', role: 'seeker', isHost: false, connected: true },
+        players: [],
+      }),
+    )
     expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(1)
     vi.advanceTimersByTime(30_000)
     expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(2)
@@ -243,5 +248,46 @@ describe('createSyncSession', () => {
     session.onGameEvent((e) => events.push(e.kind))
     f.emit({ t: 'game.event', kind: 'question.asked', from: 'p9', payload: { questionId: 'q' } })
     expect(events).toEqual(['question.asked'])
+  })
+
+  it('reconciles paused state from welcome (mid-pause (re)connect)', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    // Connect while the room is already paused.
+    f.emit(makeWelcome({ phase: 'hiding-period', paused: true, pausedAccumMs: 0, pausedAt: 9_000 }))
+    expect(session.paused.value).toBe(true)
+  })
+
+  it('effectiveElapsedMs subtracts completed + live paused time', async () => {
+    vi.useFakeTimers()
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    // Pin a known clock offset so serverNow == a fixed value.
+    session.syncClock()
+    const probe = f.sent.at(-1) as Extract<ClientMessage, { t: 'time.sync' }>
+    // Make serverNow() == 100_000 regardless of local time: offset = 100_000 − now.
+    f.emit({ t: 'time.reply', t1: probe.t1, t2: probe.t1 })
+    const now = Date.now()
+    // phase started at server 40_000; 100_000 − 40_000 = 60_000 raw elapsed.
+    f.emit({ t: 'phase', phase: 'hiding-period', startedAt: now - 60_000 })
+    // Running: full raw elapsed (allow tick slack).
+    expect(session.effectiveElapsedMs()!).toBeGreaterThanOrEqual(59_900)
+    // 10s of completed pause → elapsed drops by ~10_000.
+    f.emit({ t: 'paused', paused: true, pausedAccumMs: 10_000, pausedAt: now })
+    // While paused, the reference freezes at pausedAt → elapsed = pausedAt−start−accum.
+    const frozen = session.effectiveElapsedMs()!
+    vi.advanceTimersByTime(5_000)
+    expect(session.effectiveElapsedMs()).toBe(frozen) // frozen while paused
+    expect(frozen).toBeLessThan(59_900) // less than the running value
+    vi.useRealTimers()
+  })
+
+  it('a phase message resets pause accounting', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    f.emit({ t: 'paused', paused: true, pausedAccumMs: 5_000, pausedAt: 1_000 })
+    expect(session.paused.value).toBe(true)
+    f.emit({ t: 'phase', phase: 'seeking', startedAt: 2_000 })
+    expect(session.paused.value).toBe(false)
   })
 })
