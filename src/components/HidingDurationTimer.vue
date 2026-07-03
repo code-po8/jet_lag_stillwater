@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
+import { useRoomStore } from '@/stores/roomStore'
+import { useSync } from '@/composables/useSync'
 import { useTimer } from '@/composables/useTimer'
 import { formatTime } from '@/utils/formatTime'
 import { createPersistenceService } from '@/services/persistence'
@@ -12,7 +14,24 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
+const room = useRoomStore()
+const sync = useSync()
 const persistenceService = createPersistenceService()
+
+/**
+ * In a multiplayer room, measure elapsed from the SERVER's shared phase-start
+ * instant (via the clock offset) so every device shows the same duration.
+ * Returns null offline / before the start is known (start locally as before).
+ */
+function serverElapsedMs(): number | null {
+  if (!room.inRoom || sync.phaseStartedAt.value === null) return null
+  return Math.max(0, sync.serverNow() - sync.phaseStartedAt.value)
+}
+
+/** Start the timer, seeding elapsed from server time when in a room. */
+function startAligned() {
+  timer.start(serverElapsedMs() ?? 0)
+}
 
 // Track if timer has been stopped (hider found)
 const isStopped = ref(false)
@@ -158,16 +177,18 @@ function rehydrate(): boolean {
         const timePassed = Date.now() - state.startTime
         const totalElapsed = state.elapsed + timePassed
 
-        timer.elapsed.value = totalElapsed
         if (isActivePhase.value) {
-          timer.start()
+          timer.start(totalElapsed)
+        } else {
+          timer.elapsed.value = totalElapsed
         }
       } else if (state.isPaused) {
-        // Timer was paused - restore that state
-        timer.elapsed.value = state.elapsed
+        // Timer was paused - restore that elapsed, then pause.
         if (isActivePhase.value) {
-          timer.start()
+          timer.start(state.elapsed)
           timer.pause()
+        } else {
+          timer.elapsed.value = state.elapsed
         }
       }
 
@@ -191,7 +212,7 @@ watch(
       isStopped.value = false
       finalTimeMs.value = null
       timer.reset()
-      timer.start()
+      startAligned()
       persist()
     }
 
@@ -244,7 +265,7 @@ onMounted(() => {
   // Try to rehydrate first; if no persisted state, start fresh if in active phase
   const wasRehydrated = rehydrate()
   if (!wasRehydrated && isActivePhase.value && !timer.isRunning.value && !isStopped.value) {
-    timer.start()
+    startAligned()
     persist()
   }
   document.addEventListener('visibilitychange', handleVisibilityChange)

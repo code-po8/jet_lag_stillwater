@@ -149,6 +149,8 @@ describe('WS gateway (integration)', () => {
 
     const phase = await phasePromise
     expect(phase.t === 'phase' && phase.phase).toBe('seeking')
+    // Carries the server phase-start instant for cross-device timer alignment.
+    expect(phase.t === 'phase' && typeof phase.startedAt).toBe('number')
     hider.close()
     seeker.close()
   })

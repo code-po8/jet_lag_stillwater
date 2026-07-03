@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
+import { useRoomStore } from '@/stores/roomStore'
+import { useSync } from '@/composables/useSync'
 import { useTimer } from '@/composables/useTimer'
 import { useNotifications } from '@/composables/useNotifications'
 import { formatTimeShort } from '@/utils/formatTime'
@@ -24,8 +26,26 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
+const room = useRoomStore()
+const sync = useSync()
 const persistenceService = createPersistenceService()
 const notifications = useNotifications()
+
+/**
+ * In a multiplayer room, elapsed time is measured from the SERVER's shared
+ * phase-start instant (converted to local time via the clock offset), so every
+ * device shows the same countdown. Returns null offline / before the phase
+ * start is known, in which case the timer starts locally as before.
+ */
+function serverElapsedMs(): number | null {
+  if (!room.inRoom || sync.phaseStartedAt.value === null) return null
+  return Math.max(0, sync.serverNow() - sync.phaseStartedAt.value)
+}
+
+/** Start the timer, seeding elapsed from server time when in a room. */
+function startAligned() {
+  timer.start(serverElapsedMs() ?? 0)
+}
 
 // Timer state
 const hasWarned = ref(false)
@@ -162,9 +182,8 @@ function rehydrate(): boolean {
         // Manually set the elapsed time and start the timer
         // The timer will pick up from where it should be
         if (totalElapsed < HIDING_PERIOD_MS) {
-          // Timer should still be running
-          timer.elapsed.value = totalElapsed
-          timer.start()
+          // Timer should still be running — resume from the persisted elapsed.
+          timer.start(totalElapsed)
         } else {
           // Timer would have completed while app was closed
           // Clear stale state and start fresh for new game
@@ -173,9 +192,8 @@ function rehydrate(): boolean {
           return false
         }
       } else if (state.isPaused) {
-        // Timer was paused - restore that state
-        timer.elapsed.value = state.elapsed
-        timer.start()
+        // Timer was paused - restore that elapsed, then pause.
+        timer.start(state.elapsed)
         timer.pause()
       }
 
@@ -195,7 +213,7 @@ watch(
     if (isRehydrating.value) return
 
     if (active && !timer.isRunning.value && !hasCompleted.value) {
-      timer.start()
+      startAligned()
       persist()
     } else if (!active) {
       timer.stop()
@@ -235,7 +253,7 @@ onMounted(() => {
   // Try to rehydrate first; if no persisted state, start fresh if in hiding period
   const wasRehydrated = rehydrate()
   if (!wasRehydrated && isHidingPeriod.value && !timer.isRunning.value) {
-    timer.start()
+    startAligned()
     persist()
   }
   document.addEventListener('visibilitychange', handleVisibilityChange)

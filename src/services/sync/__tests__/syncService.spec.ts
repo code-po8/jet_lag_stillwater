@@ -114,8 +114,8 @@ describe('WsSyncService', () => {
     await connected
     const received: ServerMessage[] = []
     svc.onMessage((m) => received.push(m))
-    ws._emit({ t: 'phase', phase: 'seeking' })
-    expect(received).toEqual([{ t: 'phase', phase: 'seeking' }])
+    ws._emit({ t: 'phase', phase: 'seeking', startedAt: 1_000_000 })
+    expect(received).toEqual([{ t: 'phase', phase: 'seeking', startedAt: 1_000_000 }])
   })
 
   it('unsubscribe stops delivery', async () => {
@@ -124,7 +124,7 @@ describe('WsSyncService', () => {
     const received: ServerMessage[] = []
     const off = svc.onMessage((m) => received.push(m))
     off()
-    ws._emit({ t: 'phase', phase: 'seeking' })
+    ws._emit({ t: 'phase', phase: 'seeking', startedAt: 1_000_000 })
     expect(received).toHaveLength(0)
   })
 

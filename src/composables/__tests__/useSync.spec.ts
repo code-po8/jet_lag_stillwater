@@ -55,6 +55,7 @@ describe('createSyncSession', () => {
       you: { id: 'p1', name: 'A', role: 'hider', isHost: true, connected: true },
       players: [{ id: 'p1', name: 'A', role: 'hider', isHost: true, connected: true }],
       phase: 'setup',
+      phaseStartedAt: null,
       zone: null,
     })
     expect(session.players.value.map((p) => p.id)).toEqual(['p1'])
@@ -69,6 +70,7 @@ describe('createSyncSession', () => {
       you: { id: 's1', name: 'S', role: 'seeker', isHost: false, connected: true },
       players: [],
       phase: 'setup',
+      phaseStartedAt: null,
       zone: null,
     })
     expect(session.role.value).toBe('seeker')
@@ -89,7 +91,7 @@ describe('createSyncSession', () => {
   it('applies phase and zone updates', async () => {
     const session = createSyncSession({ service: f.svc })
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
-    f.emit({ t: 'phase', phase: 'seeking' })
+    f.emit({ t: 'phase', phase: 'seeking', startedAt: 1_000_000 })
     expect(session.phase.value).toBe('seeking')
     f.emit({ t: 'zone', zone: { lat: 1, lng: 2, radiusM: 402 } })
     expect(session.zone.value).toMatchObject({ radiusM: 402 })
@@ -166,6 +168,7 @@ describe('createSyncSession', () => {
       you: { id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true },
       players: [{ id: 'h1', name: 'Host', role: 'hider', isHost: true, connected: true }],
       phase: 'setup',
+      phaseStartedAt: null,
       zone: null,
     })
     expect(session.role.value).toBe('hider')
@@ -187,6 +190,50 @@ describe('createSyncSession', () => {
     await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
     session.setHider('s1')
     expect(f.sent.at(-1)).toEqual({ t: 'set-hider', playerId: 's1' })
+  })
+
+  it('records phaseStartedAt from a phase message', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    f.emit({ t: 'phase', phase: 'hiding-period', startedAt: 1_700_000_000_000 })
+    expect(session.phaseStartedAt.value).toBe(1_700_000_000_000)
+  })
+
+  it('does NOT probe the clock until welcome (avoids racing the hello handshake)', async () => {
+    vi.useFakeTimers()
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    // No probe before welcome: a time.sync here races hello → server closes the
+    // socket ("expected hello").
+    expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(0)
+
+    // welcome acknowledges the handshake → first probe fires, then periodically.
+    f.emit({
+      t: 'welcome',
+      you: { id: 'p1', name: 'A', role: 'seeker', isHost: false, connected: true },
+      players: [],
+      phase: 'setup',
+      phaseStartedAt: null,
+      zone: null,
+    })
+    expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(1)
+    vi.advanceTimersByTime(30_000)
+    expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(2)
+    session.disconnect()
+    vi.advanceTimersByTime(60_000)
+    // No more probes after disconnect (interval cleared).
+    expect(f.sent.filter((m) => m.t === 'time.sync')).toHaveLength(2)
+    vi.useRealTimers()
+  })
+
+  it('serverNow applies the clock offset to local time', async () => {
+    const session = createSyncSession({ service: f.svc })
+    await session.connect({ url: 'ws://x', code: 'ABCD', rejoinToken: 't' })
+    session.syncClock()
+    const probe = f.sent.at(-1) as Extract<ClientMessage, { t: 'time.sync' }>
+    f.emit({ t: 'time.reply', t1: probe.t1, t2: probe.t1 + 100_000 })
+    // Offset ≈ +100000; serverNow should be well ahead of local Date.now().
+    expect(session.serverNow()).toBeGreaterThan(Date.now() + 50_000)
   })
 
   it('relays game events to subscribers', async () => {

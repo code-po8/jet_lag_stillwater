@@ -46,6 +46,7 @@ export class RoomHub {
   private ruledOut = new Set<string>()
   private breached = new Set<string>()
   private phase: GamePhase = 'setup'
+  private phaseStartedAt: number | null = null
   private paused = false
 
   constructor(code: string) {
@@ -56,16 +57,24 @@ export class RoomHub {
     return this.phase
   }
 
+  /** Server epoch ms when the current phase began (null in setup). */
+  getPhaseStartedAt(): number | null {
+    return this.phaseStartedAt
+  }
+
   /**
    * Apply a host phase action. Host-authoritative: returns the new phase if the
    * actor is the host and the action maps to a transition, else null (ignored).
+   * Records `now` (epoch ms; injectable for tests) as the phase-start instant so
+   * clients can align timers to a single shared reference.
    */
-  applyHostAction(actorId: string, action: string): GamePhase | null {
+  applyHostAction(actorId: string, action: string, now: number = Date.now()): GamePhase | null {
     const actor = this.membersById.get(actorId)
     if (!actor || !actor.isHost) return null
     const next = ACTION_TO_PHASE[action]
     if (!next) return null
     this.phase = next
+    this.phaseStartedAt = now
     return next
   }
 

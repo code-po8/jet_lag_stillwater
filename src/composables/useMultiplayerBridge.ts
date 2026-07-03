@@ -19,6 +19,7 @@ import { storeToRefs } from 'pinia'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSync } from './useSync'
+import { getWsUrl } from '@/services/sync/roomApi'
 import type { GamePhase as WirePhase } from '@/services/sync/protocol'
 
 /** Wire phase strings equal the GamePhase enum values (validated by the union). */
@@ -34,12 +35,42 @@ export function useMultiplayerBridge() {
   const router = useRouter()
   const { inRoom } = storeToRefs(room)
 
+  // 0. Reconnect the realtime transport whenever we have a persisted room but
+  // aren't connected — e.g. after a mid-game page refresh. Previously connect()
+  // was only called from the lobby, so refreshing in the game left the device
+  // silently offline (roster/pause/phase stopped syncing). The server replies
+  // with a fresh `welcome` (full roster + phase) on reconnect.
+  let reconnecting = false
+  async function ensureConnected() {
+    if (reconnecting) return
+    if (!room.code || !room.rejoinToken) return
+    if (sync.status.value === 'connected' || sync.status.value === 'connecting') return
+    reconnecting = true
+    try {
+      await sync.connect({ url: getWsUrl(), code: room.code, rejoinToken: room.rejoinToken })
+    } catch {
+      // Transient; the watcher below retries when inRoom/status settle.
+    } finally {
+      reconnecting = false
+    }
+  }
+  const stopReconnect = watch(
+    [inRoom, sync.status],
+    () => {
+      if (inRoom.value && sync.status.value === 'disconnected') void ensureConnected()
+    },
+    { immediate: true },
+  )
+
   // 1. Roster → gameStore. New array identity on each roster update is enough;
-  // syncFromRoster merges by id so stats survive.
+  // syncFromRoster merges by id so stats survive. Skip an EMPTY roster: before
+  // the (re)connect `welcome` arrives, sync.players is [] — bridging that would
+  // wipe the players (e.g. names vanish on a mid-game refresh). A real room
+  // always has ≥1 member, so [] only ever means "not synced yet".
   const stopRoster = watch(
     () => sync.players.value,
     (players) => {
-      if (!inRoom.value) return
+      if (!inRoom.value || players.length === 0) return
       game.syncFromRoster(players.map((p) => ({ id: p.id, name: p.name, role: p.role })))
     },
     { immediate: true },
@@ -78,6 +109,7 @@ export function useMultiplayerBridge() {
 
   return {
     stopMultiplayerBridge: () => {
+      stopReconnect()
       stopRoster()
       stopPhase()
       stopPaused()

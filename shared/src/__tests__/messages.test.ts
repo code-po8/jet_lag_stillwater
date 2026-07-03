@@ -100,6 +100,7 @@ describe('DTO shapes (compile-time, asserted structurally)', () => {
       you: { id: 'p1', name: 'A', role: 'hider', isHost: true, connected: true },
       players: [],
       phase: 'setup',
+      phaseStartedAt: null,
       zone: null,
     }
     expect(msg.t).toBe('welcome')

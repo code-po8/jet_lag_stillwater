@@ -166,6 +166,19 @@ describe('RoomHub phase (host-authoritative)', () => {
     expect(hub.applyHostAction('h1', 'end-round')).toBe('round-complete')
   })
 
+  it('records the phase start time (injectable now) for timer alignment', () => {
+    expect(hub.getPhaseStartedAt()).toBeNull() // setup: no start
+    hub.applyHostAction('h1', 'start-hiding', 1_000_000)
+    expect(hub.getPhaseStartedAt()).toBe(1_000_000)
+    hub.applyHostAction('h1', 'start-seeking', 1_050_000)
+    expect(hub.getPhaseStartedAt()).toBe(1_050_000)
+  })
+
+  it('does not record a phase start for an ignored (non-host) action', () => {
+    hub.applyHostAction('s1', 'start-hiding', 1_000_000)
+    expect(hub.getPhaseStartedAt()).toBeNull()
+  })
+
   it('does not treat pause/resume as a phase transition', () => {
     // pause/resume are control actions, not phases — applyHostAction must not
     // map them (the gateway routes them to applyHostPause instead).
