@@ -49,6 +49,13 @@ export interface SyncSession {
   paused: Ref<boolean>
   /** Estimated server−client clock offset (ms). Add to a client clock for server time. */
   clockOffset: Ref<number>
+  /**
+   * Server-authoritative elapsed time (ms) in the current phase, EXCLUDING all
+   * paused spans, or null offline / before the phase start is known. Derived
+   * every call from serverNow so it self-corrects as the clock offset refines —
+   * timers should recompute from this each tick rather than free-run locally.
+   */
+  effectiveElapsedMs(): number | null
   connect(options: ConnectOptions): Promise<void>
   disconnect(): void
   sendPosition(pos: Position): void
@@ -93,6 +100,10 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   const role = computed<Role | null>(() => self.value?.role ?? null)
   const clockOffset = ref(0)
   const paused = ref(false)
+  // Server-authoritative pause accounting for the current phase (see protocol).
+  // pausedAccumMs = completed paused spans; pausedAt = start of the live pause.
+  const pausedAccumMs = ref(0)
+  const pausedAt = ref<number | null>(null)
   // t1 of the most recent in-flight clock probe; replies must echo it, so a
   // stale/out-of-order reply can't corrupt the offset (no matched round trip).
   let pendingProbeT1: number | null = null
@@ -112,6 +123,11 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
         phase.value = msg.phase
         phaseStartedAt.value = msg.phaseStartedAt
         zone.value = msg.zone
+        // Reconcile pause on (re)connect — a client joining mid-pause otherwise
+        // never sees the edge-triggered `paused` broadcast.
+        paused.value = msg.paused
+        pausedAccumMs.value = msg.pausedAccumMs
+        pausedAt.value = msg.pausedAt
         // Start clock-sync only AFTER the handshake is acknowledged. Probing
         // before `welcome` sends a time.sync that races the `hello` — the server
         // sees a non-hello first message, rejects it ("expected hello") and
@@ -145,9 +161,15 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
       case 'phase':
         phase.value = msg.phase
         phaseStartedAt.value = msg.startedAt
+        // A new phase starts un-paused with a fresh clock (server does the same).
+        paused.value = false
+        pausedAccumMs.value = 0
+        pausedAt.value = null
         break
       case 'paused':
         paused.value = msg.paused
+        pausedAccumMs.value = msg.pausedAccumMs
+        pausedAt.value = msg.pausedAt
         break
       case 'zone':
         zone.value = msg.zone
@@ -220,6 +242,8 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     breachedSeekers.value = []
     ruledOutCells.value = []
     paused.value = false
+    pausedAccumMs.value = 0
+    pausedAt.value = null
     phaseStartedAt.value = null
     pendingProbeT1 = null
   }
@@ -257,6 +281,19 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   function serverNow(): number {
     return Date.now() + clockOffset.value
   }
+  /**
+   * Server-authoritative in-phase elapsed ms, minus all paused time. Recomputed
+   * on every call from serverNow(), so a timer that reads this each tick stays
+   * aligned across devices and self-corrects as clockOffset refines. Returns null
+   * when there's nothing shared to align to (offline, or phase start unknown).
+   */
+  function effectiveElapsedMs(): number | null {
+    if (phaseStartedAt.value === null) return null
+    // Freeze the "now" reference at the pause instant while paused, so the timer
+    // holds; on resume, pausedAt clears and the completed span lives in accum.
+    const nowRef = pausedAt.value ?? serverNow()
+    return Math.max(0, nowRef - phaseStartedAt.value - pausedAccumMs.value)
+  }
 
   return {
     status: service.status,
@@ -281,6 +318,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     onGameEvent,
     syncClock,
     serverNow,
+    effectiveElapsedMs,
     clockOffset,
   }
 }

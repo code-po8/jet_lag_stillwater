@@ -32,19 +32,49 @@ const persistenceService = createPersistenceService()
 const notifications = useNotifications()
 
 /**
- * In a multiplayer room, elapsed time is measured from the SERVER's shared
- * phase-start instant (converted to local time via the clock offset), so every
- * device shows the same countdown. Returns null offline / before the phase
- * start is known, in which case the timer starts locally as before.
+ * In a multiplayer room the countdown is SERVER-authoritative: elapsed is
+ * re-derived every tick from the shared phase-start instant (via the clock
+ * offset) minus paused time, so every device agrees and self-corrects as the
+ * clock offset refines. `roomElapsedMs` mirrors that value for the template;
+ * offline, the local `useTimer` drives everything as before.
  */
-function serverElapsedMs(): number | null {
-  if (!room.inRoom || sync.phaseStartedAt.value === null) return null
-  return Math.max(0, sync.serverNow() - sync.phaseStartedAt.value)
+const roomElapsedMs = ref(0)
+let roomTick: ReturnType<typeof setInterval> | null = null
+
+/** True when the server-synced timer should drive the display. */
+const useRoomTimer = computed(() => room.inRoom && sync.phaseStartedAt.value !== null)
+
+function pollRoomElapsed() {
+  const e = sync.effectiveElapsedMs()
+  if (e !== null) roomElapsedMs.value = e
 }
 
-/** Start the timer, seeding elapsed from server time when in a room. */
+function startRoomTick() {
+  pollRoomElapsed()
+  if (roomTick) clearInterval(roomTick)
+  roomTick = setInterval(pollRoomElapsed, 200)
+}
+
+function stopRoomTick() {
+  if (roomTick) {
+    clearInterval(roomTick)
+    roomTick = null
+  }
+}
+
+/** In a room, elapsed to seed the local timer from the shared server instant. */
+function serverElapsedMs(): number | null {
+  return useRoomTimer.value ? sync.effectiveElapsedMs() : null
+}
+
+/**
+ * Start the timer. In a room the display reads `roomElapsedMs` (server-driven),
+ * so we spin up the room tick; the local `useTimer` is still started/seeded so
+ * offline fallback and completion bookkeeping keep working.
+ */
 function startAligned() {
   timer.start(serverElapsedMs() ?? 0)
+  if (room.inRoom) startRoomTick()
 }
 
 // Timer state
@@ -64,36 +94,51 @@ const timer = useTimer({
 const isHidingPeriod = computed(() => gameStore.currentPhase === GamePhase.HidingPeriod)
 const isGamePaused = computed(() => gameStore.isGamePaused)
 
+/**
+ * The authoritative remaining ms: server-derived in a room, local otherwise.
+ * All display/threshold logic reads THIS so both sources stay consistent.
+ */
+const activeRemaining = computed(() => {
+  if (useRoomTimer.value) return Math.max(0, HIDING_PERIOD_MS - roomElapsedMs.value)
+  return timer.remaining.value
+})
+
 const displayTime = computed(() => {
-  return formatTimeShort(timer.remaining.value)
+  return formatTimeShort(activeRemaining.value)
 })
 
 const isWarning = computed(() => {
-  return timer.remaining.value <= WARNING_THRESHOLD_MS && timer.remaining.value > 0
+  return activeRemaining.value <= WARNING_THRESHOLD_MS && activeRemaining.value > 0
 })
 
 const isExpired = computed(() => {
-  return timer.remaining.value <= 0 && hasCompleted.value
+  return activeRemaining.value <= 0 && hasCompleted.value
 })
+
+/** Paused for display: server-synced pause in a room, local timer otherwise. */
+const isPausedDisplay = computed(() =>
+  useRoomTimer.value ? gameStore.isGamePaused : timer.isPaused.value,
+)
 
 const timerClasses = computed(() => ({
   warning: isWarning.value && !isExpired.value,
   expired: isExpired.value,
-  paused: timer.isPaused.value,
+  paused: isPausedDisplay.value,
 }))
 
 const ariaLabel = computed(() => {
   if (isExpired.value) {
     return 'Hiding period timer expired. Seeking begins.'
   }
-  if (timer.isPaused.value) {
+  if (isPausedDisplay.value) {
     return `Hiding period timer paused at ${displayTime.value}`
   }
   return `Hiding period timer: ${displayTime.value} remaining`
 })
 
 /**
- * Handle timer tick - check for warning threshold
+ * Handle timer tick - check for warning threshold. Reads the local timer; the
+ * room path drives the same checks via the activeRemaining watcher below.
  */
 function handleTick() {
   if (!hasWarned.value && timer.remaining.value <= WARNING_THRESHOLD_MS) {
@@ -103,6 +148,20 @@ function handleTick() {
   }
   persist()
 }
+
+// Room path: warning + completion are driven by the server-derived remaining,
+// not the local useTimer's onTick/onComplete (which run on unsynced local time).
+watch(activeRemaining, (remaining) => {
+  if (!useRoomTimer.value) return
+  if (!hasWarned.value && remaining <= WARNING_THRESHOLD_MS && remaining > 0) {
+    hasWarned.value = true
+    notifications.notifyTimerWarning()
+    emit('warning')
+  }
+  if (!hasCompleted.value && remaining <= 0) {
+    handleComplete()
+  }
+})
 
 /**
  * Handle timer completion
@@ -217,6 +276,7 @@ watch(
       persist()
     } else if (!active) {
       timer.stop()
+      stopRoomTick()
       hasWarned.value = false
       hasCompleted.value = false
       persistenceService.remove(STORAGE_KEY)
@@ -238,6 +298,13 @@ watch(isGamePaused, (paused) => {
   }
 })
 
+// Start the server-driven tick as soon as the room timer becomes drivable —
+// phaseStartedAt often arrives (via welcome/phase) after this component mounts.
+watch(useRoomTimer, (drivable) => {
+  if (drivable && isHidingPeriod.value && !hasCompleted.value && !roomTick) startRoomTick()
+  else if (!drivable) stopRoomTick()
+})
+
 // Handle visibility change for app backgrounding
 function handleVisibilityChange() {
   if (document.hidden) {
@@ -256,11 +323,15 @@ onMounted(() => {
     startAligned()
     persist()
   }
+  // Ensure the server-driven tick runs whenever we're in a room mid-hiding —
+  // e.g. after a rehydrate (mid-game refresh) that didn't go through startAligned.
+  if (isHidingPeriod.value && useRoomTimer.value && !roomTick) startRoomTick()
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
+  stopRoomTick()
   persist()
 })
 </script>
@@ -315,7 +386,7 @@ onUnmounted(() => {
       </p>
 
       <!-- Paused Indicator -->
-      <p v-if="timer.isPaused.value && !isExpired" class="timer-status-paused">
+      <p v-if="isPausedDisplay && !isExpired" class="timer-status-paused">
         <svg class="timer-status-icon-small" viewBox="0 0 24 24" fill="currentColor">
           <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
         </svg>
@@ -323,8 +394,9 @@ onUnmounted(() => {
       </p>
     </div>
 
-    <!-- Control Buttons -->
-    <div v-if="!isExpired" class="timer-controls">
+    <!-- Control Buttons: hidden in a room — pause is host-authoritative and driven
+         by GamePauseOverlay, so these local-only controls would desync the room. -->
+    <div v-if="!isExpired && !room.inRoom" class="timer-controls">
       <button
         v-if="!timer.isPaused.value"
         class="btn-show btn-show-secondary"

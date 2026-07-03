@@ -217,6 +217,35 @@ describe('RoomHub pause (host-authoritative)', () => {
     hub.applyHostPause('h1', true)
     expect(hub.applyHostPause('h1', true)).toBeNull() // already paused
   })
+
+  it('tracks pausedAt on pause and folds the span into pausedAccumMs on resume', () => {
+    expect(hub.getPausedAccumMs()).toBe(0)
+    expect(hub.getPausedAt()).toBeNull()
+
+    hub.applyHostPause('h1', true, 1_000)
+    expect(hub.getPausedAt()).toBe(1_000)
+    expect(hub.getPausedAccumMs()).toBe(0) // live span not yet folded in
+
+    hub.applyHostPause('h1', false, 4_000)
+    expect(hub.getPausedAt()).toBeNull()
+    expect(hub.getPausedAccumMs()).toBe(3_000) // 4_000 − 1_000
+
+    // A second pause accumulates on top of the first.
+    hub.applyHostPause('h1', true, 10_000)
+    hub.applyHostPause('h1', false, 12_500)
+    expect(hub.getPausedAccumMs()).toBe(5_500) // 3_000 + 2_500
+  })
+
+  it('resets pause accounting on a new phase', () => {
+    hub.applyHostPause('h1', true, 1_000)
+    hub.applyHostPause('h1', false, 3_000)
+    expect(hub.getPausedAccumMs()).toBe(2_000)
+
+    hub.applyHostAction('h1', 'start-seeking', 5_000)
+    expect(hub.isPaused()).toBe(false)
+    expect(hub.getPausedAccumMs()).toBe(0)
+    expect(hub.getPausedAt()).toBeNull()
+  })
 })
 
 describe('RoomHub setHider (host-authoritative)', () => {
