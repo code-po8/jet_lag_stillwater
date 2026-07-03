@@ -123,4 +123,46 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
     await hostCtx.close()
     await joinCtx.close()
   })
+
+  test('host keeps roster names + host controls after a mid-game refresh', async ({ browser }) => {
+    const hostCtx = await browser.newContext()
+    const joinCtx = await browser.newContext()
+
+    const { page: host, code } = await createHost(hostCtx, 'Hank')
+    const hostFrames = captureWsFrames(host)
+    const { page: joiner } = await joinRoom(joinCtx, code, 'Sam')
+
+    await expect(host.getByTestId('lobby-roster')).toContainText('Sam')
+    await host.getByTestId('lobby-roster').getByRole('button', { name: 'Sam' }).click()
+    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER')
+    await host.getByTestId('start-game-btn').click()
+    await expect(host).toHaveURL(/\/game/)
+
+    // Names render for the host before the refresh.
+    await expect(host.getByTestId('hider-name')).toContainText('Sam')
+
+    // The bug: host refreshes mid-hiding → reconnect welcome must restore the
+    // roster (names) AND host status (the pause control).
+    await host.reload()
+    await expect(host).toHaveURL(/\/game/)
+
+    try {
+      await expect(host.getByTestId('hider-name')).toContainText('Sam', { timeout: 10_000 })
+      await expect(host.getByLabel('Pause game')).toBeVisible()
+    } catch (e) {
+      console.log('=== HOST WS FRAMES after reload ===')
+      for (const f of hostFrames) console.log(f)
+      console.log('=== HOST hider-name DOM ===')
+      console.log(
+        await host
+          .getByTestId('hider-name')
+          .textContent()
+          .catch(() => '(missing)'),
+      )
+      throw e
+    }
+
+    await hostCtx.close()
+    await joinCtx.close()
+  })
 })
