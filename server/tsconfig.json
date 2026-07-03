@@ -15,10 +15,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "verbatimModuleSyntax": true,
-    "paths": {
-      "@jet-lag-stillwater/shared": ["../shared/dist/index.d.ts"]
-    }
+    "verbatimModuleSyntax": true
+    // No `paths` alias for @jet-lag-stillwater/shared: it's a real package
+    // (file:../shared with proper exports), so tsc resolves it via node_modules
+    // + the project reference below. A `paths` alias to the .d.ts also fooled
+    // tsx into importing a types-only file at runtime (no exports) — breaking
+    // `npm run dev`.
   },
   "references": [{ "path": "../shared" }],
   "include": ["src/**/*.ts"],

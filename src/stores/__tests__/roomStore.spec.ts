@@ -5,7 +5,7 @@ import { useRoomStore } from '../roomStore'
 const HOST_RESP = {
   code: 'ABCD',
   sessionId: 's1',
-  player: { id: 'p1', name: 'Host', role: 'hider' as const, isHost: true },
+  player: { id: 'p1', name: 'Host', role: 'seeker' as const, isHost: true },
   rejoinToken: 'host-tok',
 }
 
@@ -69,14 +69,14 @@ describe('roomStore', () => {
     it('rehydrates the server-assigned role across reloads (before welcome)', async () => {
       const store = useRoomStore()
       store.api = stubApi() as never
-      await store.createRoom('Host') // host is a hider
-      expect(store.role).toBe('hider')
+      await store.createRoom('Host') // host starts as a seeker (no hider yet)
+      expect(store.role).toBe('seeker')
 
       // After a refresh, the role must be known immediately — without waiting
       // for a WS `welcome` — so the role-locked UI never strands the player.
       setActivePinia(createPinia())
       const store2 = useRoomStore()
-      expect(store2.role).toBe('hider')
+      expect(store2.role).toBe('seeker')
     })
   })
 

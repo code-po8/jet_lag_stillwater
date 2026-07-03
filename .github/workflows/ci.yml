@@ -55,3 +55,63 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+
+  # Full-stack 2-browser multiplayer E2E: real WS server + Postgres. Separate
+  # job so the fast `test` job doesn't carry a database, and this heavier stack
+  # only runs where it's needed.
+  e2e-multiplayer:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: jetlag
+          POSTGRES_PASSWORD: e2epw
+          POSTGRES_DB: jetlag
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jetlag"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://jetlag:e2epw@localhost:5432/jetlag
+      VITE_API_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies (root + shared + server)
+        # shared + server are separate packages the E2E stack needs. globalSetup
+        # builds shared; the server auto-migrates Postgres on boot.
+        run: |
+          npm ci
+          npm --prefix shared ci
+          npm --prefix server ci
+
+      - name: Rebuild allow-listed native deps
+        run: npm rebuild sharp
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run multiplayer E2E (full stack)
+        run: npm run test:e2e:multiplayer
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-multiplayer
+          path: playwright-report/
+          retention-days: 30

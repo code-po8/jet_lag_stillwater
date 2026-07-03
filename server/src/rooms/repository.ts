@@ -71,8 +71,10 @@ export async function createRoom(
       const session = rows[0]!
       const { raw, hash } = generateRejoinToken()
       const { rows: pRows } = await db.query<PlayerRow>(
+        // Host starts as a seeker — there is NO hider until the host explicitly
+        // picks one in the lobby (Start is gated on that). See useMultiplayerBridge.
         `INSERT INTO players (session_id, name, role, is_host, rejoin_token_hash)
-         VALUES ($1, $2, 'hider', true, $3) RETURNING *`,
+         VALUES ($1, $2, 'seeker', true, $3) RETURNING *`,
         [session.id, opts.hostName, hash],
       )
       return { session, player: pRows[0]!, rejoinToken: raw }
