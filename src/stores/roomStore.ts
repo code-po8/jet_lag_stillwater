@@ -25,6 +25,13 @@ interface PersistedRoom {
    * welcome arrives (and forever if offline).
    */
   selfRole: PublicPlayer['role']
+  /**
+   * Whether this device is the host, persisted for the same reason as the role:
+   * a mid-game refresh must know it's the host BEFORE `welcome` arrives, or the
+   * host loses its host-only controls (pause/resume, end game). `isHost` derives
+   * from live `self` when present, else this persisted value.
+   */
+  selfIsHost: boolean
 }
 
 export const useRoomStore = defineStore('room', () => {
@@ -37,11 +44,14 @@ export const useRoomStore = defineStore('room', () => {
   const rejoinToken = ref<string | null>(null)
   const self = ref<PublicPlayer | null>(null)
   const players = ref<PublicPlayer[]>([])
-  // Persisted role, available across a refresh before `self` is re-fetched.
+  // Persisted role/host flag, available across a refresh before `self` is
+  // re-fetched (the WS welcome).
   const persistedRole = ref<PublicPlayer['role'] | null>(null)
+  const persistedIsHost = ref(false)
 
   const inRoom = computed(() => code.value !== null)
-  const isHost = computed(() => self.value?.isHost ?? false)
+  /** Host status: live `self` if present, else the persisted value (post-refresh). */
+  const isHost = computed(() => self.value?.isHost ?? persistedIsHost.value)
   /** Server-assigned role: live `self` if present, else the persisted value. */
   const role = computed<PublicPlayer['role'] | null>(() => self.value?.role ?? persistedRole.value)
 
@@ -52,6 +62,7 @@ export const useRoomStore = defineStore('room', () => {
         rejoinToken: rejoinToken.value,
         selfId: self.value.id,
         selfRole: self.value.role,
+        selfIsHost: self.value.isHost,
       })
     }
   }
@@ -61,9 +72,11 @@ export const useRoomStore = defineStore('room', () => {
     if (saved) {
       code.value = saved.code
       rejoinToken.value = saved.rejoinToken
-      // self/roster are re-fetched on rejoin, but the role is restored now so
-      // role-locked UI is correct immediately (older sessions may lack it).
+      // self/roster are re-fetched on rejoin, but the role + host flag are
+      // restored now so role/host-locked UI is correct immediately (older
+      // sessions may lack these fields → default role null, host false).
       persistedRole.value = saved.selfRole ?? null
+      persistedIsHost.value = saved.selfIsHost ?? false
     }
   }
 
@@ -82,6 +95,20 @@ export const useRoomStore = defineStore('room', () => {
     self.value = res.player
     rejoinToken.value = res.rejoinToken
     await refreshRoster()
+    persist()
+  }
+
+  /**
+   * Adopt the authoritative `self` from the WS welcome (fired on connect AND on
+   * every reconnect). After a mid-game refresh `self` is null until this lands,
+   * so mirroring it here restores live host status / role — and re-persists them
+   * so a subsequent refresh is correct before the next welcome. The bridge calls
+   * this; keeping it in the store means `isHost`/`role` have a single source.
+   */
+  function applySyncedSelf(player: PublicPlayer): void {
+    self.value = player
+    persistedRole.value = player.role
+    persistedIsHost.value = player.isHost
     persist()
   }
 
@@ -123,5 +150,6 @@ export const useRoomStore = defineStore('room', () => {
     rejoin,
     refreshRoster,
     leaveRoom,
+    applySyncedSelf,
   }
 })
