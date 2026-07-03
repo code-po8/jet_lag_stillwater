@@ -33,7 +33,17 @@ export function dbConnectionAuth(db: Queryable): ConnectionAuth {
         isHost: match.is_host,
         connected: true,
       }
-      return { player }
+      // Full durable roster seeds the in-memory hub so `welcome` always reflects
+      // every member (see ConnectionAuth.resolve). Reuse the already-fetched
+      // player rows rather than a second query.
+      const roster: PublicPlayer[] = rows.map((p) => ({
+        id: p.id,
+        name: p.name,
+        role: p.role as PublicPlayer['role'],
+        isHost: p.is_host,
+        connected: p.connected,
+      }))
+      return { player, roster }
     },
   }
 }

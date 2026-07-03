@@ -171,6 +171,19 @@ docker compose run --rm test-server
 # Run backend integration tests against a real Postgres (room REST endpoints)
 POSTGRES_HOST_PORT=5433 docker compose run --rm itest-server
 
+# E2E (Playwright) --------------------------------------------------------
+# Offline E2E suite (no server/DB), chromium baked into the Playwright image
+docker compose run --rm e2e
+
+# Full-stack MULTIPLAYER E2E: 2 browsers vs a real WS server + Postgres, all
+# inside one container. playwright.config.ts's webServer boots the API server
+# (auto-migrates) + Vite; the container reaches Postgres over the compose
+# network. If host 5432 is taken, set POSTGRES_HOST_PORT to a free port.
+POSTGRES_HOST_PORT=55434 docker compose run --rm e2e-multiplayer
+# Scope to a single test:
+POSTGRES_HOST_PORT=55434 docker compose run --rm e2e-multiplayer \
+  npx playwright test --project=multiplayer --grep "mid-game refresh"
+
 # Run / roll back DB migrations manually (against the compose Postgres)
 docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:up"
 docker compose run --rm --entrypoint sh backend -c "cd /app/server && npm run migrate:down"
@@ -411,7 +424,7 @@ git push -u origin feature/Q-001-question-model
 # CI runs automatically (lint, type-check, all tests)
 
 # 5. If CI passes, merge PR
-# 6. Netlify/Vercel auto-deploys from main
+# 6. Railway auto-deploys from main (web + api services)
 ```
 
 ---
@@ -514,18 +527,18 @@ For secrets your app needs:
 1. Create `.env.example` with placeholder values (committed):
 
    ```
-   SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_ANON_KEY=your-anon-key-here
+   # server/ (api)
+   DATABASE_URL=postgres://user:password@host:5432/dbname
+   WEB_ORIGIN=https://your-web-service.example  # CORS + WS origin lock
+   # web client (build-time)
+   VITE_API_URL=https://your-api-service.example
    ```
 
-2. Create `.env` with real values (gitignored):
+2. Create `.env` with real values (gitignored).
 
-   ```
-   SUPABASE_URL=https://your-project-id.supabase.co
-   SUPABASE_ANON_KEY=your-anon-key-here
-   ```
-
-3. For CI/CD, use GitHub repository secrets (Settings → Secrets)
+3. For CI/CD, use GitHub repository secrets (Settings → Secrets). In production
+   these are set on the Railway services (see the Deployment section) — the
+   Postgres `DATABASE_URL` is a cross-service reference, never committed.
 
 ---
 
@@ -572,28 +585,13 @@ Creates dist/ folder:
     │   └── index-[hash].css
     └── manifest.webmanifest
     ↓
-Hosted as static files on Netlify/Vercel
+Served as static files (Railway `web` service via Dockerfile.web, or any static host)
 ```
 
-### Netlify Setup
-
-1. Connect GitHub repo to Netlify
-2. Configure build settings:
-   - **Build command:** `npm run build`
-   - **Publish directory:** `dist`
-   - **Node version:** Specify in environment or `.nvmrc`
-3. Enable automatic deploys from `main` branch
-
-**Environment Variables (if needed):**
-Set in Netlify dashboard under Site Settings → Environment Variables.
-
-### Vercel Setup
-
-1. Import GitHub repo to Vercel
-2. Vercel auto-detects Vite/Vue and configures:
-   - **Build command:** `npm run build`
-   - **Output directory:** `dist`
-3. Automatic deploys enabled by default
+The primary deployment is Railway (see above). Because the single-device build is
+just static files, `dist/` can alternatively be served by any static host (build
+command `npm run build`, publish directory `dist`). Only the single-device build
+works this way — the multiplayer build needs the `api` + Postgres services.
 
 ### Manual Deployment (if needed)
 

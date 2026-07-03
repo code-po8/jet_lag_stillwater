@@ -7,10 +7,16 @@ import type { RoomHub } from './roomHub.js'
 /** How a connecting socket is authenticated + resolved to a player. */
 export interface ConnectionAuth {
   /**
-   * Verify a (code, rejoinToken) pair. Returns the player to attach, or null if
-   * the room/token is invalid.
+   * Verify a (code, rejoinToken) pair. Returns the player to attach plus the
+   * FULL room roster (from the durable store), or null if the room/token is
+   * invalid. The roster seeds the in-memory hub so a `welcome` always reflects
+   * every member — even after a server restart or when peers haven't reconnected
+   * yet (the in-memory hub only knows sockets connected this process-lifetime).
    */
-  resolve(code: string, rejoinToken: string): Promise<{ player: PublicPlayer } | null>
+  resolve(
+    code: string,
+    rejoinToken: string,
+  ): Promise<{ player: PublicPlayer; roster: PublicPlayer[] } | null>
 }
 
 export interface GatewayOptions {
@@ -101,7 +107,31 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
         }
         const code = msg.code.toUpperCase()
         const hub = registry.getOrCreate(code)
-        const wasMember = hub.members().some((m) => m.id === resolved.player.id)
+        // "Returning" means this player had a live presence this process-lifetime:
+        // an open socket (rapid reconnect) or a pending grace-period drop. Hub
+        // membership alone no longer implies it — we now seed absent members from
+        // the durable roster below (as disconnected), so a first-time joiner would
+        // otherwise be misread as returning.
+        const dropKey = `${code}:${resolved.player.id}`
+        const wasMember = roomSockets(code).has(resolved.player.id) || dropTimers.has(dropKey)
+        // Seed the hub from the durable roster for any members it doesn't already
+        // know (e.g. this hub was just created after a server restart, or peers
+        // haven't reconnected yet). They start `connected: false` — their real
+        // presence flips true when their own socket sends `hello`. Without this,
+        // a reconnecting client's `welcome` would list only itself and the UI
+        // would lose the other players' names.
+        for (const member of resolved.roster) {
+          if (!hub.members().some((m) => m.id === member.id)) {
+            hub.addMember({
+              id: member.id,
+              name: member.name,
+              role: member.role,
+              isHost: member.isHost,
+            })
+            hub.setConnected(member.id, false)
+          }
+        }
+        // The connecting player is authoritatively present.
         hub.addMember({
           id: resolved.player.id,
           name: resolved.player.name,
@@ -112,7 +142,6 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
         roomSockets(code).set(resolved.player.id, socket)
 
         // Reconnect: cancel any pending drop timer for this player.
-        const dropKey = `${code}:${resolved.player.id}`
         const pendingDrop = dropTimers.get(dropKey)
         if (pendingDrop) {
           clearTimeout(pendingDrop)

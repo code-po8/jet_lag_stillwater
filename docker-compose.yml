@@ -104,6 +104,30 @@ services:
       CI: "1"
     command: npx playwright test
 
+  # Full-stack MULTIPLAYER E2E (2 browsers vs a real WS server + Postgres). Unlike
+  # `e2e`, playwright.config.ts's webServer here also boots the API server, so this
+  # container needs BOTH node_modules volumes and must reach the `postgres` service
+  # over the compose network (hence DATABASE_URL uses host `postgres`). The API
+  # server auto-migrates on boot. E2E_MULTIPLAYER=1 selects the multiplayer project.
+  #   docker compose run --rm e2e-multiplayer
+  #   docker compose run --rm e2e-multiplayer npx playwright test --grep "mid-game refresh"
+  e2e-multiplayer:
+    image: mcr.microsoft.com/playwright:v1.57.0-noble
+    volumes:
+      - ./:/app:cached
+      - frontend_node_modules:/app/node_modules
+      - server_node_modules:/app/server/node_modules
+      - npm_cache:/root/.npm
+    working_dir: /app
+    environment:
+      CI: "1"
+      E2E_MULTIPLAYER: "1"
+      VITE_API_URL: "http://localhost:3000"
+      DATABASE_URL: "postgres://jetlag:jetlag_local_dev@postgres:5432/jetlag"
+    command: npx playwright test --project=multiplayer
+    depends_on:
+      - postgres
+
   # --- Backend (Fastify) sandbox services (INFRA-003) -----------------------
   # Same isolation guarantees as the frontend: bind-mount only the source, no
   # $HOME/~/.ssh, non-root, node_modules in a named volume. The server has its

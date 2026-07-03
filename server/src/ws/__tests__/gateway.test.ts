@@ -16,11 +16,13 @@ const PLAYERS: Record<
   'tok-seeker': { id: 's1', name: 'Sue', role: 'seeker', isHost: false },
   'tok-seeker2': { id: 's2', name: 'Sam', role: 'seeker', isHost: false },
 }
+// The durable roster the resolver reports for room ABCD (all known players).
+const ROSTER = Object.values(PLAYERS).map((p) => ({ ...p, connected: true }))
 const mockAuth: ConnectionAuth = {
   async resolve(code, token) {
     const p = PLAYERS[token]
     if (!p || code.toUpperCase() !== 'ABCD') return null
-    return { player: { ...p, connected: true } }
+    return { player: { ...p, connected: true }, roster: ROSTER }
   },
 }
 
@@ -78,6 +80,36 @@ describe('WS gateway (integration)', () => {
     expect(welcome.t).toBe('welcome')
     if (welcome.t === 'welcome') expect(welcome.you.id).toBe('h1')
     ws.close()
+  })
+
+  it('seeds welcome from the durable roster (peers not yet reconnected)', async () => {
+    // A single client connects to a FRESH hub (as after a server restart, or
+    // when peers haven't reconnected). Its welcome must still list every roster
+    // member — otherwise the UI loses the other players' names.
+    const { ws, welcome } = await helloAs('tok-hider')
+    expect(welcome.t).toBe('welcome')
+    if (welcome.t === 'welcome') {
+      const ids = welcome.players.map((p) => p.id).sort()
+      expect(ids).toEqual(['h1', 's1', 's2'])
+      // The connecting player is present; unseen peers are marked disconnected.
+      const self = welcome.players.find((p) => p.id === 'h1')
+      const peer = welcome.players.find((p) => p.id === 's1')
+      expect(self?.connected).toBe(true)
+      expect(peer?.connected).toBe(false)
+    }
+    ws.close()
+  })
+
+  it('treats a first-time connect as a new join, not a reconnect', async () => {
+    // Even though the seeker is seeded into the hub from the roster, its FIRST
+    // hello is a genuine join → existing members get player.joined (not presence).
+    const { ws: hider } = await helloAs('tok-hider')
+    const joinedPromise = nextMessage(hider, (m) => m.t === 'player.joined')
+    const { ws: seeker } = await helloAs('tok-seeker')
+    const joined = await joinedPromise
+    expect(joined.t === 'player.joined' && joined.player.id).toBe('s1')
+    hider.close()
+    seeker.close()
   })
 
   it('rejects an invalid token', async () => {
