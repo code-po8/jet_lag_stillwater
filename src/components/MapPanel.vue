@@ -187,7 +187,6 @@ function pickStopFromMap(stop: BusStop) {
       :bus-stops="isHider ? busStops : []"
       :in-range-stop-indices="inRangeStopIndices"
       :stops-pickable="isHider"
-      :dim-other-pois="isHider"
       @pick-stop="pickStopFromMap"
     />
 
