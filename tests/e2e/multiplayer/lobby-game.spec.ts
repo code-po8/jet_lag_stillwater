@@ -265,4 +265,63 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
     await hostCtx.close()
     await joinCtx.close()
   })
+
+  // Regression: the hider's own GPS "you" dot stopped rendering on the map tab
+  // after the map merges. The dot needs BOTH a server `self` (multiplayer) AND a
+  // real geolocation fix — the unit suite mocks geolocation, so it can't catch a
+  // break in the live GPS→marker path. This drives the real path with a granted,
+  // fixed geolocation and asserts the self marker's "(you)" tooltip renders.
+  test('the joiner sees their own GPS "you" dot on the map', async ({ browser }) => {
+    const hostCtx = await browser.newContext()
+    // Grant + fix geolocation for the joiner so watchPosition delivers a fix.
+    const joinCtx = await browser.newContext({
+      permissions: ['geolocation'],
+      geolocation: { latitude: 36.1223, longitude: -97.0687 }, // OSU Student Union
+    })
+
+    const { page: host, code } = await createHost(hostCtx, 'Hank')
+    const { page: joiner } = await joinRoom(joinCtx, code, 'Sam')
+
+    await expect(host.getByTestId('lobby-roster')).toContainText('Sam')
+    // Host picks ITSELF as hider → the joiner is a SEEKER. A seeker's map has no
+    // interactive bus-stop layer, so the ONLY player marker on it is the self
+    // "you" dot — making its presence unambiguous to assert.
+    await host.getByTestId('lobby-roster').getByRole('button', { name: 'Hank' }).click()
+    // Wait for the role broadcast to reach the joiner: the host's row now shows
+    // the HIDER badge in the joiner's roster (there is no explicit SEEKER badge).
+    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
+    await host.getByTestId('start-game-btn').click()
+    await expect(joiner).toHaveURL(/\/game/)
+    await expect(joiner.getByTestId('current-role-display')).toContainText(/seeker/i)
+
+    // Open the map tab (MapPanel only mounts — and only starts geolocation — here).
+    await joiner.getByTestId('bottom-nav').getByRole('button', { name: 'Map' }).click()
+    await expect(joiner.getByTestId('base-map-canvas')).toBeVisible()
+
+    // The self "you" dot is a radius-9 Leaflet circleMarker in the marker layer
+    // group. With a granted, fixed geolocation it must appear once the first GPS
+    // fix arrives. Assert a visible player marker (r≥9) is painted on the map —
+    // its absence is the reported bug (no "you" dot despite a working GPS).
+    await expect(async () => {
+      const rendered = await joiner.evaluate(() => {
+        const paths = Array.from(
+          document.querySelectorAll<SVGPathElement>('.leaflet-overlay-pane path'),
+        )
+        // Player markers are the larger circles (r=9 self / r=7 others); POIs are
+        // r≤5. A visible r≥7 circle is a player dot.
+        return paths.some((p) => {
+          const d = p.getAttribute('d') ?? ''
+          const m = d.match(/a(\d+(?:\.\d+)?),/) // radius from the arc command
+          const r = m ? parseFloat(m[1]!) : 0
+          const rect = p.getBoundingClientRect()
+          const cs = getComputedStyle(p)
+          return r >= 7 && rect.width > 0 && cs.visibility === 'visible' && cs.display !== 'none'
+        })
+      })
+      expect(rendered).toBe(true)
+    }).toPass({ timeout: 15_000 })
+
+    await hostCtx.close()
+    await joinCtx.close()
+  })
 })

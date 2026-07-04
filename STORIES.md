@@ -4443,6 +4443,30 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ---
 
+### MAP-008: GPS "You" Dot — Visible Status & Legend/Nav Layout Fix
+
+**Status:** `complete`
+**Depends On:** MAP-003, MAP-002
+
+**Story:** As a player, when my own GPS "you" dot doesn't show on the map I want to know _why_ (permission, acquiring, unavailable) instead of an empty map, and the map legend must not sit under the bottom navigation bar.
+
+**Acceptance Criteria:**
+
+- [x] While the map tab has no GPS fix yet, a status pill shows "Locating you…"; if geolocation errors (denied/unavailable), it shows the error message
+- [x] The status pill disappears once a fix arrives (the "you" dot is then drawn)
+- [x] The map tab clears the fixed BottomNav, so the bottom-left legend (and seeker toolbar) no longer render underneath / cover the nav bar
+- [x] The full GPS→marker render path is covered by a multiplayer E2E (granted, fixed geolocation → visible player marker) — the unit suite mocks geolocation and can't catch a live-path break
+
+**Size:** S
+
+**Implementation Notes:**
+
+- Root cause of the reported "GPS not working": the render path was sound (confirmed by a new multiplayer E2E that drives a real granted geolocation and asserts the marker paints). Real-device failures (denied permission / no fix) were **silent** — no UI feedback — so `MapPanel` now derives a `gpsStatus` from `geo.ownPosition`/`geo.error` and renders a `data-testid="gps-status"` pill.
+- Legend/nav overlap: `.gameplay-map-tab` was `position: absolute; inset: 0`, which bypasses the parent's `.content-with-nav` padding and extends the map (and its `bottom: 10px` legend) under the fixed BottomNav. Fixed by setting `bottom: calc(60px + env(safe-area-inset-bottom))` on the map tab.
+- TDD: `MapPanel.spec.ts` (+3: locating / error / hidden-on-fix status states); new multiplayer E2E `tests/e2e/multiplayer/lobby-game.spec.ts` "the joiner sees their own GPS 'you' dot on the map". 1476 frontend tests pass; multiplayer + offline E2E green.
+
+---
+
 ## Backlog Summary
 
 | Epic                           | Stories | Complete | Remaining |
@@ -4461,8 +4485,8 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 | 11: Branding & Visual Identity | 2       | 2        | 0         |
 | 12: Bug Fixes                  | 1       | 1        | 0         |
 | 13: Backend & Infrastructure   | 11      | 0        | 11        |
-| 14: Live Shared Map            | 8       | 8        | 0         |
-| **Total**                      | **84**  | **69**   | **15**    |
+| 14: Live Shared Map            | 9       | 9        | 0         |
+| **Total**                      | **85**  | **70**   | **15**    |
 
 ---
 

@@ -502,11 +502,17 @@ function handleEndGame() {
   padding: 1.5rem;
 }
 
-/* Map tab fills the content area so Leaflet has a sized container. */
+/* Map tab fills the content area so Leaflet has a sized container. It is
+   absolutely positioned (so Leaflet gets a fixed-size box), which bypasses the
+   parent's `.content-with-nav` padding — so it must clear the fixed BottomNav
+   itself, otherwise the map (and its bottom-left legend) render underneath the
+   nav bar and the legend covers it. Match BottomNav's height (60px + safe area). */
 .gameplay-map-tab {
   position: absolute;
-  inset: 0;
-  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Host-only "End Game" control (multiplayer). */

@@ -131,6 +131,15 @@ const inRangeStopIndices = computed<number[]>(() => {
   return out
 })
 
+// GPS status for the "you" dot (MAP-008): surfaces WHY the dot is missing so a
+// silent geolocation failure (denied permission, insecure origin, timeout) is
+// visible instead of just an absent marker. Null message = healthy/have a fix.
+const gpsStatus = computed<string | null>(() => {
+  if (geo.ownPosition.value) return null // have a fix — dot is drawn
+  if (geo.error.value) return geo.error.value // permission denied / unavailable
+  return 'Locating you…' // started, waiting for the first fix
+})
+
 function pickStop(event: Event) {
   const idx = Number((event.target as HTMLSelectElement).value)
   const stop = busStops.value[idx]
@@ -154,6 +163,20 @@ function pickStopFromMap(stop: BusStop) {
       aria-live="assertive"
     >
       ⚠️ Seekers in your zone — end game triggered!
+    </div>
+
+    <!-- GPS status (MAP-008): tells the player why their "you" dot is missing,
+         rather than failing silently. Hidden once a fix arrives. -->
+    <div
+      v-if="gpsStatus"
+      data-testid="gps-status"
+      class="gps-status"
+      :class="{ 'gps-status-error': !!geo.error.value }"
+      role="status"
+      aria-live="polite"
+    >
+      <span class="gps-status-dot" aria-hidden="true"></span>
+      {{ gpsStatus }}
     </div>
 
     <BaseMap
@@ -312,6 +335,50 @@ function pickStopFromMap(stop: BusStop) {
   }
   50% {
     box-shadow: 0 0 0 8px rgba(255, 80, 80, 0);
+  }
+}
+/* GPS status pill (MAP-008): top-left, clear of the zone sheet (top-right) and
+   the seeker toolbar (bottom). Shown only while there's no fix. */
+.gps-status {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 650;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--color-ui-border, #475569);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--color-ui-text-primary, #f8fafc);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+.gps-status-error {
+  border-color: #ff8a8a;
+  background: rgba(120, 30, 30, 0.92);
+}
+.gps-status-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-brand-cyan, #00aaff);
+  animation: gps-pulse 1.2s ease-in-out infinite;
+}
+.gps-status-error .gps-status-dot {
+  background: #ff8a8a;
+  animation: none;
+}
+@keyframes gps-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
   }
 }
 .zone-sheet {
