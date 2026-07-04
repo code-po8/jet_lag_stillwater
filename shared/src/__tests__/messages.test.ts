@@ -25,6 +25,7 @@ describe('message type guards', () => {
       'player.left',
       'player.presence',
       'pos.batch',
+      'gps.presence',
       'zone',
       'ruledout',
       'zone.breach',

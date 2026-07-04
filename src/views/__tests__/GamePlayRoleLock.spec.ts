@@ -135,33 +135,40 @@ describe('GamePlayView host End Game (multiplayer)', () => {
     }
   }
 
-  it('shows the End Game button to the host during play', () => {
+  // End Game now lives in the host-only Admin tab (ADMIN-001).
+  it('shows the Admin tab (with End Game) to the host during play', async () => {
     enterRoomAs(true)
     render(GamePlayView)
-    expect(screen.getByTestId('end-game-btn')).toBeInTheDocument()
+    // The host gets the Admin nav tab; opening it reveals the End Game control.
+    const adminTab = screen.getByTestId('nav-tab-admin')
+    expect(adminTab).toBeInTheDocument()
+    await fireEvent.click(adminTab)
+    expect(screen.getByTestId('admin-end-game-btn')).toBeInTheDocument()
   })
 
-  it('hides the End Game button from a non-host', () => {
+  it('hides the Admin tab (and End Game) from a non-host', () => {
     enterRoomAs(false)
     render(GamePlayView)
-    expect(screen.queryByTestId('end-game-btn')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('nav-tab-admin')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('admin-end-game-btn')).not.toBeInTheDocument()
   })
 
-  it('does not show End Game in offline (no room) play', () => {
+  it('does not show the Admin tab in offline (no room) play', () => {
     const game = useGameStore()
     game.currentPhase = GamePhase.Seeking
     render(GamePlayView)
-    expect(screen.queryByTestId('end-game-btn')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('nav-tab-admin')).not.toBeInTheDocument()
   })
 
-  it('clicking End Game broadcasts end-round', async () => {
+  it('clicking End Game in the Admin tab broadcasts end-round', async () => {
     enterRoomAs(true)
     const sync = useSync()
     const sendHostAction = vi.fn()
     sync.sendHostAction = sendHostAction
 
     render(GamePlayView)
-    await fireEvent.click(screen.getByTestId('end-game-btn'))
+    await fireEvent.click(screen.getByTestId('nav-tab-admin'))
+    await fireEvent.click(screen.getByTestId('admin-end-game-btn'))
     expect(sendHostAction).toHaveBeenCalledWith('end-round')
   })
 })

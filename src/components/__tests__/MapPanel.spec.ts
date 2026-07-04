@@ -37,8 +37,12 @@ vi.mock('../BaseMap.vue', () => ({
 }))
 
 // Geolocation is started by MapPanel; stub it so tests don't touch the browser
-// API. `__geoPosition` lets a test inject a fix for the in-range computation.
-const geoState = { position: null as null | { lat: number; lng: number; ts: number } }
+// API. `position`/`error` let a test drive the in-range computation and the GPS
+// status pill (MAP-008).
+const geoState = {
+  position: null as null | { lat: number; lng: number; ts: number },
+  error: null as string | null,
+}
 vi.mock('@/composables/useGeolocation', () => ({
   useGeolocation: () => ({
     ownPosition: {
@@ -46,7 +50,11 @@ vi.mock('@/composables/useGeolocation', () => ({
         return geoState.position
       },
     },
-    error: { value: null },
+    error: {
+      get value() {
+        return geoState.error
+      },
+    },
     start: vi.fn(),
     stop: vi.fn(),
   }),
@@ -57,6 +65,7 @@ describe('MapPanel (MAP-004)', () => {
     setActivePinia(createPinia())
     __resetSyncSession()
     geoState.position = null
+    geoState.error = null
   })
   afterEach(() => {
     cleanup()
@@ -270,5 +279,29 @@ describe('MapPanel (MAP-004)', () => {
     render(MapPanel)
     await nextTick()
     expect(screen.getByTestId('zone-pick-hint')).toHaveTextContent(/tap a bus stop/i)
+  })
+
+  // GPS status pill (MAP-008): a missing "you" dot must never be silent.
+  it('shows a "locating" status while waiting for the first GPS fix', async () => {
+    geoState.position = null
+    geoState.error = null
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('gps-status')).toHaveTextContent(/locating/i)
+  })
+
+  it('surfaces the geolocation error when GPS fails', async () => {
+    geoState.position = null
+    geoState.error = 'User denied Geolocation'
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('gps-status')).toHaveTextContent(/denied/i)
+  })
+
+  it('hides the GPS status once a fix arrives', async () => {
+    geoState.position = { lat: 36.12, lng: -97.07, ts: 1 }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.queryByTestId('gps-status')).toBeNull()
   })
 })

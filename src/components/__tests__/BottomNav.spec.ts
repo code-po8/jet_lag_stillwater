@@ -36,6 +36,17 @@ describe('BottomNav', () => {
       expect(wrapper.find('[data-testid="nav-tab-history"]').exists()).toBe(true)
     })
 
+    it('hides the Admin tab by default (non-host)', () => {
+      wrapper = mount(BottomNav, { props: { currentTab: 'questions' } })
+      expect(wrapper.find('[data-testid="nav-tab-admin"]').exists()).toBe(false)
+    })
+
+    it('shows the Admin tab when showAdmin is true (host)', () => {
+      wrapper = mount(BottomNav, { props: { currentTab: 'questions', showAdmin: true } })
+      expect(wrapper.find('[data-testid="nav-tab-admin"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Admin')
+    })
+
     it('should display tab labels', () => {
       wrapper = mount(BottomNav, {
         props: {
