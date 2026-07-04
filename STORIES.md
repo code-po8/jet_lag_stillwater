@@ -4419,6 +4419,30 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ---
 
+### MAP-007: Tap-to-Pick Bus Stop from Map
+
+**Status:** `complete`
+**Depends On:** MAP-004, MAP-003
+
+**Story:** As a hider, I want to tap a bus stop directly on the map (and see which ones I'm currently in end-game range of) so that I can set my hiding zone without knowing stop names — the dropdown is unusable in the field.
+
+**Acceptance Criteria:**
+
+- [x] Bus stops render as an interactive map layer for the hider; tapping one opens a popup with the stop name and a "Set as my hiding zone" button that declares the ¼-mile zone (same `zone.set` as the dropdown)
+- [x] Stops within ¼ mi (end-game radius) of the hider's current GPS are highlighted (larger, cyan) and labeled "in range"
+- [x] The dropdown remains as a name-search fallback; a hint tells the hider to tap the map and reports how many stops are in range
+- [x] Seekers never get the pickable layer (no leak of the picker)
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `BaseMap.vue`: new `busStops` / `inRangeStopIndices` / `stopsPickable` props + `pickStop` emit. When `busStops` is provided, bus stops are drawn as a dedicated interactive `layerGroup` (filtered out of the generic POI layer to avoid double-draw); each in-range stop uses the cyan highlight style. Pickable stops bind a Leaflet popup with a labeled button wired via `DomEvent`.
+- `MapPanel.vue`: computes `inRangeStopIndices` from `geo.ownPosition` vs each stop using `distanceMeters` ≤ `QUARTER_MILE_M`; passes the pickable layer only for the hider; `pickStopFromMap` → `setFromBusStop`.
+- TDD: `BaseMap.spec.ts` (+4: interactive layer, highlight style, `pickStop` emit, non-pickable path), `MapPanel.spec.ts` (+6: pickable-for-hider-only, in-range computation near/far, map pick sends `zone.set`, hint text). Verified in-container: 1473 frontend tests pass; type-check OK.
+
+---
+
 ## Backlog Summary
 
 | Epic                           | Stories | Complete | Remaining |
@@ -4437,8 +4461,8 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 | 11: Branding & Visual Identity | 2       | 2        | 0         |
 | 12: Bug Fixes                  | 1       | 1        | 0         |
 | 13: Backend & Infrastructure   | 11      | 0        | 11        |
-| 14: Live Shared Map            | 7       | 0        | 7         |
-| **Total**                      | **83**  | **61**   | **22**    |
+| 14: Live Shared Map            | 8       | 8        | 0         |
+| **Total**                      | **84**  | **69**   | **15**    |
 
 ---
 
