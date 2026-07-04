@@ -308,37 +308,32 @@ describe('BaseMap (MAP-001)', () => {
     expect(fills[1]!.fillColor).toBe('#ffffff')
   })
 
-  it('dims the generic POI dots when dimOtherPois is set (MAP-007)', async () => {
-    render(BaseMap, {
-      props: { leaflet: fake.L as never, dimOtherPois: true },
-    })
+  it('renders the generic POI dots at full opacity', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never } })
     await nextTick()
-    // The POI overlay is the 2nd geoJSON layer; its pointToLayer builds faded
-    // circle markers. Grab the fillOpacity passed to the first POI marker.
+    // The POI overlay is the 2nd geoJSON layer; its pointToLayer builds the
+    // category-colored circle markers.
     const poiOpts = fake.L.geoJSON.mock.calls[1]![1] as {
       pointToLayer: (f: unknown, latlng: unknown) => unknown
     }
     poiOpts.pointToLayer({ properties: { kind: 'school' } }, [36.1, -97.0])
     const lastCall = fake.L.circleMarker.mock.calls.at(-1) as unknown as [
       unknown,
-      { fillOpacity: number },
+      { fillColor: string; fillOpacity: number },
     ]
-    expect(lastCall[1].fillOpacity).toBeLessThan(0.5)
+    expect(lastCall[1].fillOpacity).toBeGreaterThan(0.5)
+    expect(lastCall[1].fillColor).toBe('#f5b830') // school gold
   })
 
-  it('restyles the POI layer when dimOtherPois toggles (MAP-007)', async () => {
-    const { rerender } = render(BaseMap, {
-      props: { leaflet: fake.L as never, dimOtherPois: false },
-    })
+  it('binds a clickable popup naming each POI', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never } })
     await nextTick()
-    await rerender({ dimOtherPois: true })
-    await nextTick()
-    // The POI layer is faded in place (no rebuild).
-    expect(fake.layer.setStyle).toHaveBeenCalledWith(
-      expect.objectContaining({ fillOpacity: expect.any(Number) }),
-    )
-    const lastStyle = fake.layer.setStyle.mock.calls.at(-1)![0] as { fillOpacity: number }
-    expect(lastStyle.fillOpacity).toBeLessThan(0.5)
+    const poiOpts = fake.L.geoJSON.mock.calls[1]![1] as {
+      onEachFeature: (f: unknown, lyr: unknown) => void
+    }
+    const lyr = { bindTooltip: vi.fn().mockReturnThis(), bindPopup: vi.fn().mockReturnThis() }
+    poiOpts.onEachFeature({ properties: { kind: 'restaurant', name: "Eskimo Joe's" } }, lyr)
+    expect(lyr.bindPopup).toHaveBeenCalledWith("Eskimo Joe's · Restaurant")
   })
 
   it('emits pickStop when a stop popup button is clicked (MAP-007)', async () => {
