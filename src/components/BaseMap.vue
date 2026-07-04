@@ -183,8 +183,12 @@ onMounted(() => {
 let busStopLayer: L.LayerGroup | null = null
 
 function busStopStyle(inRange: boolean): L.CircleMarkerOptions {
+  // In-range stops stay WHITE (like every bus stop) but larger with a bold dark
+  // outline — size, not color, signals "highlighted". Cyan/blue is reserved for
+  // GPS player pins and orange for schools, so neither is used here to avoid the
+  // stop being misread as a location/school marker (MAP-007).
   return inRange
-    ? { radius: 8, color: '#ffffff', weight: 2, fillColor: BRAND_COLORS.cyan, fillOpacity: 0.95 }
+    ? { radius: 9, color: '#0f172a', weight: 3, fillColor: '#ffffff', fillOpacity: 1 }
     : { radius: 4, color: '#0f172a', weight: 1, fillColor: '#ffffff', fillOpacity: 0.9 }
 }
 
