@@ -63,6 +63,14 @@ const props = withDefaults(
     inRangeStopIndices?: number[]
     /** When true, tapping a bus stop opens a popup with a pick button (hider). */
     stopsPickable?: boolean
+    /**
+     * When true, fade the generic POIs (schools, restaurants, parks) so the
+     * bus-stop layer and its in-range highlights read as the foreground. Set
+     * while the hider is picking a zone: several bus stops are *named* after and
+     * sit next to a school/restaurant POI, so a highlighted stop is easily
+     * misread as a highlighted school/restaurant (MAP-007).
+     */
+    dimOtherPois?: boolean
   }>(),
   {
     zone: null,
@@ -72,6 +80,7 @@ const props = withDefaults(
     busStops: () => [],
     inRangeStopIndices: () => [],
     stopsPickable: false,
+    dimOtherPois: false,
   },
 )
 
@@ -83,6 +92,9 @@ const emit = defineEmits<{
 
 const container = ref<HTMLElement | null>(null)
 const mapInstance = shallowRef<L.Map | null>(null)
+// Generic POI overlay (schools/restaurants/parks). Kept so it can be dimmed
+// while the hider picks a zone (see `dimOtherPois`).
+let poiLayer: L.GeoJSON | null = null
 
 // Stillwater, OK center + sane zoom for a single small town.
 const STILLWATER_CENTER: [number, number] = [36.1156, -97.0584]
@@ -125,18 +137,20 @@ onMounted(() => {
   // interactive bus-stop layer is in use (MAP-007), skip bus stops here so they
   // aren't drawn twice.
   const skipBusStops = props.busStops.length > 0
-  const poiLayer = leaflet.geoJSON(poiGeo as unknown as GeoJSON.GeoJsonObject, {
+  poiLayer = leaflet.geoJSON(poiGeo as unknown as GeoJSON.GeoJsonObject, {
     filter: (feature) =>
       !(skipBusStops && (feature.properties as { kind?: string })?.kind === 'bus-stop'),
     pointToLayer: (feature, latlng) => {
       const kind = (feature.properties as { kind?: string })?.kind ?? ''
       const style = POI_STYLE[kind] ?? { color: '#94a3b8', label: kind }
+      const dim = props.dimOtherPois
       return leaflet.circleMarker(latlng, {
         radius: kind === 'bus-stop' ? 4 : 5,
         color: '#0f172a',
         weight: 1,
         fillColor: style.color,
-        fillOpacity: 0.9,
+        fillOpacity: dim ? 0.25 : 0.9,
+        opacity: dim ? 0.3 : 1,
       })
     },
     onEachFeature: (feature, lyr) => {
@@ -224,6 +238,17 @@ watch(
   () => drawBusStops(),
   { deep: true },
 )
+
+// Fade / restore the generic POI dots when `dimOtherPois` toggles, so a
+// highlighted bus stop can't be mistaken for a same-named school/restaurant dot
+// sitting next to it (MAP-007). Restyle in place rather than rebuilding.
+function applyPoiDim() {
+  if (!poiLayer) return
+  const dim = props.dimOtherPois
+  poiLayer.setStyle({ fillOpacity: dim ? 0.25 : 0.9, opacity: dim ? 0.3 : 1 })
+}
+
+watch(() => props.dimOtherPois, applyPoiDim)
 
 // ── Ruled-out shading (MAP-005): one rectangle per geohash cell ──
 // Incrementally reconciled: a `ruledout` broadcast carries the full unioned set,
