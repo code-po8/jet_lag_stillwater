@@ -102,6 +102,9 @@ test(timer): add unit tests for useTimer composable
 chore(deps): configure vitest and vue test utils
 ```
 
+Do **not** add `Co-Authored-By` or `Claude-Session` trailers to commit
+messages. Keep the message to the conventional-commit body only.
+
 ### Files to Reference
 
 | File                | Purpose                                                       |
