@@ -5,12 +5,14 @@
  * declared zone drawn on the map and described in a labeled sheet.
  */
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import BaseMap, { type PlayerMarker } from './BaseMap.vue'
+import BaseMap, { type PlayerMarker, type BusStop } from './BaseMap.vue'
 import { useZone, type BusStopLike } from '@/composables/useZone'
 import { useSync } from '@/composables/useSync'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useShading } from '@/composables/useShading'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
+import { QUARTER_MILE_M } from '@/services/sync/protocol'
+import { distanceMeters } from '@jet-lag-stillwater/shared'
 import poiGeo from '../assets/map/stillwater-poi.json'
 
 const { zone, hasZone, setFromBusStop } = useZone()
@@ -116,10 +118,28 @@ const busStops = computed<BusStopLike[]>(() =>
 
 const radiusMiles = computed(() => (zone.value ? (zone.value.radiusM / 1609.34).toFixed(2) : null))
 
+// Indices of bus stops within end-game range (¼ mi) of the hider's current GPS.
+// These are highlighted on the map: if declared, the hider stands inside their
+// own zone. Empty when we have no fix or aren't the hider.
+const inRangeStopIndices = computed<number[]>(() => {
+  const pos = geo.ownPosition.value
+  if (!pos || !isHider.value) return []
+  const out: number[] = []
+  busStops.value.forEach((stop, i) => {
+    if (distanceMeters(pos.lat, pos.lng, stop.lat, stop.lng) <= QUARTER_MILE_M) out.push(i)
+  })
+  return out
+})
+
 function pickStop(event: Event) {
   const idx = Number((event.target as HTMLSelectElement).value)
   const stop = busStops.value[idx]
   if (stop) setFromBusStop(stop)
+}
+
+/** A stop was tapped + confirmed on the map (MAP-007). */
+function pickStopFromMap(stop: BusStop) {
+  setFromBusStop(stop)
 }
 </script>
 
@@ -136,7 +156,16 @@ function pickStop(event: Event) {
       ⚠️ Seekers in your zone — end game triggered!
     </div>
 
-    <BaseMap :zone="zone" :markers="markers" :breached="isBreached" :shaded-cells="shadedCells" />
+    <BaseMap
+      :zone="zone"
+      :markers="markers"
+      :breached="isBreached"
+      :shaded-cells="shadedCells"
+      :bus-stops="isHider ? busStops : []"
+      :in-range-stop-indices="inRangeStopIndices"
+      :stops-pickable="isHider"
+      @pick-stop="pickStopFromMap"
+    />
 
     <!-- Seeker shading toolbar (MAP-005): all controls have text labels. -->
     <div
@@ -196,9 +225,19 @@ function pickStop(event: Event) {
       </template>
       <p v-else class="zone-sheet-empty" data-testid="zone-empty">No hiding zone set yet.</p>
 
-      <!-- Hider-only: pick a bus stop to declare the zone. -->
+      <!-- Hider-only: pick a bus stop to declare the zone. Tapping a stop on the
+           map is the primary flow (MAP-007); this dropdown is a fallback. -->
       <div v-if="isHider" class="zone-picker">
-        <label class="zone-picker-label" for="zone-stop-select">Set zone center (bus stop)</label>
+        <p class="zone-picker-hint" data-testid="zone-pick-hint">
+          Tap a bus stop on the map to set your zone.
+          <template v-if="inRangeStopIndices.length">
+            {{ inRangeStopIndices.length }} highlighted stop{{
+              inRangeStopIndices.length === 1 ? ' is' : 's are'
+            }}
+            within range of you now.
+          </template>
+        </p>
+        <label class="zone-picker-label" for="zone-stop-select">Or choose by name (bus stop)</label>
         <select
           id="zone-stop-select"
           data-testid="zone-stop-select"
@@ -313,6 +352,12 @@ function pickStop(event: Event) {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+.zone-picker-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--color-ui-text-secondary, #94a3b8);
 }
 .zone-picker-label {
   font-size: 0.72rem;

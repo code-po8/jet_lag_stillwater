@@ -24,6 +24,13 @@ export interface PlayerMarker {
   isSelf?: boolean
 }
 
+/** A pickable bus stop (MAP-007): the hider taps it to declare the zone. */
+export interface BusStop {
+  lat: number
+  lng: number
+  name?: string | null
+}
+
 /** Game-data overlay categories (MAP-002) and their legend colors. */
 const POI_STYLE: Record<string, { color: string; label: string }> = {
   'bus-stop': { color: '#ffffff', label: 'Bus stop' },
@@ -45,11 +52,34 @@ const props = withDefaults(
     markers?: PlayerMarker[]
     /** Ruled-out geohash cells to shade (MAP-005). */
     shadedCells?: string[]
+    /**
+     * Bus stops the hider can tap to declare the zone (MAP-007). When provided,
+     * they render as an interactive layer (name popup + pick button) instead of
+     * the generic POI dots. Indices into this array that are in end-game range
+     * of the hider are highlighted via `inRangeStopIndices`.
+     */
+    busStops?: BusStop[]
+    /** Indices of `busStops` within end-game range of the hider (MAP-007). */
+    inRangeStopIndices?: number[]
+    /** When true, tapping a bus stop opens a popup with a pick button (hider). */
+    stopsPickable?: boolean
   }>(),
-  { zone: null, breached: false, markers: () => [], shadedCells: () => [] },
+  {
+    zone: null,
+    breached: false,
+    markers: () => [],
+    shadedCells: () => [],
+    busStops: () => [],
+    inRangeStopIndices: () => [],
+    stopsPickable: false,
+  },
 )
 
-const emit = defineEmits<{ ready: [map: L.Map] }>()
+const emit = defineEmits<{
+  ready: [map: L.Map]
+  /** The hider tapped a bus stop's pick button (MAP-007). */
+  pickStop: [stop: BusStop, index: number]
+}>()
 
 const container = ref<HTMLElement | null>(null)
 const mapInstance = shallowRef<L.Map | null>(null)
@@ -91,8 +121,13 @@ onMounted(() => {
   })
   layer.addTo(map)
 
-  // Game-data overlay (MAP-002): bus stops + POIs as category-colored markers.
+  // Game-data overlay (MAP-002): POIs as category-colored markers. When the
+  // interactive bus-stop layer is in use (MAP-007), skip bus stops here so they
+  // aren't drawn twice.
+  const skipBusStops = props.busStops.length > 0
   const poiLayer = leaflet.geoJSON(poiGeo as unknown as GeoJSON.GeoJsonObject, {
+    filter: (feature) =>
+      !(skipBusStops && (feature.properties as { kind?: string })?.kind === 'bus-stop'),
     pointToLayer: (feature, latlng) => {
       const kind = (feature.properties as { kind?: string })?.kind ?? ''
       const style = POI_STYLE[kind] ?? { color: '#94a3b8', label: kind }
@@ -122,9 +157,73 @@ onMounted(() => {
   mapInstance.value = map
   drawShading()
   drawZone()
+  drawBusStops()
   drawMarkers()
   emit('ready', map)
 })
+
+// ── Interactive bus stops (MAP-007) ──
+// The hider taps a stop to declare the zone. Stops within end-game range of the
+// hider's GPS are highlighted (larger, cyan) so they don't have to know names.
+// Rebuilt whenever the stop set, range set, or pickable flag changes.
+let busStopLayer: L.LayerGroup | null = null
+
+function busStopStyle(inRange: boolean): L.CircleMarkerOptions {
+  return inRange
+    ? { radius: 8, color: '#ffffff', weight: 2, fillColor: BRAND_COLORS.cyan, fillOpacity: 0.95 }
+    : { radius: 4, color: '#0f172a', weight: 1, fillColor: '#ffffff', fillOpacity: 0.9 }
+}
+
+function drawBusStops() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+
+  if (busStopLayer) {
+    busStopLayer.remove()
+    busStopLayer = null
+  }
+  if (props.busStops.length === 0) return
+
+  busStopLayer = leaflet.layerGroup()
+  const inRange = new Set(props.inRangeStopIndices)
+
+  props.busStops.forEach((stop, i) => {
+    const isInRange = inRange.has(i)
+    const marker = leaflet.circleMarker([stop.lat, stop.lng], busStopStyle(isInRange))
+    const name = stop.name ?? `Bus stop ${i + 1}`
+    marker.bindTooltip(isInRange ? `${name} (in range)` : name)
+
+    if (props.stopsPickable) {
+      // Popup: name + a labeled button to declare this stop as the hiding zone.
+      const el = leaflet.DomUtil.create('div', 'busstop-popup')
+      const title = leaflet.DomUtil.create('div', 'busstop-popup-name', el)
+      title.textContent = name
+      if (isInRange) {
+        const badge = leaflet.DomUtil.create('div', 'busstop-popup-badge', el)
+        badge.textContent = '✓ In end-game range of you'
+      }
+      const btn = leaflet.DomUtil.create('button', 'busstop-popup-btn', el)
+      btn.setAttribute('type', 'button')
+      btn.textContent = 'Set as my hiding zone'
+      leaflet.DomEvent.on(btn, 'click', (e) => {
+        leaflet.DomEvent.stop(e)
+        emit('pickStop', stop, i)
+        marker.closePopup()
+      })
+      marker.bindPopup(el)
+    }
+
+    busStopLayer!.addLayer(marker)
+  })
+  busStopLayer.addTo(map)
+}
+
+watch(
+  () => [props.busStops, props.inRangeStopIndices, props.stopsPickable],
+  () => drawBusStops(),
+  { deep: true },
+)
 
 // ── Ruled-out shading (MAP-005): one rectangle per geohash cell ──
 // Incrementally reconciled: a `ruledout` broadcast carries the full unioned set,
@@ -326,6 +425,31 @@ defineExpose({ map: mapInstance })
   height: 40px;
   line-height: 40px;
   font-size: 1.2rem;
+}
+
+/* Bus-stop pick popup (MAP-007). Leaflet renders popups outside the scoped
+   tree, so target globally. */
+:global(.busstop-popup-name) {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+:global(.busstop-popup-badge) {
+  font-size: 0.72rem;
+  color: #0369a1;
+  margin-bottom: 6px;
+}
+:global(.busstop-popup-btn) {
+  min-height: 40px;
+  width: 100%;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-brand-cyan, #00aaff);
+  color: #06263a;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 /* Breached hiding-zone circle pulses (MAP-006). Leaflet renders the SVG path
    outside the scoped tree, so target it globally. */

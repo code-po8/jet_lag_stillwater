@@ -7,20 +7,45 @@ import { useSync, __resetSyncSession } from '@/composables/useSync'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { QUARTER_MILE_M } from '@/services/sync/protocol'
 
-// Stub the heavy Leaflet-based BaseMap; expose the markers count for assertions.
+// Stub the heavy Leaflet-based BaseMap; expose props + a button to fire pickStop.
 vi.mock('../BaseMap.vue', () => ({
   default: {
     name: 'BaseMap',
-    props: ['zone', 'breached', 'markers', 'shadedCells'],
-    template:
-      '<div data-testid="base-map-stub" :data-marker-count="(markers || []).length" :data-breached="String(!!breached)" :data-shaded="(shadedCells || []).length" />',
+    props: [
+      'zone',
+      'breached',
+      'markers',
+      'shadedCells',
+      'busStops',
+      'inRangeStopIndices',
+      'stopsPickable',
+    ],
+    emits: ['pickStop'],
+    template: `<div
+      data-testid="base-map-stub"
+      :data-marker-count="(markers || []).length"
+      :data-breached="String(!!breached)"
+      :data-shaded="(shadedCells || []).length"
+      :data-busstops="(busStops || []).length"
+      :data-inrange="(inRangeStopIndices || []).join(',')"
+      :data-pickable="String(!!stopsPickable)"
+    ><button
+      data-testid="map-pick-first-stop"
+      @click="busStops && busStops.length && $emit('pickStop', busStops[0], 0)"
+    /></div>`,
   },
 }))
 
-// Geolocation is started by MapPanel; stub it so tests don't touch the browser API.
+// Geolocation is started by MapPanel; stub it so tests don't touch the browser
+// API. `__geoPosition` lets a test inject a fix for the in-range computation.
+const geoState = { position: null as null | { lat: number; lng: number; ts: number } }
 vi.mock('@/composables/useGeolocation', () => ({
   useGeolocation: () => ({
-    ownPosition: { value: null },
+    ownPosition: {
+      get value() {
+        return geoState.position
+      },
+    },
     error: { value: null },
     start: vi.fn(),
     stop: vi.fn(),
@@ -31,6 +56,7 @@ describe('MapPanel (MAP-004)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     __resetSyncSession()
+    geoState.position = null
   })
   afterEach(() => {
     cleanup()
@@ -179,5 +205,70 @@ describe('MapPanel (MAP-004)', () => {
 
     expect(sent).toHaveLength(1)
     expect(sent[0]).toMatchObject({ radiusM: QUARTER_MILE_M })
+  })
+
+  // ── Map-based bus-stop picking (MAP-007) ──
+
+  it('passes pickable bus stops to the map for the hider only', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    render(MapPanel)
+    await nextTick()
+    const stub = screen.getByTestId('base-map-stub')
+    expect(stub.getAttribute('data-pickable')).toBe('true')
+    expect(Number(stub.getAttribute('data-busstops'))).toBeGreaterThan(0)
+  })
+
+  it('does NOT pass pickable bus stops to a seeker', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    render(MapPanel)
+    await nextTick()
+    const stub = screen.getByTestId('base-map-stub')
+    expect(stub.getAttribute('data-pickable')).toBe('false')
+    expect(stub.getAttribute('data-busstops')).toBe('0')
+  })
+
+  it('highlights bus stops within ¼ mi of the hider GPS as in-range', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    // Sit essentially on top of the first bus stop (Student Union Shelter).
+    geoState.position = { lat: 36.1219326, lng: -97.0677964, ts: 1 }
+    render(MapPanel)
+    await nextTick()
+    const inrange = screen.getByTestId('base-map-stub').getAttribute('data-inrange') ?? ''
+    expect(inrange.split(',')).toContain('0')
+  })
+
+  it('reports no in-range stops when the hider is far from every stop', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    // Far outside Stillwater — nothing within ¼ mile.
+    geoState.position = { lat: 40.0, lng: -100.0, ts: 1 }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('base-map-stub').getAttribute('data-inrange')).toBe('')
+  })
+
+  it('sends a zone.set when the hider picks a stop from the map', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    const sent: unknown[] = []
+    sync.setZone = (z) => sent.push(z)
+
+    render(MapPanel)
+    await nextTick()
+    await fireEvent.click(screen.getByTestId('map-pick-first-stop'))
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toMatchObject({ radiusM: QUARTER_MILE_M })
+  })
+
+  it('shows the tap-a-stop hint to the hider', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('zone-pick-hint')).toHaveTextContent(/tap a bus stop/i)
   })
 })

@@ -24,8 +24,14 @@ function fakeLeaflet() {
   }
   // Each circleMarker/rectangle is a distinct object so per-layer ops (setLatLng,
   // remove) can be asserted; record them for inspection.
-  const markers: Array<{ setLatLng: ReturnType<typeof vi.fn> }> = []
+  const markers: Array<{
+    setLatLng: ReturnType<typeof vi.fn>
+    bindPopup: ReturnType<typeof vi.fn>
+    bindTooltip: ReturnType<typeof vi.fn>
+  }> = []
   const rects: unknown[] = []
+  // Capture click handlers registered via DomEvent.on so tests can fire them.
+  const domClicks: Array<(e: unknown) => void> = []
   const L = {
     map: vi.fn().mockReturnValue(map),
     geoJSON: vi.fn().mockReturnValue(layer),
@@ -35,6 +41,8 @@ function fakeLeaflet() {
         setStyle: vi.fn().mockReturnThis(),
         bindTooltip: vi.fn().mockReturnThis(),
         setTooltipContent: vi.fn().mockReturnThis(),
+        bindPopup: vi.fn().mockReturnThis(),
+        closePopup: vi.fn().mockReturnThis(),
       }
       markers.push(m)
       return m
@@ -46,8 +54,23 @@ function fakeLeaflet() {
       rects.push(r)
       return r
     }),
+    DomUtil: {
+      create: (tag: string, cls?: string, parent?: HTMLElement) => {
+        const el = document.createElement(tag)
+        if (cls) el.className = cls
+        if (parent) parent.appendChild(el)
+        return el
+      },
+    },
+    DomEvent: {
+      on: (el: unknown, type: string, fn: (e: unknown) => void) => {
+        void el
+        if (type === 'click') domClicks.push(fn)
+      },
+      stop: vi.fn(),
+    },
   }
-  return { L, map, layer, circle, group, markers, rects }
+  return { L, map, layer, circle, group, markers, rects, domClicks }
 }
 
 describe('BaseMap (MAP-001)', () => {
@@ -240,6 +263,75 @@ describe('BaseMap (MAP-001)', () => {
     render(BaseMap, { props: { leaflet: fake.L as never } })
     await nextTick()
     expect(fake.L.rectangle).not.toHaveBeenCalled()
+  })
+
+  it('draws pickable bus stops as an interactive layer (MAP-007)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        busStops: [
+          { lat: 36.12, lng: -97.07, name: 'Union' },
+          { lat: 36.13, lng: -97.08, name: 'Library' },
+        ],
+        stopsPickable: true,
+      },
+    })
+    await nextTick()
+    // One circleMarker per stop, each with a bound popup (pick button).
+    expect(fake.markers).toHaveLength(2)
+    expect(fake.markers[0]!.bindPopup).toHaveBeenCalled()
+    expect(fake.markers[1]!.bindPopup).toHaveBeenCalled()
+  })
+
+  it('highlights in-range stops with a distinct style (MAP-007)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        busStops: [
+          { lat: 36.12, lng: -97.07, name: 'Union' },
+          { lat: 36.13, lng: -97.08, name: 'Library' },
+        ],
+        inRangeStopIndices: [0],
+      },
+    })
+    await nextTick()
+    const fills = fake.L.circleMarker.mock.calls.map(
+      (c) => (c as unknown as [unknown, { fillColor: string; radius: number }])[1],
+    )
+    // In-range stop (index 0) uses the cyan highlight + larger radius.
+    expect(fills[0]!.radius).toBeGreaterThan(fills[1]!.radius)
+    expect(fills[0]!.fillColor).not.toBe(fills[1]!.fillColor)
+  })
+
+  it('emits pickStop when a stop popup button is clicked (MAP-007)', async () => {
+    const { emitted } = render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        busStops: [{ lat: 36.12, lng: -97.07, name: 'Union' }],
+        stopsPickable: true,
+      },
+    })
+    await nextTick()
+    // Fire the captured DomEvent click handler for the pick button.
+    expect(fake.domClicks).toHaveLength(1)
+    fake.domClicks[0]!({ type: 'click' })
+    expect(emitted().pickStop).toBeTruthy()
+    const [stop, index] = emitted().pickStop![0] as [{ name: string }, number]
+    expect(stop.name).toBe('Union')
+    expect(index).toBe(0)
+  })
+
+  it('does not bind a pick popup when stops are not pickable (MAP-007)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        busStops: [{ lat: 36.12, lng: -97.07, name: 'Union' }],
+        stopsPickable: false,
+      },
+    })
+    await nextTick()
+    expect(fake.markers[0]!.bindPopup).not.toHaveBeenCalled()
+    expect(fake.domClicks).toHaveLength(0)
   })
 
   it('styles city-limits distinctly from roads', async () => {
