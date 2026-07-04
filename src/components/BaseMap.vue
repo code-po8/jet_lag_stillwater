@@ -338,8 +338,15 @@ watch(
 let markerLayer: L.LayerGroup | null = null
 const markersById = new Map<string, { marker: L.CircleMarker; entry: PlayerMarker }>()
 
+// Player pins are both shades of BLUE so a "you"/player dot is never confused
+// with an orange school/restaurant POI — but the two roles use distinct blues
+// so hider and seeker stay tell-apart-able (deep indigo hider vs bright cyan
+// seeker).
+const HIDER_PIN = '#4f46e5' // indigo
+const SEEKER_PIN = BRAND_COLORS.cyan // bright cyan
+
 function markerColor(m: PlayerMarker): string {
-  return m.role === 'hider' ? BRAND_COLORS.orange : BRAND_COLORS.cyan
+  return m.role === 'hider' ? HIDER_PIN : SEEKER_PIN
 }
 
 function tooltipFor(m: PlayerMarker): string {
