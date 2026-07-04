@@ -19,6 +19,7 @@ vi.mock('../BaseMap.vue', () => ({
       'busStops',
       'inRangeStopIndices',
       'stopsPickable',
+      'dimOtherPois',
     ],
     emits: ['pickStop'],
     template: `<div
@@ -29,6 +30,7 @@ vi.mock('../BaseMap.vue', () => ({
       :data-busstops="(busStops || []).length"
       :data-inrange="(inRangeStopIndices || []).join(',')"
       :data-pickable="String(!!stopsPickable)"
+      :data-dim="String(!!dimOtherPois)"
     ><button
       data-testid="map-pick-first-stop"
       @click="busStops && busStops.length && $emit('pickStop', busStops[0], 0)"
@@ -226,6 +228,9 @@ describe('MapPanel (MAP-004)', () => {
     const stub = screen.getByTestId('base-map-stub')
     expect(stub.getAttribute('data-pickable')).toBe('true')
     expect(Number(stub.getAttribute('data-busstops'))).toBeGreaterThan(0)
+    // Dim the other POIs so a highlighted bus stop isn't confused with a
+    // same-named school/restaurant dot next to it (MAP-007).
+    expect(stub.getAttribute('data-dim')).toBe('true')
   })
 
   it('does NOT pass pickable bus stops to a seeker', async () => {
@@ -236,6 +241,8 @@ describe('MapPanel (MAP-004)', () => {
     const stub = screen.getByTestId('base-map-stub')
     expect(stub.getAttribute('data-pickable')).toBe('false')
     expect(stub.getAttribute('data-busstops')).toBe('0')
+    // Seekers see the full POI overlay at full strength.
+    expect(stub.getAttribute('data-dim')).toBe('false')
   })
 
   it('highlights bus stops within ¼ mi of the hider GPS as in-range', async () => {

@@ -14,6 +14,7 @@ function fakeLeaflet() {
   const layer = {
     addTo: vi.fn().mockReturnThis(),
     getBounds: vi.fn().mockReturnValue({ isValid: () => true }),
+    setStyle: vi.fn().mockReturnThis(),
   }
   const circle = { addTo: vi.fn().mockReturnThis(), remove: vi.fn() }
   const group = {
@@ -296,11 +297,48 @@ describe('BaseMap (MAP-001)', () => {
     })
     await nextTick()
     const fills = fake.L.circleMarker.mock.calls.map(
-      (c) => (c as unknown as [unknown, { fillColor: string; radius: number }])[1],
+      (c) => (c as unknown as [unknown, { fillColor: string; radius: number; weight: number }])[1],
     )
-    // In-range stop (index 0) uses the cyan highlight + larger radius.
+    // In-range stop (index 0) is distinguished by SIZE + a bolder outline, not
+    // color: it stays white (like all bus stops) so it isn't misread as a blue
+    // GPS pin or an orange school marker (MAP-007).
     expect(fills[0]!.radius).toBeGreaterThan(fills[1]!.radius)
-    expect(fills[0]!.fillColor).not.toBe(fills[1]!.fillColor)
+    expect(fills[0]!.weight).toBeGreaterThan(fills[1]!.weight)
+    expect(fills[0]!.fillColor).toBe('#ffffff')
+    expect(fills[1]!.fillColor).toBe('#ffffff')
+  })
+
+  it('dims the generic POI dots when dimOtherPois is set (MAP-007)', async () => {
+    render(BaseMap, {
+      props: { leaflet: fake.L as never, dimOtherPois: true },
+    })
+    await nextTick()
+    // The POI overlay is the 2nd geoJSON layer; its pointToLayer builds faded
+    // circle markers. Grab the fillOpacity passed to the first POI marker.
+    const poiOpts = fake.L.geoJSON.mock.calls[1]![1] as {
+      pointToLayer: (f: unknown, latlng: unknown) => unknown
+    }
+    poiOpts.pointToLayer({ properties: { kind: 'school' } }, [36.1, -97.0])
+    const lastCall = fake.L.circleMarker.mock.calls.at(-1) as unknown as [
+      unknown,
+      { fillOpacity: number },
+    ]
+    expect(lastCall[1].fillOpacity).toBeLessThan(0.5)
+  })
+
+  it('restyles the POI layer when dimOtherPois toggles (MAP-007)', async () => {
+    const { rerender } = render(BaseMap, {
+      props: { leaflet: fake.L as never, dimOtherPois: false },
+    })
+    await nextTick()
+    await rerender({ dimOtherPois: true })
+    await nextTick()
+    // The POI layer is faded in place (no rebuild).
+    expect(fake.layer.setStyle).toHaveBeenCalledWith(
+      expect.objectContaining({ fillOpacity: expect.any(Number) }),
+    )
+    const lastStyle = fake.layer.setStyle.mock.calls.at(-1)![0] as { fillOpacity: number }
+    expect(lastStyle.fillOpacity).toBeLessThan(0.5)
   })
 
   it('emits pickStop when a stop popup button is clicked (MAP-007)', async () => {
