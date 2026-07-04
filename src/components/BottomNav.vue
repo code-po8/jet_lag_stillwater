@@ -1,11 +1,15 @@
 <script setup lang="ts">
-export type NavTab = 'questions' | 'timers' | 'cards' | 'history' | 'map'
+import { computed } from 'vue'
+
+export type NavTab = 'questions' | 'timers' | 'cards' | 'history' | 'map' | 'admin'
 
 interface Props {
   currentTab: NavTab
+  /** Show the host-only Admin tab (ADMIN-001). Default false. */
+  showAdmin?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { showAdmin: false })
 
 const emit = defineEmits<{
   (e: 'tab-change', tab: NavTab): void
@@ -16,13 +20,18 @@ interface TabConfig {
   label: string
 }
 
-const tabs: TabConfig[] = [
-  { id: 'questions', label: 'Questions' },
-  { id: 'map', label: 'Map' },
-  { id: 'timers', label: 'Timers' },
-  { id: 'cards', label: 'Cards' },
-  { id: 'history', label: 'History' },
-]
+const tabs = computed<TabConfig[]>(() => {
+  const base: TabConfig[] = [
+    { id: 'questions', label: 'Questions' },
+    { id: 'map', label: 'Map' },
+    { id: 'timers', label: 'Timers' },
+    { id: 'cards', label: 'Cards' },
+    { id: 'history', label: 'History' },
+  ]
+  // Host-only Admin tab, appended last so the common tabs keep their positions.
+  if (props.showAdmin) base.push({ id: 'admin', label: 'Admin' })
+  return base
+})
 
 function handleTabClick(tabId: NavTab) {
   emit('tab-change', tabId)
@@ -112,6 +121,19 @@ function isActive(tabId: NavTab): boolean {
       >
         <path
           d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"
+        />
+      </svg>
+
+      <!-- Admin Icon (host-only) -->
+      <svg
+        v-else-if="tab.id === 'admin'"
+        :data-testid="`nav-tab-${tab.id}-icon`"
+        class="bottom-nav-icon"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path
+          d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11V11.99z"
         />
       </svg>
 

@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSync } from '@/composables/useSync'
-import { useGameSync } from '@/composables/useGameSync'
 import HiderView from './HiderView.vue'
 import SeekerView from './SeekerView.vue'
 import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
@@ -13,6 +12,7 @@ import HidingDurationTimer from '@/components/HidingDurationTimer.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionHistory from '@/components/QuestionHistory.vue'
 import MapPanel from '@/components/MapPanel.vue'
+import AdminPanel from '@/components/AdminPanel.vue'
 import GamePauseOverlay from '@/components/GamePauseOverlay.vue'
 import JetLagLogo from '@/components/JetLagLogo.vue'
 import { GameSize } from '@/types/question'
@@ -31,16 +31,10 @@ const router = useRouter()
 const gameStore = useGameStore()
 const roomStore = useRoomStore()
 const sync = useSync()
-const { hostAction } = useGameSync()
 
-/**
- * Host ends the game early (multiplayer). Broadcasts `end-round`; the app-level
- * bridge routes ALL clients to results/round-complete, so it's not just local.
- */
-function endGameEarly() {
-  hostAction('end-round', GamePhase.RoundComplete)
-}
-const canEndGame = computed(() => roomStore.isHost && !isRoundComplete.value)
+// Host-only Admin tab visibility (ADMIN-001). Uses the persisted-or-live host
+// flag so it survives a mid-game refresh (same source as the role-lock UI).
+const isHost = computed(() => roomStore.isHost)
 
 // Current role being viewed (for single-device / offline play)
 type ViewRole = 'hider' | 'seeker'
@@ -244,18 +238,7 @@ function handleEndGame() {
 
     <!-- Regular gameplay UI (hidden during round-complete) -->
     <template v-else>
-      <!-- Host-only: end the multiplayer game early. Broadcasts end-round so the
-           app-level bridge routes every client to the round summary. -->
-      <div v-if="canEndGame" class="gameplay-end-game">
-        <button
-          type="button"
-          data-testid="end-game-btn"
-          class="gameplay-end-game-btn"
-          @click="endGameEarly"
-        >
-          End Game
-        </button>
-      </div>
+      <!-- Host game controls now live in the Admin tab (ADMIN-001). -->
 
       <!-- Role Toggle — offline single-device only. In a multiplayer room the
            role is server-locked (SYNC-003), so this is hidden. -->
@@ -333,10 +316,13 @@ function handleEndGame() {
         <div v-else-if="currentTab === 'map'" class="gameplay-map-tab" data-testid="map-tab">
           <MapPanel />
         </div>
+
+        <!-- Admin Tab - host-only controls + player status (ADMIN-001) -->
+        <AdminPanel v-else-if="currentTab === 'admin' && isHost" />
       </div>
 
       <!-- Bottom Navigation -->
-      <BottomNav :current-tab="currentTab" @tab-change="handleTabChange" />
+      <BottomNav :current-tab="currentTab" :show-admin="isHost" @tab-change="handleTabChange" />
     </template>
   </main>
 </template>
@@ -513,24 +499,5 @@ function handleEndGame() {
   left: 0;
   right: 0;
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-}
-
-/* Host-only "End Game" control (multiplayer). */
-.gameplay-end-game {
-  display: flex;
-  justify-content: center;
-  padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
-}
-.gameplay-end-game-btn {
-  min-height: 44px;
-  padding: 0 1.25rem;
-  border-radius: 8px;
-  border: 1px solid var(--color-brand-red, #c73e3e);
-  background: rgba(199, 62, 62, 0.15);
-  color: #ffb4b4;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
 }
 </style>

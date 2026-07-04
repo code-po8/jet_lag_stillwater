@@ -117,8 +117,9 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
     await host.getByLabel('Resume game').click()
     await expect(joiner.getByTestId('game-pause-overlay')).toBeHidden()
 
-    // 8. Host ends the game early → both clients leave the game.
-    await host.getByTestId('end-game-btn').click()
+    // 8. Host ends the game early from the Admin tab → both clients leave.
+    await host.getByTestId('bottom-nav').getByRole('button', { name: 'Admin' }).click()
+    await host.getByTestId('admin-end-game-btn').click()
     await expect(host).toHaveURL(/\/results/)
     await expect(joiner).toHaveURL(/\/results/)
 
@@ -320,6 +321,52 @@ test.describe('multiplayer lobby → game (2 browsers)', () => {
       })
       expect(rendered).toBe(true)
     }).toPass({ timeout: 15_000 })
+
+    await hostCtx.close()
+    await joinCtx.close()
+  })
+
+  // ADMIN-001: the host's Admin tab shows per-player GPS status. Critically, a
+  // seeker host must see that the HIDER has GPS (leak-free presence) WITHOUT ever
+  // receiving the hider's coordinates. This drives the real server `gps.presence`
+  // path that unit tests can't exercise across two clients.
+  test('host Admin tab shows the hider GPS as connected without leaking location', async ({
+    browser,
+  }) => {
+    const hostCtx = await browser.newContext()
+    // The joiner (hider) has a granted, fixed geolocation so the server receives
+    // its position and marks it GPS-present.
+    const joinCtx = await browser.newContext({
+      permissions: ['geolocation'],
+      geolocation: { latitude: 36.1223, longitude: -97.0687 },
+    })
+
+    const { page: host, code } = await createHost(hostCtx, 'Hank')
+    const { page: joiner } = await joinRoom(joinCtx, code, 'Sam')
+
+    await expect(host.getByTestId('lobby-roster')).toContainText('Sam')
+    // Joiner (Sam) is the hider; host (Hank) stays a seeker.
+    await host.getByTestId('lobby-roster').getByRole('button', { name: 'Sam' }).click()
+    await expect(joiner.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
+    await host.getByTestId('start-game-btn').click()
+    await expect(host).toHaveURL(/\/game/)
+    await expect(joiner).toHaveURL(/\/game/)
+
+    // The hider opens the map so its geolocation watch starts sending positions.
+    await joiner.getByTestId('bottom-nav').getByRole('button', { name: 'Map' }).click()
+    await expect(joiner.getByTestId('base-map-canvas')).toBeVisible()
+
+    // Grab the hider's player id (present in the host's seeker roster on-screen is
+    // by name; the GPS chip is keyed by id, so read it from the host's DOM).
+    await host.getByTestId('bottom-nav').getByRole('button', { name: 'Admin' }).click()
+    await expect(host.getByTestId('admin-roster')).toBeVisible()
+
+    // The host must NEVER receive the hider's coordinates (withheld) — assert no
+    // pos.batch frame to the host carries a position (host is a seeker with the
+    // hider withheld and its own position excluded).
+    // The hider's GPS chip flips to "on" via the leak-free gps.presence signal.
+    const hiderGps = host.locator('[data-testid^="admin-gps-"][data-gps="on"]')
+    await expect(hiderGps.first()).toBeVisible({ timeout: 15_000 })
 
     await hostCtx.close()
     await joinCtx.close()

@@ -196,6 +196,22 @@ export class RoomHub {
   }
 
   /**
+   * Leak-free GPS presence (ADMIN-001): IDs of connected members whose latest
+   * position is fresher than `stalenessMs`. Returns only IDs — never coordinates
+   * — so it is safe to broadcast to EVERYONE, including a seeker host who must
+   * not learn the hider's location but may see that the hider has GPS.
+   */
+  gpsPresentIds(now: number, stalenessMs: number): string[] {
+    const out: string[] = []
+    for (const [id, member] of this.membersById) {
+      if (!member.connected) continue
+      const pos = this.positions.get(id)
+      if (pos && now - pos.ts <= stalenessMs) out.push(id)
+    }
+    return out
+  }
+
+  /**
    * Latest position of every OTHER player visible to `viewerId`:
    *  - excludes the viewer's own position
    *  - excludes the hider's position when the viewer is a seeker (withholding)

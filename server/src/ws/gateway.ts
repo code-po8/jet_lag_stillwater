@@ -39,6 +39,13 @@ export interface GatewayOptions {
    * 60000 (1 min).
    */
   dropTimeoutMs?: number
+  /**
+   * How fresh a player's last GPS fix must be to count as "GPS connected" in the
+   * leak-free `gps.presence` broadcast (ADMIN-001). Default 10000 (2× the client
+   * throttle floor of ~2.5s plus slack), so a brief GPS gap doesn't flap the
+   * host's status icons.
+   */
+  gpsStalenessMs?: number
 }
 
 interface SocketCtx {
@@ -64,6 +71,7 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
   const batchIntervalMs = opts.batchIntervalMs ?? 1000
   const heartbeatMs = opts.heartbeatMs ?? 15_000
   const dropTimeoutMs = opts.dropTimeoutMs ?? 60_000
+  const gpsStalenessMs = opts.gpsStalenessMs ?? 10_000
 
   // Pending full-removal timers, keyed by `${code}:${playerId}`.
   const dropTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -221,13 +229,20 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
   // Position broadcast tick: coalesced latest-per-player, withholding applied
   // per-viewer by the RoomHub.
   const batchTimer = setInterval(() => {
+    const now = Date.now()
     for (const [code, sockets] of socketsByCode) {
       const hub = registry.get(code)
       if (!hub) continue
+      // Per-viewer positions (hider withheld from seekers).
       for (const [pid, sock] of sockets) {
         const positions = hub.positionBatchFor(pid)
         if (positions.length > 0) send(sock, { t: 'pos.batch', positions })
       }
+      // Leak-free GPS presence (ADMIN-001): same list for everyone (IDs only, no
+      // coordinates), so a seeker host learns the hider has GPS without seeing
+      // where. Broadcast every tick so the host's status icons stay live.
+      const online = hub.gpsPresentIds(now, gpsStalenessMs)
+      broadcast(code, { t: 'gps.presence', online })
     }
   }, batchIntervalMs)
   batchTimer.unref?.()

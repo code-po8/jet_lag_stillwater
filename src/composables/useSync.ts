@@ -42,6 +42,8 @@ export interface SyncSession {
   phaseStartedAt: Ref<number | null>
   zone: Ref<Zone | null>
   positions: Ref<Map<string, Position>>
+  /** Player IDs with a fresh server-side GPS fix (leak-free; drives ADMIN-001). */
+  gpsOnline: Ref<Set<string>>
   breachedSeekers: Ref<string[]>
   ruledOutCells: Ref<string[]>
   role: Ref<Role | null>
@@ -94,6 +96,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
   const phaseStartedAt = ref<number | null>(null)
   const zone = ref<Zone | null>(null)
   const positions = ref<Map<string, Position>>(new Map())
+  const gpsOnline = ref<Set<string>>(new Set())
   const breachedSeekers = ref<string[]>([])
   const ruledOutCells = ref<string[]>([])
 
@@ -188,6 +191,10 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
         positions.value = next
         break
       }
+      case 'gps.presence':
+        // Leak-free presence set (IDs only) — drives the host Admin GPS icons.
+        gpsOnline.value = new Set(msg.online)
+        break
       case 'game.event':
         for (const h of gameEventHandlers) {
           h({ kind: msg.kind, from: msg.from, payload: msg.payload })
@@ -239,6 +246,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     self.value = null
     players.value = []
     positions.value = new Map()
+    gpsOnline.value = new Set()
     breachedSeekers.value = []
     ruledOutCells.value = []
     paused.value = false
@@ -303,6 +311,7 @@ export function createSyncSession(options: SyncSessionOptions = {}): SyncSession
     phaseStartedAt,
     zone,
     positions,
+    gpsOnline,
     breachedSeekers,
     ruledOutCells,
     role,

@@ -187,6 +187,19 @@ export interface PosBatchMessage {
   positions: Array<{ playerId: string; pos: Position }>
 }
 
+/**
+ * Leak-free GPS-presence: the set of player IDs that currently have a fresh GPS
+ * fix on the server (position `ts` within the staleness window). Coordinates are
+ * NEVER included, so this can be broadcast to everyone — including a seeker host
+ * who must not see the hider's *location* but may see that the hider has GPS.
+ * Drives the host Admin tab's per-player GPS status icons (ADMIN-001).
+ */
+export interface GpsPresenceMessage {
+  t: 'gps.presence'
+  /** Player IDs with a fresh GPS fix. Everyone else is treated as GPS-offline. */
+  online: string[]
+}
+
 /** Broadcast of the current zone (seekers only ever see the declared zone). */
 export interface ZoneMessage {
   t: 'zone'
@@ -262,6 +275,7 @@ export type ServerMessage =
   | PlayerLeftMessage
   | PresenceMessage
   | PosBatchMessage
+  | GpsPresenceMessage
   | ZoneMessage
   | RuledOutMessage
   | ZoneBreachMessage
@@ -328,6 +342,7 @@ export function isServerMessageType(t: string): t is ServerMessage['t'] {
     t === 'player.left' ||
     t === 'player.presence' ||
     t === 'pos.batch' ||
+    t === 'gps.presence' ||
     t === 'zone' ||
     t === 'ruledout' ||
     t === 'zone.breach' ||

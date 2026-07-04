@@ -95,6 +95,47 @@ describe('RoomHub hider-position withholding', () => {
   })
 })
 
+describe('RoomHub GPS presence (ADMIN-001, leak-free)', () => {
+  let hub: RoomHub
+  beforeEach(() => {
+    hub = new RoomHub('ABCD')
+    hub.addMember(hiderPlayer)
+    hub.addMember(seekerPlayer)
+  })
+
+  it('lists connected members with a fresh position (ids only, no coordinates)', () => {
+    hub.updatePosition('h1', pos(36.12, -97.07)) // ts 1000
+    hub.updatePosition('s1', pos(36.1, -97.0)) // ts 1000
+    // now=5000, staleness=10000 → both fresh (within 10s).
+    expect(hub.gpsPresentIds(5000, 10_000).sort()).toEqual(['h1', 's1'])
+  })
+
+  it('includes the HIDER even though a seeker never gets the hider LOCATION', () => {
+    hub.updatePosition('h1', pos(36.12, -97.07))
+    // Presence carries the hider ID (safe) — the coordinate is only withheld in
+    // positionBatchFor, not here.
+    expect(hub.gpsPresentIds(2000, 10_000)).toContain('h1')
+    expect(hub.positionBatchFor('s1').find((b) => b.playerId === 'h1')).toBeUndefined()
+  })
+
+  it('excludes players whose last fix is stale', () => {
+    hub.updatePosition('s1', pos(36.1, -97.0)) // ts 1000
+    // now=20000, staleness=10000 → 19s old, stale.
+    expect(hub.gpsPresentIds(20_000, 10_000)).not.toContain('s1')
+  })
+
+  it('excludes players with no fix at all', () => {
+    hub.updatePosition('s1', pos(36.1, -97.0))
+    expect(hub.gpsPresentIds(2000, 10_000)).not.toContain('h1')
+  })
+
+  it('excludes disconnected members even with a fresh fix', () => {
+    hub.updatePosition('s1', pos(36.1, -97.0))
+    hub.setConnected('s1', false)
+    expect(hub.gpsPresentIds(2000, 10_000)).not.toContain('s1')
+  })
+})
+
 describe('RoomHub zone + breach', () => {
   let hub: RoomHub
   const zone: Zone = { lat: 36.12, lng: -97.07, radiusM: 402 }

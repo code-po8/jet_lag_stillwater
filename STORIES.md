@@ -4467,6 +4467,33 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ---
 
+## Epic 15: Host Admin
+
+### ADMIN-001: Host Admin Tab (controls + player GPS/connection status)
+
+**Status:** `complete`
+**Depends On:** MULTI-003b-1 (host actions), MAP-008 (GPS status), INFRA-006 (RoomHub)
+
+**Story:** As the host, I want a single Admin tab that houses the game controls (End Game, End Hiding Period early) and shows every player's connection + GPS status, so I can run the game without hunting for controls and can tell at a glance who is online and who has a GPS fix.
+
+**Acceptance Criteria:**
+
+- [x] A host-only "Admin" tab appears in the bottom nav (hidden for non-hosts and offline play)
+- [x] The Admin tab houses **End Game** (broadcasts `end-round`) and **End Hiding Period Early** (broadcasts `start-seeking`, two-step confirm, shown only during the hiding period); the standalone top-of-page End Game control is removed
+- [x] The Admin tab lists every player with a WS connection status (online/offline) and a GPS status (connected/no-fix) icon
+- [x] The host sees the **hider's** GPS status too — even as a seeker host who is never sent the hider's coordinates — via a **leak-free** server signal (IDs only, no lat/lng)
+- [x] The Admin tab starts the host's own geolocation so the host's own GPS row is live even if they never opened the Map tab
+
+**Size:** M
+
+**Implementation Notes:**
+
+- **Leak-free presence (server):** new `gps.presence` `ServerMessage` carrying only player IDs with a fresh fix. `RoomHub.gpsPresentIds(now, stalenessMs)` computes it from the position map (connected members, `ts` within window); the gateway broadcasts it to everyone each batch tick. Coordinates stay withheld by `positionBatchFor` — the presence signal never includes location, so a seeker host learns the hider _has_ GPS without learning _where_.
+- **Client:** `useSync` gains a `gpsOnline: Ref<Set<string>>` fed by `gps.presence`. `AdminPanel.vue` renders the controls + roster; it trusts the LOCAL `geo.ownPosition` for the host's own row and `gpsOnline` for everyone else. `BottomNav` gains a `showAdmin` prop; `GamePlayView` passes `isHost` and renders `AdminPanel` for the `admin` tab.
+- TDD: `AdminPanel.spec.ts` (+8), `BottomNav.spec.ts` (+2), `GamePlayRoleLock.spec.ts` (End Game now via Admin tab), `roomHub.test.ts` (+5 presence: fresh/hider-included/stale/no-fix/disconnected), `messages.test.ts` (+`gps.presence`), new multiplayer E2E "host Admin tab shows the hider GPS as connected without leaking location". 1486 frontend + 93 server tests pass; multiplayer + offline E2E green.
+
+---
+
 ## Backlog Summary
 
 | Epic                           | Stories | Complete | Remaining |
@@ -4486,7 +4513,8 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 | 12: Bug Fixes                  | 1       | 1        | 0         |
 | 13: Backend & Infrastructure   | 11      | 0        | 11        |
 | 14: Live Shared Map            | 9       | 9        | 0         |
-| **Total**                      | **85**  | **70**   | **15**    |
+| 15: Host Admin                 | 1       | 1        | 0         |
+| **Total**                      | **86**  | **71**   | **15**    |
 
 ---
 
