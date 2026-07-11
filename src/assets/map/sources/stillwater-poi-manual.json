@@ -1,0 +1,12 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "_readme": "Hand-curated POI overrides. This file is YOURS — `npm run bake:poi` merges it on top of the OSM and Google sources and never overwrites it. Add restaurants (or any kind) the auto-baked data misses. A manual entry overrides an OSM/Google entry with the same `kind` + matching name within ~150m (or the same location). kind must be one of: bus-stop, restaurant, school, park. coordinates are [longitude, latitude].",
+    "_example": {
+      "type": "Feature",
+      "properties": { "kind": "restaurant", "name": "Example Diner" },
+      "geometry": { "type": "Point", "coordinates": [-97.0584, 36.1156] }
+    }
+  },
+  "features": []
+}

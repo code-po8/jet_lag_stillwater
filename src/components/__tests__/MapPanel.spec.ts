@@ -248,8 +248,8 @@ describe('MapPanel (MAP-004)', () => {
   it('highlights bus stops within ¼ mi of the hider GPS as in-range', async () => {
     const sync = useSync()
     sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
-    // Sit essentially on top of the first bus stop (Student Union Shelter).
-    geoState.position = { lat: 36.1219326, lng: -97.0677964, ts: 1 }
+    // Sit essentially on top of the first bus stop (index 0 in the baked overlay).
+    geoState.position = { lat: 36.1267339, lng: -97.0643939, ts: 1 }
     render(MapPanel)
     await nextTick()
     const inrange = screen.getByTestId('base-map-stub').getAttribute('data-inrange') ?? ''

@@ -23,7 +23,10 @@
     "secrets:scan": "gitleaks-secret-scanner --diff-mode history",
     "secrets:scan:staged": "gitleaks-secret-scanner --diff-mode staged",
     "bake:map": "node scripts/bake-stillwater-map.mjs",
-    "bake:poi": "node scripts/bake-stillwater-poi.mjs"
+    "bake:poi": "node scripts/bake-stillwater-poi.mjs",
+    "bake:poi:osm": "node scripts/bake-stillwater-poi.mjs osm",
+    "bake:poi:google": "node scripts/bake-stillwater-poi.mjs google",
+    "bake:poi:all": "node scripts/bake-stillwater-poi.mjs all"
   },
   "dependencies": {
     "pinia": "^3.0.4",
