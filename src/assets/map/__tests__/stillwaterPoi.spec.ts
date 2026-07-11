@@ -4,8 +4,9 @@ import { resolve } from 'node:path'
 
 /**
  * Validates the committed Stillwater POI overlay (MAP-002). Offline, no network.
- * Swapping in a curated Google My Maps export must keep these invariants
- * (same `kind` values, points within Stillwater bounds).
+ * The overlay is baked by merging the OSM, Google My Maps, and manual sources
+ * (see scripts/bake-stillwater-poi.mjs). Whatever the source mix, these invariants
+ * must hold: same `kind` values, points within Stillwater bounds.
  */
 interface Feature {
   type: 'Feature'

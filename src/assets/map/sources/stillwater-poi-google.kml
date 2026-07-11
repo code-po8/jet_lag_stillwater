@@ -1,0 +1,3736 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Jet Lag: Stillwater</name>
+    <description>For playing Jet Lag: The Game in Stillwater, OK</description>
+    <Style id="icon-1532-000000-normal">
+      <IconStyle>
+        <color>ff000000</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1532-000000-highlight">
+      <IconStyle>
+        <color>ff000000</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1532-000000">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-000000-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-000000-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-000000-nodesc-normal">
+      <IconStyle>
+        <color>ff000000</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-000000-nodesc-highlight">
+      <IconStyle>
+        <color>ff000000</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-000000-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-000000-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-000000-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-0288D1-normal">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1532-0288D1-highlight">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1532-0288D1">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-0288D1-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-0288D1-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-0288D1-nodesc-normal">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-0288D1-nodesc-highlight">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-0288D1-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-0288D1-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-0288D1-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-3949AB-normal">
+      <IconStyle>
+        <color>ffab4939</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1532-3949AB-highlight">
+      <IconStyle>
+        <color>ffab4939</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1532-3949AB">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-3949AB-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-3949AB-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-3949AB-nodesc-normal">
+      <IconStyle>
+        <color>ffab4939</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-3949AB-nodesc-highlight">
+      <IconStyle>
+        <color>ffab4939</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-3949AB-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-3949AB-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-3949AB-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-757575-normal">
+      <IconStyle>
+        <color>ff757575</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1532-757575-highlight">
+      <IconStyle>
+        <color>ff757575</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1532-757575">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-757575-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-757575-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-757575-nodesc-normal">
+      <IconStyle>
+        <color>ff757575</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-757575-nodesc-highlight">
+      <IconStyle>
+        <color>ff757575</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-757575-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-757575-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-757575-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-795548-normal">
+      <IconStyle>
+        <color>ff485579</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1532-795548-highlight">
+      <IconStyle>
+        <color>ff485579</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1532-795548">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-795548-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-795548-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-795548-nodesc-normal">
+      <IconStyle>
+        <color>ff485579</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-795548-nodesc-highlight">
+      <IconStyle>
+        <color>ff485579</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-795548-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-795548-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-795548-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-7CB342-nodesc-normal">
+      <IconStyle>
+        <color>ff42b37c</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-7CB342-nodesc-highlight">
+      <IconStyle>
+        <color>ff42b37c</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-7CB342-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-7CB342-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-7CB342-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-9C27B0-normal">
+      <IconStyle>
+        <color>ffb0279c</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1532-9C27B0-highlight">
+      <IconStyle>
+        <color>ffb0279c</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1532-9C27B0">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-9C27B0-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-9C27B0-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-9C27B0-nodesc-normal">
+      <IconStyle>
+        <color>ffb0279c</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-9C27B0-nodesc-highlight">
+      <IconStyle>
+        <color>ffb0279c</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-9C27B0-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-9C27B0-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-9C27B0-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-A52714-normal">
+      <IconStyle>
+        <color>ff1427a5</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1532-A52714-highlight">
+      <IconStyle>
+        <color>ff1427a5</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1532-A52714">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-A52714-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-A52714-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-A52714-nodesc-normal">
+      <IconStyle>
+        <color>ff1427a5</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-A52714-nodesc-highlight">
+      <IconStyle>
+        <color>ff1427a5</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-A52714-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-A52714-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-A52714-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-BDBDBD-nodesc-normal">
+      <IconStyle>
+        <color>ffbdbdbd</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-BDBDBD-nodesc-highlight">
+      <IconStyle>
+        <color>ffbdbdbd</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-BDBDBD-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-BDBDBD-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-BDBDBD-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-F57C00-nodesc-normal">
+      <IconStyle>
+        <color>ff007cf5</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-F57C00-nodesc-highlight">
+      <IconStyle>
+        <color>ff007cf5</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-F57C00-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-F57C00-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-F57C00-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-FFEA00-normal">
+      <IconStyle>
+        <color>ff00eaff</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+    </Style>
+    <Style id="icon-1532-FFEA00-highlight">
+      <IconStyle>
+        <color>ff00eaff</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+    </Style>
+    <StyleMap id="icon-1532-FFEA00">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-FFEA00-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-FFEA00-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1532-FFEA00-nodesc-normal">
+      <IconStyle>
+        <color>ff00eaff</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1532-FFEA00-nodesc-highlight">
+      <IconStyle>
+        <color>ff00eaff</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1532-FFEA00-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1532-FFEA00-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1532-FFEA00-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1682-F57C00-nodesc-normal">
+      <IconStyle>
+        <color>ff007cf5</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1682-F57C00-nodesc-highlight">
+      <IconStyle>
+        <color>ff007cf5</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1682-F57C00-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1682-F57C00-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1682-F57C00-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1720-0F9D58-nodesc-normal">
+      <IconStyle>
+        <color>ff589d0f</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1720-0F9D58-nodesc-highlight">
+      <IconStyle>
+        <color>ff589d0f</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1720-0F9D58-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1720-0F9D58-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1720-0F9D58-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="icon-1899-0288D1-nodesc-normal">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1899-0288D1-nodesc-highlight">
+      <IconStyle>
+        <color>ffd18802</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1899-0288D1-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-0288D1-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-0288D1-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-000000-1200-77-nodesc-normal">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d000000</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-000000-1200-77-nodesc-highlight">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d000000</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-000000-1200-77-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-000000-1200-77-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-000000-1200-77-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Folder>
+      <name>Map Boundaries</name>
+      <Placemark>
+        <name>Stillwater City Limits</name>
+        <styleUrl>#poly-000000-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                -97.0885012,36.1810684,0
+                -97.0885441,36.1797175,0
+                -97.0912477,36.1797521,0
+                -97.0910761,36.1812069,0
+                -97.0912048,36.1820382,0
+                -97.0918485,36.1813455,0
+                -97.092578,36.1813455,0
+                -97.093608,36.1824539,0
+                -97.0943375,36.1839433,0
+                -97.0981998,36.1839433,0
+                -97.0981998,36.1791979,0
+                -97.1147219,36.1790593,0
+                -97.1148078,36.1626731,0
+                -97.121674,36.1625692,0
+                -97.121674,36.1607675,0
+                -97.12412,36.1607329,0
+                -97.1241629,36.1575799,0
+                -97.1179405,36.1576146,0
+                -97.117683,36.1500954,0
+                -97.1190134,36.1500954,0
+                -97.11867,36.1213634,0
+                -97.1506841,36.1214326,0
+                -97.1507699,36.114326,0
+                -97.159224,36.1144647,0
+                -97.159267,36.1158861,0
+                -97.1606401,36.1158514,0
+                -97.160726,36.1184861,0
+                -97.1723128,36.1185207,0
+                -97.172742,36.1058666,0
+                -97.1668199,36.1058319,0
+                -97.166734,36.1102351,0
+                -97.1645454,36.1103044,0
+                -97.1644596,36.1112058,0
+                -97.1666482,36.1111712,0
+                -97.166734,36.114014,0
+                -97.1591811,36.1141527,0
+                -97.1590953,36.1030581,0
+                -97.1631722,36.1030928,0
+                -97.1631292,36.099556,0
+                -97.1643309,36.0996254,0
+                -97.164288,36.098065,0
+                -97.159224,36.098065,0
+                -97.1591811,36.0994173,0
+                -97.1558337,36.099452,0
+                -97.1558337,36.0955337,0
+                -97.1508557,36.095603,0
+                -97.150727,36.0943547,0
+                -97.1526581,36.0924474,0
+                -97.1590524,36.092274,0
+                -97.1591382,36.0851648,0
+                -97.1505553,36.0853382,0
+                -97.1505553,36.0923434,0
+                -97.1460922,36.0924128,0
+                -97.1460493,36.0946668,0
+                -97.1414575,36.0948056,0
+                -97.1414146,36.0979264,0
+                -97.1437748,36.097961,0
+                -97.1439036,36.0994867,0
+                -97.1345911,36.0995561,0
+                -97.1345911,36.0985159,0
+                -97.1333895,36.0984812,0
+                -97.1336899,36.0777081,0
+                -97.1233905,36.0777775,0
+                -97.1234764,36.0851302,0
+                -97.1194425,36.0851649,0
+                -97.1193138,36.0806215,0
+                -97.1167388,36.0804828,0
+                -97.1168247,36.0828065,0
+                -97.1145503,36.0829106,0
+                -97.1145074,36.0850262,0
+                -97.088029,36.084714,0
+                -97.0799182,36.0849221,0
+                -97.0773004,36.0851649,0
+                -97.0771717,36.0866215,0
+                -97.0764851,36.0875231,0
+                -97.0759272,36.0883901,0
+                -97.0766567,36.0897426,0
+                -97.0769142,36.0914766,0
+                -97.077043,36.0995561,0
+                -97.0521097,36.0996255,0
+                -97.0522385,36.1067681,0
+                -97.0342574,36.1069068,0
+                -97.0343861,36.1214327,0
+                -97.0430977,36.1213287,0
+                -97.0433552,36.1287467,0
+                -97.0405658,36.128816,0
+                -97.0406516,36.1300985,0
+                -97.0432694,36.1300985,0
+                -97.0435269,36.1366492,0
+                -97.0461018,36.1366492,0
+                -97.0485479,36.1366838,0
+                -97.0485908,36.138486,0
+                -97.052496,36.138486,0
+                -97.052496,36.1431646,0
+                -97.0488912,36.1431993,0
+                -97.0488483,36.1471499,0
+                -97.0525389,36.1471499,0
+                -97.0527535,36.172235,0
+                -97.061508,36.1722004,0
+                -97.0617226,36.1940914,0
+                -97.0703484,36.1940568,0
+                -97.0704771,36.2000826,0
+                -97.0697906,36.2011215,0
+                -97.07155,36.2011215,0
+                -97.0709063,36.2001865,0
+                -97.0706059,36.1866103,0
+                -97.0799182,36.1866103,0
+                -97.0798753,36.1812069,0
+                -97.0885012,36.1810684,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Restaurants</name>
+      <Placemark>
+        <name><![CDATA[McDonald's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0703526,36.1162275,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Oklahoma State North Dining</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0739728,36.127413,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[McDonald's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.06005,36.1310915,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>QDOBA Mexican Eats</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0648353,36.1208386,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Del Taco</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0520647,36.1252063,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Arby's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.061562,36.1324753,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Taco Bueno</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0509703,36.130324,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Granny's Kitchen]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0582487,36.1143768,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Hatch Early Mood Food</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0582183,36.1114165,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Eskimo Joe's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0642455,36.122064,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Shortcake's Diner]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0583795,36.1248168,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Roscoe's Feed Shack]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0649679,36.1153675,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Boomarang Diner Stillwater</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0587807,36.1122017,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Miso</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0590742,36.1262797,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Louie's Grill & Bar]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0587484,36.1137762,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Good Little Eater</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0589795,36.1114604,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>The Monarch</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0588134,36.1165872,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Akeno, Japanese Grill, Sushi and Shabu</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0862508,36.1062518,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Devoted</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0567607,36.1151948,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Surf Bar</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0590662,36.1274241,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>The Ranchers Club</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0687342,36.1204009,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Da Vinci's Italian Restaurant]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0528626,36.1446624,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Stilly Express Don Pibil</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0671885,36.1408205,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Red Rock Bakery & Deli]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.060277,36.13151,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>PIBIL GRILL</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0877132,36.1153822,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Just Wafflin']]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0568235,36.130171,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>D.P. Dough</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0651127,36.1158076,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Nagoya</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0529608,36.1445673,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Tokyo Pot</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0591658,36.1114228,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>The Curty Shack</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0695771,36.1175161,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Freddie Paul's Steakhouse]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.037728,36.1156578,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>La Carreta Mexican Bar and Grill</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0508963,36.1402567,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Bad Brad's Bar-B-Q]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.131195,36.116703,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[The Garage Burgers & Beer]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0649053,36.1224122,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sandwich Planet</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0512231,36.1481949,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Texas Roadhouse</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0523115,36.1420127,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Cafe Mona</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.049401,36.1258125,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Persimmon Hill Farm and Bakery</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0604528,36.1165299,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Mexico Joe's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.055324,36.126421,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Chico's Mexican Grill and Cantina]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0509723,36.1285881,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Nooki</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0691299,36.1174751,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Mariachi Mexican Grill</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0371507,36.1463529,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Jimmy's Egg - Stillwater]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0685619,36.1152724,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Golden Dragon Cafe</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0507771,36.1212311,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Nikki's Greek Restaurant]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0500579,36.1307974,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Empire Slice House - Stillwater</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0594433,36.1114847,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[D's Down Home Bar B Que]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0691638,36.1099394,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Tacos Los Primos</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0687058,36.1415922,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Hideaway Pizza</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0657903,36.1194808,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>RibCrib BBQ</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0506277,36.1230485,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Happy Buddha Chinese Food</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0672104,36.1408451,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>TK Burger Barn</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0690192,36.1168699,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Cherokee Strip BBQ</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.050928,36.120035,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Slim Chickens</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0613104,36.1335712,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Los Aztecas Restaurant 2</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.057157,36.13015,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Old School Bagel Cafe</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0691958,36.1175291,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>China Wok</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0509616,36.1332288,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>The Dragon Asian Kitchen</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0582458,36.1272264,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Taylor's Restaurant]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0723793,36.1232659,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Cafe 88</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.064867,36.120249,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[McAlister's Deli]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0568744,36.1265453,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Thai Loco Restaurant</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0869944,36.1154583,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Nilima's Authentic Food of India]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0631302,36.1234322,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Aspen Coffee Company Downtown</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0592249,36.1144009,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Ron's Hamburgers and Chili - Stillwater]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0485232,36.1156509,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Coney Island Stillwater</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.069206,36.118796,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Aspen Coffee at Fountain Square</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.085656,36.1069548,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Chili's Grill & Bar]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.055278,36.127427,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>BABS Burritos</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0338401,36.1034166,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Pickleman's Gourmet Cafe - Stillwater, OK]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0691939,36.1180649,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Wingstop</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0520679,36.1262366,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>El Tapatio Authentic Mexican Restaurant</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.050684,36.112477,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Olive Garden Italian Restaurant</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0521932,36.143293,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Golden Chick</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0576008,36.1308108,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Whataburger</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0610086,36.1332078,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Panera Bread</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.05999,36.126399,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Freddy's Frozen Custard & Steakburgers]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0618157,36.133815,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Raising Cane's Chicken Fingers]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0508178,36.1265162,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Mazzio’s Pizza & Wings]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0663862,36.1159904,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>IHOP</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0582049,36.1291009,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Fuzzy's Taco Shop]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0691298,36.1184931,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Braum's Ice Cream & Dairy Store]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.052114,36.128037,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Braum's Ice Cream & Dairy Store]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0889083,36.1153019,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Buffalo Wild Wings</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0508945,36.1388223,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Wendy's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.051043,36.146013,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Wendy's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0534461,36.1324274,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Chick-fil-A</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.05093,36.12737,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Papa Johns Pizza</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0602164,36.1325464,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Chipotle Mexican Grill</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0533524,36.1264717,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sonic Drive-In</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0582259,36.1244328,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sonic Drive-In</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0582259,36.1244328,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sonic Drive-In</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1176616,36.1151182,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sonic Drive-In</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0508541,36.1172076,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Jimmy John's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.059088,36.128899,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Jimmy John's]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0690634,36.1190492,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Five Guys</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0508896,36.1284671,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Jersey Mike's Subs]]></name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0507475,36.1391899,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Schools</name>
+      <Placemark>
+        <name>Richmond Elementary School</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0607497,36.1730733,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Stillwater Junior High School</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0388421,36.1404191,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Skyline Elementary School</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0413354,36.1384744,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Stillwater High School</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.062079,36.135089,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Will Rogers Elementary</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0682917,36.1351834,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Stillwater Middle School</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1060132,36.0968627,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Westwood Elementary School</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0821766,36.1164671,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sangre Ridge Elementary School</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1055017,36.0947441,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Meridian Technology Center</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1070083,36.1068788,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Highland Park Elementary School</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0268787,36.1190806,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Lincoln Alternative Academy</name>
+        <styleUrl>#icon-1682-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0565213,36.1087087,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Parks</name>
+      <Placemark>
+        <name>Boomer Lake Playground</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.066741,36.1493978,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sanborn Lake Trails</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0771734,36.1550455,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Babcock Park Playground</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0895934,36.1066282,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Myers Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0836408,36.1119488,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Strickland Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0578575,36.1252927,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>West Park Playground</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1276768,36.1184809,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Ingham Park Playground</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0860542,36.1181592,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Tower Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.077577,36.1190456,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Arrowhead Park Playground</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0798114,36.1219692,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Southern Woods Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.067491,36.1095039,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sunset Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0691719,36.1141357,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Chris Salmon plaza</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0582806,36.1124719,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Hoyt Grove Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0464835,36.1109111,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Couch Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0451392,36.1069347,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Arrington Park Playground</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0442788,36.1188796,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Berry Park Playground</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0456508,36.1216681,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Whittenberg Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0720296,36.1783138,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Morningside Park</name>
+        <styleUrl>#icon-1720-0F9D58-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0520288,36.1171742,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>OSU Bus Routes</name>
+      <Placemark>
+        <name>Gallagher-Iba (33) (Blue,Gray,Green,Orange,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0643939,36.1267339,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Panera Bread (34) (Blue,Gray,Green)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0595579,36.1267014,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Main & Hall of Fame (35) (Blue,Green)]]></name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0586352,36.1277954,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[McElroy & Main (36) (Blue,Green)]]></name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0597027,36.1316494,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Whataburger (37) (Blue,Green)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0610734,36.1329384,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Boomer & Duck (38) (Blue,Green)]]></name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0629617,36.1346021,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Cimarron Plaza (39) (Blue,Green)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0661373,36.1387027,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Boomer & Franklin (40) (Blue,Green)]]></name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0670037,36.139868,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (41) (Blue)</name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0728231,36.1450655,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>University Estates Apts (42) (Blue)</name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.081331,36.1450092,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (43) (Blue)</name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0873928,36.1451478,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Stillwater Airport (45) (Blue)</name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0833156,36.1576804,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Washington & Airport (45) (Blue)]]></name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0715785,36.1594495,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (46) (Blue)</name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0698244,36.1583277,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (47) (Blue)</name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0698432,36.1532988,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (48) (Blue)</name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0689923,36.1423945,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[*Boomer & Franklin (49) (Blue)]]></name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-0288D1</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0671871,36.1397022,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Progress 405 Apts. (50) (Blue)</name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0655885,36.1374927,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[*Boomer & Duck (51) (Blue)]]></name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-0288D1</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0637967,36.1351013,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[McElroy & Main (52) (Blue)]]></name>
+        <styleUrl>#icon-1532-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0596394,36.1311716,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[*Main & Hall of Fame (53) (Blue)]]></name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-0288D1</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0589044,36.127371,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (54) (Blue,Gray)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0602509,36.1268554,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Bennett Hall (55) (Blue,White,Orange,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.064816,36.1270374,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Student Union (2) (Brown,Scarlet,White,Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0677365,36.1219912,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Journalism/Broadcast (3) (Brown,Scarlet,Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0676935,36.120583,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[4th & Washington (75) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0694847,36.1178764,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (76) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0695079,36.1148633,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Stillwater Medical Center (77)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-795548</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0740291,36.1146243,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[7th & Walnut South (78) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0784457,36.1141008,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[9th & Willis (79) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0843149,36.1123043,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Babcock Park (80) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0873743,36.1024336,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[19th & August (81) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0921271,36.1015407,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Westbrook Place (82) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1067631,36.1015266,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[19th & Shalamar (83) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1102714,36.1016219,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Shalamar & 16th (84) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1089303,36.103581,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[15th & Sangre (85) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1051967,36.1047339,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*West Wal-Mart (86) (Brown)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-795548</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1188932,36.1156789,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Fifty-One Apts. / Traden Heights Apt. (187) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1175521,36.1106778,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Nomadics (87) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1124774,36.1102878,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Business Accelerator Bldg (88) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1081858,36.1100797,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Meridian Tech Center (89) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1090441,36.1079995,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[*19th & Sangre (90) (Brown)]]></name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-795548</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1062095,36.101302,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[19th & Western (91) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0920507,36.101311,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Fountain Square (92) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0870971,36.1067094,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Myers Park (93) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0842239,36.1121276,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[7th & North Walnut (94) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0782853,36.1138791,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Payne County Health Dept (95) (Brown)</name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0740259,36.114488,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[7th & Washington (96) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0693466,36.1147215,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[4th & Washington North (97) (Brown)]]></name>
+        <styleUrl>#icon-1532-795548-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0692785,36.1180062,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>McKnight Center (28) (Brown,Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0683359,36.1196114,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Student Union/Alumni Center (29) (Brown,Scarlet,White,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0675979,36.1207594,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>ATRC (184) (Brown,Scarlet)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0677605,36.1238387,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Mexico Joe's (200) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0563345,36.1267315,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Chipotle (201) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0533841,36.1267575,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[McElroy & Perkins (117) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0513778,36.130761,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Redbud & Perkins East (119) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0506682,36.1359303,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Fair Manor (120) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0496221,36.1380185,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Krayler & Hartford North (121) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0485131,36.1405577,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Aspen Coffee (122) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0532445,36.1407656,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Krayler & Perkins (123) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0551167,36.1407353,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Total Rehab (124) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0534859,36.1406443,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Lakeview & Perkins (126) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0514609,36.145377,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Aspen Heights and Oak Park Village (127) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0515038,36.150913,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>World Color Press (128) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0577209,36.1596325,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>North Boomer Lake (129) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0660035,36.1596412,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Airport & Perkins (130) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.069469,36.1596368,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Links Apts (131) (Gray)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-757575</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0696929,36.1708046,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Silver Springs Trailer Park (132) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.069709,36.1724848,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Richmond & Washington (133) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0624511,36.1738791,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>North Slope (134) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0587765,36.1738748,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Richmond & Perkins (135) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0523445,36.1738964,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Parkview Estates (136) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0519583,36.169068,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>National Standard (137) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0518047,36.1614292,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Perkins & Park (138) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0518055,36.1511865,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Lakeview & Perkins South (202) (Gray)]]></name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0518164,36.1452979,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[*Knotts & Perkins (100) (Gray,Green)]]></name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0518472,36.1417912,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[*Krayler & Hartford East (101) (Gray,Green)]]></name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0489411,36.14055,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>North Monticello Apts (102) (Gray,Green)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.049896,36.1378553,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[*Redbud & Perkins West (103) (Gray,Green)]]></name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0506121,36.1360925,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Apple Creek Apts (104) (Gray,Green)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0516686,36.1349307,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Harbor Freight (228) (Gray,Green)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0515399,36.1291025,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Starbucks (204) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0526771,36.127092,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Food Pyramid (205) (Gray)</name>
+        <styleUrl>#icon-1532-757575-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0378257,36.1441033,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Athletics Center (57) (Gray,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0649262,36.125247,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Gundersen (30) (Gray,Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0676558,36.1216141,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Business Building (229) (Gray,White,Green)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0676424,36.1221623,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Animal Sciences (72) (Purple,Orange)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0719629,36.1254468,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Ag Hall (24) (Purple,Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0718838,36.1242617,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*HES (202) (Purple)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-9C27B0</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0718744,36.1222988,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Murray Hall (26) (Purple,Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0719737,36.1203033,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[4th & Walnut (200) (Purple)]]></name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0773885,36.1176634,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Westwood Elementary (145) (Purple)</name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0820072,36.1159842,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[6th & Ridge (146) (Purple)]]></name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0855155,36.1159452,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>OSU Botantical Gardens (147) (Purple)</name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0999747,36.1161749,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Bridgeporte (149) (Purple)</name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1198274,36.1175479,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[6th & Squires Landing (148) (Purple)]]></name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.1203746,36.1186139,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[West Braum's (150) (Purple)]]></name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0893518,36.1157278,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Dry Clean City (151) (Purple)</name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0853141,36.1157722,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[SMC Physician's Clinic (152) (Purple)]]></name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0819139,36.1157854,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Phi Mu (201) (Purple)</name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0776063,36.1175426,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[4th & Monroe (155) (Purple)]]></name>
+        <styleUrl>#icon-1532-9C27B0-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0721132,36.1175859,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Theta Pond West (6) (Purple,Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0717484,36.1202206,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Math Science (7) (Purple,Orange,Black,Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.071794,36.1223569,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*HBRC (8) (Purple,Orange,Black,Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0717672,36.1242596,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Hester & 4th South (157) (Scarlet)]]></name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0668834,36.1178609,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Hester & 5th (158) (Scarlet)]]></name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0668512,36.1162965,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>SMC South Campus (231) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0706691,36.1086874,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Duncan & 11th (180) (Scarlet)]]></name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0612358,36.1094805,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>First Baptist (181) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0612176,36.1130465,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Downtown Parking Garage (177) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0577468,36.1145026,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Lowry & 8th (178) (Scarlet)]]></name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0560088,36.1136185,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Lincoln Academy (203) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0556735,36.1090335,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>DPS (205) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0496171,36.1087215,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[6th & Jardot (168) (Scarlet)]]></name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0333383,36.1158727,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (171) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0235396,36.1160018,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Eastgate (204) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0193124,36.1160798,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Creekside Apts (169) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0161123,36.1163719,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Oklahoma Workforce (170) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0214553,36.1162939,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Vintage Apts (186) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0334488,36.1184565,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>North James Creek (173) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0363992,36.123249,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>James Creek (172) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0366674,36.1217931,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Eastern Rd (185) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0359593,36.1205105,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Roxie Weber Apts (164) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.055844,36.1135309,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Downtown Parking (107) (Scarlet,Green)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0577108,36.1146403,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sheerar Museum (160) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0614283,36.1136565,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Stillwater Library (161) (Scarlet)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-A52714</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0614444,36.1094961,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>12th Ave (232) (Scarlet)</name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0705318,36.1088591,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Hester Court Apts (182) (Scarlet,Green)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0667457,36.1163804,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Hester & 4th North (183) (Scarlet)]]></name>
+        <styleUrl>#icon-1532-A52714-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0667404,36.1178754,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Casa Mia Apts North (67) (White)</name>
+        <styleUrl>#icon-1532-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0635263,36.1238365,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Stillwater Flats Apts (142) (White)</name>
+        <styleUrl>#icon-1532-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0615496,36.1238668,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Car Wash (141) (White)</name>
+        <styleUrl>#icon-1532-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0584345,36.1238538,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Legacy Park Apts (140) (White)</name>
+        <styleUrl>#icon-1532-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0538161,36.1234366,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*East Wal-Mart (105) (White,Green)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0500019,36.1240505,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Hobby Lobby (115) (White)</name>
+        <styleUrl>#icon-1532-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0496783,36.1271528,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Virginia & Park (112) (White)]]></name>
+        <styleUrl>#icon-1532-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0537286,36.1232596,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Century 21 (111) (White)</name>
+        <styleUrl>#icon-1532-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0584207,36.123728,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Miller & Husband (110) (White)]]></name>
+        <styleUrl>#icon-1532-BDBDBD-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0607488,36.1237172,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Lakeview & Husband (99) (Green)]]></name>
+        <styleUrl>#icon-1532-7CB342-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.060098,36.1450492,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[6th & Perkins (106) (Green)]]></name>
+        <styleUrl>#icon-1532-7CB342-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0515985,36.116182,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[6th & Husband (108) (Green)]]></name>
+        <styleUrl>#icon-1532-7CB342-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0599746,36.1157003,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Wes Watkins (56) (Orange,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0691478,36.126932,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Casa Mia Apts South (66) (Orange,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0635386,36.1237438,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Athletic Ave (1) (Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0673903,36.1234686,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Lamda Chi (27) (Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0703135,36.1196403,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Theta Pond (5) (Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0707319,36.1196988,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>PIO (25) (Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0718289,36.1218358,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>University Mailing (9) (Orange,Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0718414,36.1257426,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Monroe & McElroy (58) (Orange,Gold)]]></name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0718469,36.1303588,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Morrison Apts (59) (Orange,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0743065,36.1305906,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Garfield Road (60) (Orange,Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0757603,36.1307358,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*North Willham (61) (Orange,Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0770799,36.1318211,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*North Walnut (62) (Orange,Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0779677,36.1306491,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Lot 120 (197) (Orange)</name>
+        <styleUrl>#icon-1532-F57C00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0683462,36.13363,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Bennett Chapel (4) (Black)</name>
+        <styleUrl>#icon-1532-000000-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0671522,36.1200655,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Kerr Drummond (23) (Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0745014,36.124571,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name><![CDATA[Farm & Cleveland (22) (Black,Gold)]]></name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.075982,36.124701,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Brumley Apts (21) (Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0791792,36.1247616,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>USDA OSUPD (20) (Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0811531,36.1247963,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Kamm/Peterson (19) (Black,Gold)</name>
+        <styleUrl>#icon-1532-3949AB-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0814106,36.1256326,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (18) (Black)</name>
+        <styleUrl>#icon-1532-000000-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0829091,36.1271966,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Unlisted stop (17) (Black)</name>
+        <styleUrl>#icon-1532-000000-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0829574,36.1291854,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Art Annex (16) (Black)</name>
+        <styleUrl>#icon-1532-000000-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0849905,36.1305936,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>CEAT Lab (227) (Black)</name>
+        <styleUrl>#icon-1532-000000-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.082024,36.1325649,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*West University Apts (14) (Black,Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0806507,36.1302418,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Stevens Apts (13) (Black)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-000000</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0798568,36.1282574,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Lot 74 (11) (Black,Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0773194,36.1271569,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Commons (198) (Black)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-000000</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0761553,36.1271049,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Stevens Apts East (74) (Gold)</name>
+        <styleUrl>#icon-1532-FFEA00-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0795108,36.1282184,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*Lot 74 East (12) (Gold)</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-FFEA00</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0760695,36.1277201,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>*MMTT</name>
+        <description>Has Shelter</description>
+        <styleUrl>#icon-1532-3949AB</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0713462,36.1275095,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 172</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0577209,36.1596325,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 173</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            -97.0683446,36.1212081,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Untitled layer</name>
+    </Folder>
+  </Document>
+</kml>
