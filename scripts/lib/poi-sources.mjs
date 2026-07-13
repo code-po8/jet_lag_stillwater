@@ -206,9 +206,27 @@ function firstCoordinate(placemark) {
  * stops are uniquely route-numbered, and real north/south & east/west pairs sit
  * <30 m apart — collapsing them would drop valid hider zones.
  *
- * `dropName` drops features whose name matches the pattern — used to strip the
- * bare "Point N" scratch pins My Maps leaves behind (they carry no stop info).
+ * `dropName` drops features whose name matches the pattern. Two jobs:
+ *   - strip the bare "Point N" scratch pins My Maps leaves behind (no stop info);
+ *   - remove POIs that have closed but can't be reliably deleted from the My Maps
+ *     app (see CLOSED_POIS). Dropping them at bake time keeps the game data correct
+ *     without depending on the map edit landing; harmless once the pin is gone.
  */
+
+/**
+ * POIs to drop by exact name even if still present in a source. Add closed
+ * restaurants here when the My Maps pin won't delete (a known Android issue).
+ * Matched case-insensitively against the full name; harmless if already absent.
+ */
+export const CLOSED_POIS = []
+
+/** Build a RegExp that matches the junk-pin pattern OR any exact CLOSED_POIS name. */
+function buildDropName(closed) {
+  const escaped = closed.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const closedAlt = escaped.length ? `|^(?:${escaped.join('|')})$` : ''
+  return new RegExp(`^Point \\d+$${closedAlt}`, 'i')
+}
+
 export const DEFAULT_MERGE_POLICY = {
   sourcesByKind: {
     // Curated in the Google map; OSM only adds worse-named near-duplicates.
@@ -226,7 +244,7 @@ export const DEFAULT_MERGE_POLICY = {
     school: 50,
     park: 50,
   },
-  dropName: /^Point \d+$/i,
+  dropName: buildDropName(CLOSED_POIS),
 }
 
 /**

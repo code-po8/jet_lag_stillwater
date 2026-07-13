@@ -36,6 +36,10 @@ separate by the proximity check.
   "…School"; every park has a "…Playground" twin). Proximity dedup collapses the
   twins (Google wins) while keeping any OSM-only school/park the curated map lacks.
 - Bare `Point N` scratch pins My Maps leaves behind are dropped (`dropName`).
+- **Closed POIs** whose My Maps pin won't delete (a known Android issue) are dropped
+  by exact name via the `CLOSED_POIS` list in `scripts/lib/poi-sources.mjs`. Add a
+  name there when a place has closed but its pin lingers; it's harmless once the pin
+  is actually removed.
 
 The policy lives in `DEFAULT_MERGE_POLICY` in `scripts/lib/poi-sources.mjs`. The
 bake log prints `dropped: N` — the count excluded by the source policy.

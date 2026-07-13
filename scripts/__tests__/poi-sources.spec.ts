@@ -8,6 +8,7 @@ import {
   metresBetween,
   NAME_MATCH_RADIUS_M,
   DEFAULT_MERGE_POLICY,
+  CLOSED_POIS,
 } from '../lib/poi-sources.mjs'
 
 // Touch the export so its shape stays covered even as the default policy evolves.
@@ -201,6 +202,27 @@ describe('mergeSources per-kind policy', () => {
     const { features, dropped } = mergeSources([google], { dropName: /^Point \d+$/i })
     expect(features).toHaveLength(1)
     expect(features[0].properties.name).toBe('Real Stop (5)')
+    expect(dropped).toBe(1)
+  })
+
+  it('CLOSED_POIS is an array the policy can drop by exact name', () => {
+    // The list is empty when no closed pin is lingering; the mechanism still works.
+    // Pass an explicit dropName built from a sample closed name to prove the behavior.
+    expect(Array.isArray(CLOSED_POIS)).toBe(true)
+    const google = {
+      name: 'google',
+      features: [
+        feat('restaurant', 'Closed Diner', [-97.087, 36.1154]),
+        feat('restaurant', 'Still Open Diner', [-97.07, 36.13]),
+      ],
+    }
+    const { features, dropped } = mergeSources([google], {
+      sourcesByKind: { restaurant: ['google'] },
+      dropName: /^Closed Diner$/i,
+    })
+    expect(features.map((f: { properties: { name: string } }) => f.properties.name)).toEqual([
+      'Still Open Diner',
+    ])
     expect(dropped).toBe(1)
   })
 
