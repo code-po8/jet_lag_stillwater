@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import MapPanel from '../MapPanel.vue'
 import { useSync, __resetSyncSession } from '@/composables/useSync'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
+import { useQuestionStore } from '@/stores/questionStore'
 import { QUARTER_MILE_M } from '@/services/sync/protocol'
 
 // Stub the heavy Leaflet-based BaseMap; expose props + a button to fire pickStop.
@@ -19,6 +20,7 @@ vi.mock('../BaseMap.vue', () => ({
       'busStops',
       'inRangeStopIndices',
       'stopsPickable',
+      'askedFromMarkers',
     ],
     emits: ['pickStop'],
     template: `<div
@@ -29,6 +31,8 @@ vi.mock('../BaseMap.vue', () => ({
       :data-busstops="(busStops || []).length"
       :data-inrange="(inRangeStopIndices || []).join(',')"
       :data-pickable="String(!!stopsPickable)"
+      :data-askedfrom="(askedFromMarkers || []).length"
+      :data-askedfrom-label="(askedFromMarkers || []).map(m => m.label).join('|')"
     ><button
       data-testid="map-pick-first-stop"
       @click="busStops && busStops.length && $emit('pickStop', busStops[0], 0)"
@@ -303,5 +307,46 @@ describe('MapPanel (MAP-004)', () => {
     render(MapPanel)
     await nextTick()
     expect(screen.queryByTestId('gps-status')).toBeNull()
+  })
+
+  // ── Ask-time position pins (MAP-009) ──
+
+  it('passes ask-time pins to the map for the HIDER, labeled by category', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    const questions = useQuestionStore()
+    // A synced radar question the seeker asked, with their ask-time position.
+    questions.askQuestion('radar-0.5-miles', { lat: 36.12, lng: -97.07 })
+
+    render(MapPanel)
+    await nextTick()
+
+    const stub = screen.getByTestId('base-map-stub')
+    expect(stub).toHaveAttribute('data-askedfrom', '1')
+    expect(stub).toHaveAttribute('data-askedfrom-label', 'Radar asked here')
+  })
+
+  it('does NOT show ask-time pins to a seeker', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('radar-0.5-miles', { lat: 36.12, lng: -97.07 })
+
+    render(MapPanel)
+    await nextTick()
+
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-askedfrom', '0')
+  })
+
+  it('omits a pin for a question that has no ask-time position', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('radar-0.5-miles') // no askedFrom
+
+    render(MapPanel)
+    await nextTick()
+
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-askedfrom', '0')
   })
 })

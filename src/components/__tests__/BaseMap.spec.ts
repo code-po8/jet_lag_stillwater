@@ -31,6 +31,14 @@ function fakeLeaflet() {
     bindTooltip: ReturnType<typeof vi.fn>
   }> = []
   const rects: unknown[] = []
+  // Ask-time pins (MAP-009) use L.marker + L.divIcon. Record each so tests can
+  // assert the icon html + precedence ops (setLatLng, bringToFront, zIndex).
+  const pins: Array<{
+    opts: unknown
+    setLatLng: ReturnType<typeof vi.fn>
+    bindTooltip: ReturnType<typeof vi.fn>
+  }> = []
+  const divIcons: Array<{ options: { html?: string } }> = []
   // Capture click handlers registered via DomEvent.on so tests can fire them.
   const domClicks: Array<(e: unknown) => void> = []
   const L = {
@@ -47,6 +55,20 @@ function fakeLeaflet() {
       }
       markers.push(m)
       return m
+    }),
+    marker: vi.fn((_latlng: unknown, opts: unknown) => {
+      const m = {
+        opts,
+        setLatLng: vi.fn().mockReturnThis(),
+        bindTooltip: vi.fn().mockReturnThis(),
+      }
+      pins.push(m)
+      return m
+    }),
+    divIcon: vi.fn((options: { html?: string }) => {
+      const icon = { options }
+      divIcons.push(icon)
+      return icon
     }),
     circle: vi.fn().mockReturnValue(circle),
     layerGroup: vi.fn().mockReturnValue(group),
@@ -71,7 +93,7 @@ function fakeLeaflet() {
       stop: vi.fn(),
     },
   }
-  return { L, map, layer, circle, group, markers, rects, domClicks }
+  return { L, map, layer, circle, group, markers, rects, pins, divIcons, domClicks }
 }
 
 describe('BaseMap (MAP-001)', () => {
@@ -234,6 +256,69 @@ describe('BaseMap (MAP-001)', () => {
     // 'b' was removed from the group; 'a' was not re-created.
     expect(fake.group.removeLayer).toHaveBeenCalledTimes(1)
     expect(fake.L.circleMarker).toHaveBeenCalledTimes(2)
+  })
+
+  // ── Ask-time position pins (MAP-009) ──
+
+  it('renders a seeker ask-time pin as a distinct teardrop "?" divIcon marker', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        askedFromMarkers: [{ id: 'q1', lat: 36.12, lng: -97.07, label: 'Radar asked here' }],
+      },
+    })
+    await nextTick()
+
+    // Uses L.marker (not circleMarker) with a divIcon — a distinct silhouette.
+    expect(fake.L.marker).toHaveBeenCalledTimes(1)
+    expect(fake.L.divIcon).toHaveBeenCalledTimes(1)
+    // The icon html carries the "?" glyph and the muted-cyan pin color.
+    const html = fake.divIcons[0]!.options.html ?? ''
+    expect(html).toContain('>?<')
+    expect(html.toLowerCase()).toContain('#4a7f8c')
+    // Accessible label bound as a tooltip.
+    expect(fake.pins[0]!.bindTooltip).toHaveBeenCalledWith('Radar asked here', expect.anything())
+  })
+
+  it('draws the ask-time pin ABOVE the live dot (precedence on overlap)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        // Same coordinates: the seeker has not moved since asking.
+        markers: [
+          { id: 's1', name: 'Sue', role: 'seeker', pos: { lat: 36.12, lng: -97.07, ts: 1 } },
+        ],
+        askedFromMarkers: [{ id: 'q1', lat: 36.12, lng: -97.07, label: 'asked here' }],
+      },
+    })
+    await nextTick()
+
+    // The ask-time pin is an L.marker (marker pane, above the overlay pane that
+    // holds the live circleMarker dot) with a high zIndexOffset — so an
+    // overlapping pin is never hidden by the current-position dot.
+    expect(fake.pins).toHaveLength(1)
+    expect((fake.pins[0]!.opts as { zIndexOffset?: number }).zIndexOffset).toBeGreaterThan(0)
+  })
+
+  it('does not render an ask-time pin when there are none', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never } })
+    await nextTick()
+    expect(fake.L.marker).not.toHaveBeenCalled()
+  })
+
+  it('removes an ask-time pin when its question is no longer active', async () => {
+    const { rerender } = render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        askedFromMarkers: [{ id: 'q1', lat: 1, lng: 1 }],
+      },
+    })
+    await nextTick()
+    await rerender({ leaflet: fake.L as never, askedFromMarkers: [] })
+    await nextTick()
+    // The single pin was removed from its group; L.marker not re-created.
+    expect(fake.group.removeLayer).toHaveBeenCalled()
+    expect(fake.L.marker).toHaveBeenCalledTimes(1)
   })
 
   it('adds only new shading rectangles on a union update (MAP-005 perf)', async () => {

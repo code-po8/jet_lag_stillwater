@@ -5,12 +5,14 @@
  * declared zone drawn on the map and described in a labeled sheet.
  */
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import BaseMap, { type PlayerMarker, type BusStop } from './BaseMap.vue'
+import BaseMap, { type PlayerMarker, type BusStop, type AskedFromMarker } from './BaseMap.vue'
 import { useZone, type BusStopLike } from '@/composables/useZone'
 import { useSync } from '@/composables/useSync'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useShading } from '@/composables/useShading'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
+import { useQuestionStore } from '@/stores/questionStore'
+import { getCategoryById } from '@/types/question'
 import { QUARTER_MILE_M } from '@/services/sync/protocol'
 import { distanceMeters } from '@jet-lag-stillwater/shared'
 import poiGeo from '../assets/map/stillwater-poi.json'
@@ -19,6 +21,7 @@ const { zone, hasZone, setFromBusStop } = useZone()
 const sync = useSync()
 const geo = useGeolocation()
 const gameStore = useGameStore()
+const questionStore = useQuestionStore()
 const { cells: shadedCells, shadeFreehand, autoShadeRadar, unshadeLocal } = useShading()
 
 const isHider = computed(() => sync.role.value === 'hider')
@@ -94,6 +97,36 @@ const markers = computed<PlayerMarker[]>(() => {
       isSelf: true,
     })
   }
+  return out
+})
+
+// Ask-time position pins (MAP-009): where a seeker was when they asked. Shown to
+// the HIDER only — it's the seeker's position (synced via the question relay),
+// which is context for answering, not something the seeker needs re-shown. Covers
+// the pending question plus any answered questions that carry an ask-time
+// position, so the hider keeps the picture of what recent answers were measured
+// against. Keyed by question id for stable reconciliation.
+const askedFromMarkers = computed<AskedFromMarker[]>(() => {
+  if (!isHider.value) return []
+  const out: AskedFromMarker[] = []
+  const seen = new Set<string>()
+  const add = (q: {
+    questionId: string
+    categoryId: string
+    askedFrom?: { lat: number; lng: number }
+  }) => {
+    if (!q.askedFrom || seen.has(q.questionId)) return
+    seen.add(q.questionId)
+    const cat = getCategoryById(q.categoryId as never)
+    out.push({
+      id: q.questionId,
+      lat: q.askedFrom.lat,
+      lng: q.askedFrom.lng,
+      label: cat ? `${cat.name} asked here` : 'Asked here',
+    })
+  }
+  if (questionStore.pendingQuestion) add(questionStore.pendingQuestion)
+  for (const q of questionStore.askedQuestions) add(q)
   return out
 })
 
@@ -187,6 +220,7 @@ function pickStopFromMap(stop: BusStop) {
       :bus-stops="isHider ? busStops : []"
       :in-range-stop-indices="inRangeStopIndices"
       :stops-pickable="isHider"
+      :asked-from-markers="askedFromMarkers"
       @pick-stop="pickStopFromMap"
     />
 
