@@ -7,9 +7,18 @@ interface Props {
   currentTab: NavTab
   /** Show the host-only Admin tab (ADMIN-001). Default false. */
   showAdmin?: boolean
+  /**
+   * Tabs to mark with an attention badge (QSYNC-006) — e.g. `['cards']` while a
+   * question is pending for the hider, so it's visible from any tab.
+   */
+  badgeTabs?: NavTab[]
 }
 
-const props = withDefaults(defineProps<Props>(), { showAdmin: false })
+const props = withDefaults(defineProps<Props>(), { showAdmin: false, badgeTabs: () => [] })
+
+function hasBadge(tabId: NavTab): boolean {
+  return props.badgeTabs.includes(tabId)
+}
 
 const emit = defineEmits<{
   (e: 'tab-change', tab: NavTab): void
@@ -137,6 +146,14 @@ function isActive(tabId: NavTab): boolean {
         />
       </svg>
 
+      <!-- Attention badge (QSYNC-006): drawn on top-right of the tab icon. -->
+      <span
+        v-if="hasBadge(tab.id)"
+        :data-testid="`nav-badge-${tab.id}`"
+        class="bottom-nav-badge"
+        aria-label="Action needed"
+      ></span>
+
       <span class="bottom-nav-label">{{ tab.label }}</span>
     </button>
   </nav>
@@ -159,6 +176,28 @@ function isActive(tabId: NavTab): boolean {
 /* Active state indicator */
 .bottom-nav-item {
   position: relative;
+}
+
+/* Attention badge (QSYNC-006): a pulsing dot on the tab icon's top-right. */
+.bottom-nav-badge {
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 16px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-brand-cyan, #00aaff);
+  box-shadow: 0 0 0 2px var(--color-ui-bg, #0f172a);
+  animation: nav-badge-pulse 1.4s ease-in-out infinite;
+}
+@keyframes nav-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .bottom-nav-item.active::before {

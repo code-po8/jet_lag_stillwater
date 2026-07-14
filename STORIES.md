@@ -3793,7 +3793,7 @@ Today (post-QSYNC-004) a question asked by a seeker syncs to the hider's device,
 
 ### QSYNC-006: Surface the Hider Answer Prompt Regardless of Tab
 
-**Status:** `ready`
+**Status:** `complete`
 **Depends On:** QSYNC-005
 
 **Story:** As a hider, when a seeker asks a question, I want to be told **wherever I am in the app** — not only if I happen to be on the Cards tab — so I don't miss a pending question I need to answer.
@@ -3804,24 +3804,20 @@ QSYNC-005 added `HiderAnswerPrompt`, but it's mounted inside `HiderView`, which 
 
 **Acceptance Criteria:**
 
-- [ ] When a question is pending and the viewer is the **hider**, there is a persistent, visible indication **independent of the current tab** (e.g. a badge on the Cards/Questions nav item, a top banner, or auto-switching the hider to the answer surface)
-- [ ] The indication clears once the question is answered (on either device) or vetoed
-- [ ] Seekers are unaffected (no hider-answer affordance shown to them)
-- [ ] Works in a room and offline/single-device; no new sync protocol (reads `questionStore.pendingQuestion` + role, like `HiderAnswerPrompt`)
-- [ ] The QSYNC-005 E2E is updated/extended to assert the tab-independent indication (drop the "click to Cards first" workaround)
+- [x] When a question is pending and the viewer is the **hider**, there is a persistent, visible indication **independent of the current tab** — the answer prompt itself (always-mounted) plus a badge on the Cards nav item
+- [x] The indication clears once the question is answered (on either device) or vetoed (`hasPendingQuestion` drives both)
+- [x] Seekers are unaffected (the prompt banner and badge are gated on `currentViewRole === 'hider'`)
+- [x] Works in a room and offline/single-device; no new sync protocol (reads `questionStore.hasPendingQuestion` + role)
+- [x] The QSYNC-005 E2E is updated to assert the prompt appears on the hider's default tab + the Cards badge, and to answer without navigating to Cards first
 
 **Size:** S
 
-**Implementation Notes / Open Questions:**
+**Implementation Notes:**
 
-- Cheapest option: a **nav badge** on the relevant BottomNav tab (`BottomNav.vue`) driven by `hasPendingQuestion && isHider`. Most discoverable option: **auto-switch** the hider to Cards (or a dedicated answer view) when a pending question arrives — but auto-switching mid-interaction can be jarring; a badge + optional banner is likely the better default.
-- Consider whether the answer prompt should live somewhere always-mounted (e.g. `GamePlayView` as a top banner for the hider) rather than only inside `HiderView`, so it shows on every tab. That would also remove the "Cards tab only" coupling entirely.
-- Keep the existing `HiderAnswerPrompt` component; this card is about **where/when it (or a pointer to it) surfaces**, not the answering logic.
-
-**Tests to Write:**
-
-- `BottomNav.spec.ts` (or `GamePlayView` spec): a pending question shows the hider indication; clears on answer; not shown to seekers
-- Extend the multiplayer E2E to assert the indication appears without navigating to Cards first
+- Chose **both** the "always-mounted prompt" and the "nav badge" (the card floated either): the prompt moved out of the Cards-only `HiderView` into an always-mounted banner in `GamePlayView` (`v-if="isHiderView"`, the component self-gates on a pending question), which removes the Cards-tab coupling entirely; the badge adds an at-a-glance cue. Did **not** auto-switch tabs (jarring mid-interaction, per the card's own caution).
+- `BottomNav` gained a generic `badgeTabs?: NavTab[]` prop → a pulsing dot on any listed tab (`data-testid="nav-badge-{id}"`). `GamePlayView` passes `['cards']` when `isHiderView && hasPendingQuestion`.
+- Removed the now-redundant `HiderAnswerPrompt` from `HiderView` (it would double-render on the Cards tab alongside the banner).
+- TDD (red→green): `BottomNav.spec.ts` (+3: no badge by default, badge on listed tab, badge removed when unlisted); `GamePlayQuestionSync.spec.ts` (+3: prompt on the default Questions tab after a relayed ask, Cards badge appears then clears on answer, seeker sees neither). Updated the multiplayer E2E (`question-sync.spec.ts`) to assert the prompt + badge without visiting Cards. Full suite: 1584 unit tests green; multiplayer E2E green.
 
 ---
 

@@ -5,8 +5,10 @@ import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSync } from '@/composables/useSync'
 import { useQuestionCurseSync } from '@/composables/useQuestionCurseSync'
+import { useQuestionStore } from '@/stores/questionStore'
 import HiderView from './HiderView.vue'
 import SeekerView from './SeekerView.vue'
+import HiderAnswerPrompt from '@/components/HiderAnswerPrompt.vue'
 import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
 import RoundSummary from '@/components/RoundSummary.vue'
 import HidingDurationTimer from '@/components/HidingDurationTimer.vue'
@@ -32,6 +34,7 @@ const router = useRouter()
 const gameStore = useGameStore()
 const roomStore = useRoomStore()
 const sync = useSync()
+const questionStore = useQuestionStore()
 
 // Mount the question/curse sync bridge for the whole game session (QSYNC-004).
 // GamePlayView persists across the SeekerView/HiderView/MapPanel tab switches
@@ -76,6 +79,15 @@ watch(
 
 // Current navigation tab
 const currentTab = ref<NavTab>('questions')
+
+// Hider answer surface (QSYNC-006): when the viewer is the hider and a question
+// is pending, alert them on ANY tab — the prompt renders in an always-mounted
+// banner (not just inside the Cards-tab HiderView), and the Cards nav item gets
+// a badge. This closes the discoverability gap where a hider on the default
+// Questions tab wouldn't see a pending question.
+const isHiderView = computed(() => currentViewRole.value === 'hider')
+const showHiderAnswerPrompt = computed(() => isHiderView.value && questionStore.hasPendingQuestion)
+const navBadgeTabs = computed<NavTab[]>(() => (showHiderAnswerPrompt.value ? ['cards'] : []))
 
 // Track the final hiding time for round summary
 const finalHidingTimeMs = ref<number>(0)
@@ -302,6 +314,13 @@ function handleEndGame() {
         </span>
       </div>
 
+      <!-- Hider answer prompt (QSYNC-006): always-mounted for the hider so a
+           pending question is answerable from ANY tab, not just Cards. The
+           component self-gates on there being a pending question. -->
+      <div v-if="isHiderView" class="gameplay-hider-answer">
+        <HiderAnswerPrompt />
+      </div>
+
       <!-- Main Content Area with tab-based content -->
       <div data-testid="main-content-area" class="gameplay-content content-with-nav">
         <!-- Questions Tab - Shows SeekerView with questions -->
@@ -331,7 +350,12 @@ function handleEndGame() {
       </div>
 
       <!-- Bottom Navigation -->
-      <BottomNav :current-tab="currentTab" :show-admin="isHost" @tab-change="handleTabChange" />
+      <BottomNav
+        :current-tab="currentTab"
+        :show-admin="isHost"
+        :badge-tabs="navBadgeTabs"
+        @tab-change="handleTabChange"
+      />
     </template>
   </main>
 </template>
@@ -487,6 +511,12 @@ function handleEndGame() {
 .gameplay-content {
   flex: 1;
   overflow-y: auto;
+}
+
+/* Always-mounted hider answer prompt (QSYNC-006). No padding of its own when
+   empty — HiderAnswerPrompt renders nothing until a question is pending. */
+.gameplay-hider-answer {
+  padding: 0 1rem;
 }
 
 .gameplay-timers-tab {

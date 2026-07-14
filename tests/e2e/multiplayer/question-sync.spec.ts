@@ -8,6 +8,7 @@ import { test, expect, type Page, type BrowserContext } from '@playwright/test'
  *
  * Covered:
  *  - QSYNC-004: a seeker asks a question → the hider's device shows it.
+ *  - QSYNC-006: the hider is alerted on ANY tab (prompt + Cards nav badge).
  *  - MAP-009:   the hider's map shows the seeker's ask-time pin.
  *  - QSYNC-005: the hider answers in-app → the seeker's device records it.
  *
@@ -92,11 +93,12 @@ test.describe('multiplayer question sync + map pin (2 browsers)', () => {
     await seeker.getByRole('button', { name: 'Ask', exact: true }).click()
 
     // The HIDER's device shows the pending question in the answer prompt (relayed
-    // over the live WS — the core QSYNC-004 behavior). The prompt lives in
-    // HiderView, which renders on the Cards tab, so navigate there.
-    await hider.getByTestId('bottom-nav').getByRole('button', { name: 'Cards' }).click()
+    // over the live WS — the core QSYNC-004 behavior). QSYNC-006: the prompt is
+    // now always-mounted for the hider, so it appears on their DEFAULT tab
+    // (Questions) without navigating to Cards — and the Cards nav item is badged.
     await expect(hider.getByTestId('hider-answer-prompt')).toBeVisible({ timeout: 15_000 })
     await expect(hider.getByTestId('hider-answer-question')).not.toBeEmpty()
+    await expect(hider.getByTestId('nav-badge-cards')).toBeVisible()
 
     // ── MAP-009: the hider's map shows the seeker's ask-time pin ──
     await hider.getByTestId('bottom-nav').getByRole('button', { name: 'Map' }).click()
@@ -104,9 +106,10 @@ test.describe('multiplayer question sync + map pin (2 browsers)', () => {
     // The ask-time pin is an L.marker with our teardrop "?" divIcon.
     await expect(hider.locator('.askedfrom-pin').first()).toBeVisible({ timeout: 15_000 })
 
-    // ── QSYNC-005: the hider answers "Yes" in-app → the seeker records it ──
-    // Return to a tab that shows the prompt (Cards = HiderView).
-    await hider.getByTestId('bottom-nav').getByRole('button', { name: 'Cards' }).click()
+    // ── QSYNC-005 + QSYNC-006: the hider answers "Yes" from the default
+    // (Questions) tab — no need to visit Cards. Switch off the Map tab first so
+    // the Leaflet canvas isn't overlaying the prompt for the click.
+    await hider.getByTestId('bottom-nav').getByRole('button', { name: 'Questions' }).click()
     await expect(hider.getByTestId('hider-answer-prompt')).toBeVisible()
     await hider.getByTestId('hider-answer-yes').click()
 
