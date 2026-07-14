@@ -47,6 +47,9 @@ vi.mock('../BaseMap.vue', () => ({
     /><button
       data-testid="map-drop-pin"
       @click="$emit('tempPinsChange', [{ lat: 36.12, lng: -97.07 }])"
+    /><button
+      data-testid="map-drop-two-pins"
+      @click="$emit('tempPinsChange', [{ lat: 36.12, lng: -97.07 }, { lat: 36.13, lng: -97.07 }])"
     /></div>`,
   },
 }))
@@ -456,5 +459,86 @@ describe('MapPanel (MAP-004)', () => {
     render(MapPanel)
     await nextTick()
     expect(screen.queryByTestId('shade-radius-btn')).toBeNull()
+  })
+
+  // ── Line (thermometer) shader (MAP-011) ──
+
+  it('shows a Line tool button in the seeker toolbar', async () => {
+    asSeeker()
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('shade-line-btn')).toHaveTextContent(/line/i)
+  })
+
+  it('opens the line panel and requests TWO pins when the tool is toggled', async () => {
+    asSeeker()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-line-btn'))
+
+    expect(screen.getByTestId('line-panel')).toBeInTheDocument()
+    const stub = screen.getByTestId('base-map-stub')
+    expect(stub).toHaveAttribute('data-placement', 'true')
+    expect(stub).toHaveAttribute('data-maxpins', '2')
+  })
+
+  it('commits a line shade after placing start+end pins and applying', async () => {
+    asSeeker()
+    const v = useVectorShades()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-line-btn'))
+    // Apply disabled until BOTH pins exist.
+    expect(screen.getByTestId('line-apply-btn')).toBeDisabled()
+
+    await fireEvent.click(screen.getByTestId('map-drop-two-pins'))
+    await fireEvent.click(screen.getByTestId('line-apply-btn'))
+
+    expect(v.shades.value).toHaveLength(1)
+    expect(v.shades.value[0]).toMatchObject({
+      kind: 'line',
+      side: 'away', // default: shade the half behind the start
+      start: { lat: 36.12, lng: -97.07 },
+      end: { lat: 36.13, lng: -97.07 },
+    })
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-vectorshades', '1')
+  })
+
+  it('lets the seeker pick which half to shade', async () => {
+    asSeeker()
+    const v = useVectorShades()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-line-btn'))
+    await fireEvent.click(screen.getByTestId('line-side-toward'))
+    await fireEvent.click(screen.getByTestId('map-drop-two-pins'))
+    await fireEvent.click(screen.getByTestId('line-apply-btn'))
+
+    expect(v.shades.value[0]).toMatchObject({ kind: 'line', side: 'toward' })
+  })
+
+  it('radius and line tools are mutually exclusive', async () => {
+    asSeeker()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+    expect(screen.getByTestId('radius-panel')).toBeInTheDocument()
+
+    // Activating the line tool closes the radius panel.
+    await fireEvent.click(screen.getByTestId('shade-line-btn'))
+    expect(screen.queryByTestId('radius-panel')).toBeNull()
+    expect(screen.getByTestId('line-panel')).toBeInTheDocument()
+  })
+
+  it('does not show the line tool for a hider', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.queryByTestId('shade-line-btn')).toBeNull()
   })
 })

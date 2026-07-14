@@ -60,11 +60,11 @@ describe('useVectorShades (MAP-010)', () => {
     expect(v.shades.value).toEqual([])
   })
 
-  it('stores line shades too (MAP-011 API is stable here)', () => {
+  it('stores line shades too (MAP-011)', () => {
     const v = useVectorShades()
-    const id = v.addLineShade({ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, 'left')
+    const id = v.addLineShade({ lat: 1, lng: 1 }, { lat: 2, lng: 2 }, 'toward')
     const s = v.shades.value[0] as LineShade
-    expect(s).toMatchObject({ kind: 'line', id, side: 'left' })
+    expect(s).toMatchObject({ kind: 'line', id, side: 'toward' })
   })
 
   it('__resetVectorShades clears the singleton', () => {

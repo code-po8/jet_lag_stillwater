@@ -36,8 +36,8 @@ export interface RadiusShade {
 /**
  * A half-plane shade for thermometer hotter/colder (MAP-011): the perpendicular
  * through `start` (perpendicular to start→end) splits the map; `side` picks which
- * half is shaded. Rendering/geometry land in MAP-011; the type is defined here so
- * the store API is stable across both cards.
+ * half is shaded — `'toward'` = the half containing the end pin, `'away'` = the
+ * opposite half. Geometry lives in `src/utils/halfPlane.ts`.
  */
 export interface LineShade {
   kind: 'line'
@@ -45,7 +45,7 @@ export interface LineShade {
   start: LatLng
   end: LatLng
   /** Which half-plane to shade, relative to the start→end direction. */
-  side: 'left' | 'right'
+  side: 'toward' | 'away'
 }
 
 export type VectorShade = RadiusShade | LineShade

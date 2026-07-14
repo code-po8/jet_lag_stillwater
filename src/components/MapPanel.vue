@@ -35,7 +35,27 @@ const undoStack = ref<string[]>([]) // last applied set of cells (for undo)
 
 function toggleFreehand() {
   freehandActive.value = !freehandActive.value
-  if (freehandActive.value) radiusActive.value = false // one tool at a time
+  if (freehandActive.value) {
+    radiusActive.value = false // one tool at a time
+    lineActive.value = false
+  }
+}
+
+// ── Vector shade tools (MAP-010/011) share temp-pin placement + undo/clear ──
+// Ids of vector shades this device committed, for order-independent undo.
+const vectorUndo = ref<string[]>([])
+// Placement mode / pin capacity depend on the active tool (radius=1, line=2).
+const placementMode = computed(() => radiusActive.value || lineActive.value)
+const maxPins = computed(() => (lineActive.value ? 2 : 1))
+
+/** BaseMap reports the current temp pin(s); route them to the active tool. */
+function onTempPins(pins: LatLng[]) {
+  if (lineActive.value) {
+    lineStart.value = pins[0] ?? null
+    lineEnd.value = pins[1] ?? null
+  } else {
+    radiusPin.value = pins[0] ?? null
+  }
 }
 
 // ── Radius shader (MAP-010): vector-shade a configurable disc, inside/outside ──
@@ -43,18 +63,15 @@ const radiusActive = ref(false)
 const radiusFeet = ref(500) // default matches the ~300ft–¼mi play scale
 const radiusMode = ref<'inside' | 'outside'>('inside')
 const radiusPin = ref<LatLng | null>(null) // temp placement pin (center)
-// Ids of vector shades this device committed, for order-independent undo.
-const vectorUndo = ref<string[]>([])
 
 function toggleRadiusTool() {
   radiusActive.value = !radiusActive.value
-  if (radiusActive.value) freehandActive.value = false
-  else radiusPin.value = null // leaving the tool clears the pending pin
-}
-
-/** BaseMap reports the current temp pin(s); the radius tool uses the first. */
-function onTempPins(pins: LatLng[]) {
-  radiusPin.value = pins[0] ?? null
+  if (radiusActive.value) {
+    freehandActive.value = false
+    lineActive.value = false
+  } else {
+    radiusPin.value = null // leaving the tool clears the pending pin
+  }
 }
 
 const canApplyRadius = computed(() => radiusActive.value && radiusPin.value !== null)
@@ -70,6 +87,41 @@ function applyRadius() {
   )
   vectorUndo.value = [...vectorUndo.value, id]
   radiusPin.value = null // ready to place the next one
+}
+
+// ── Line (thermometer) shader (MAP-011): shade one side of the perpendicular ──
+const lineActive = ref(false)
+const lineSide = ref<'toward' | 'away'>('away') // 'away' = colder half (behind start)
+const lineStart = ref<LatLng | null>(null)
+const lineEnd = ref<LatLng | null>(null)
+
+function toggleLineTool() {
+  lineActive.value = !lineActive.value
+  if (lineActive.value) {
+    freehandActive.value = false
+    radiusActive.value = false
+  } else {
+    lineStart.value = null
+    lineEnd.value = null
+  }
+}
+
+// Both pins are needed to define the perpendicular.
+const canApplyLine = computed(
+  () => lineActive.value && lineStart.value !== null && lineEnd.value !== null,
+)
+
+/** Commit the chosen half-plane as a vector shade. */
+function applyLine() {
+  if (!lineStart.value || !lineEnd.value) return
+  const id = vectorShades.addLineShade(
+    { lat: lineStart.value.lat, lng: lineStart.value.lng },
+    { lat: lineEnd.value.lat, lng: lineEnd.value.lng },
+    lineSide.value,
+  )
+  vectorUndo.value = [...vectorUndo.value, id]
+  lineStart.value = null
+  lineEnd.value = null
 }
 
 /** Undo the most recent vector shade this device added. */
@@ -275,8 +327,8 @@ function pickStopFromMap(stop: BusStop) {
       :stops-pickable="isHider"
       :asked-from-markers="askedFromMarkers"
       :vector-shades="vectorShades.shades.value"
-      :placement-mode="radiusActive"
-      :max-pins="1"
+      :placement-mode="placementMode"
+      :max-pins="maxPins"
       @pick-stop="pickStopFromMap"
       @temp-pins-change="onTempPins"
     />
@@ -319,6 +371,17 @@ function pickStopFromMap(stop: BusStop) {
         @click="toggleRadiusTool"
       >
         ⊙ <span class="shade-btn-label">Radius</span>
+      </button>
+      <button
+        type="button"
+        class="shade-btn"
+        :class="{ 'shade-btn-active': lineActive }"
+        data-testid="shade-line-btn"
+        :aria-pressed="lineActive"
+        title="Line shade — start + end pins, shade one side (Thermometer hotter/colder)"
+        @click="toggleLineTool"
+      >
+        ⇥ <span class="shade-btn-label">Line</span>
       </button>
       <button
         type="button"
@@ -406,6 +469,80 @@ function pickStopFromMap(stop: BusStop) {
           type="button"
           class="radius-clear"
           data-testid="vector-clear-btn"
+          :disabled="!canUndoVector"
+          title="Clear all radius/line shades"
+          @click="clearVector"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Line (thermometer) shader control panel (MAP-011). -->
+    <div
+      v-if="isSeeker && lineActive"
+      class="radius-panel"
+      data-testid="line-panel"
+      role="group"
+      aria-label="Line shade options"
+    >
+      <p class="radius-panel-hint" data-testid="line-hint">
+        {{
+          !lineStart
+            ? 'Tap to place the START pin (where you took the reading).'
+            : !lineEnd
+              ? 'Tap to place the END pin (the direction you traveled).'
+              : 'Pick which side the answer ruled out, then apply.'
+        }}
+      </p>
+      <div class="radius-mode" role="radiogroup" aria-label="Shade which half-plane">
+        <button
+          type="button"
+          class="radius-mode-btn"
+          :class="{ 'radius-mode-active': lineSide === 'away' }"
+          :aria-pressed="lineSide === 'away'"
+          data-testid="line-side-away"
+          title="Shade the half BEHIND the start pin (away from travel)"
+          @click="lineSide = 'away'"
+        >
+          Behind start
+        </button>
+        <button
+          type="button"
+          class="radius-mode-btn"
+          :class="{ 'radius-mode-active': lineSide === 'toward' }"
+          :aria-pressed="lineSide === 'toward'"
+          data-testid="line-side-toward"
+          title="Shade the half TOWARD the end pin (direction of travel)"
+          @click="lineSide = 'toward'"
+        >
+          Toward end
+        </button>
+      </div>
+      <div class="radius-actions">
+        <button
+          type="button"
+          class="radius-apply"
+          data-testid="line-apply-btn"
+          :disabled="!canApplyLine"
+          @click="applyLine"
+        >
+          Apply
+        </button>
+        <button
+          type="button"
+          class="radius-clear"
+          data-testid="line-undo-btn"
+          :disabled="!canUndoVector"
+          title="Undo the last radius/line shade"
+          @click="undoVector"
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          class="radius-clear"
+          data-testid="line-clear-btn"
           :disabled="!canUndoVector"
           title="Clear all radius/line shades"
           @click="clearVector"

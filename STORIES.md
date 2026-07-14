@@ -4617,31 +4617,29 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-011: Line (Thermometer) Shader
 
-**Status:** `ready`
+**Status:** `complete`
 **Depends On:** MAP-010
 
 **Story:** As a seeker, after a Thermometer (hotter/colder) answer, I need to place a start and end pin and shade one side of the perpendicular through the start pin, so I can rule out the half of the map the answer eliminates.
 
 **Acceptance Criteria:**
 
-- [ ] Seeker places a **start pin** and an **end pin** (reusing MAP-010's temp-pin placement)
-- [ ] The tool draws the **perpendicular line through the start pin** (perpendicular to the start→end direction), dividing the map into two half-planes
-- [ ] The seeker **taps which half-plane to shade** (whichever the hotter/colder answer ruled out) — no assumption about which side
-- [ ] The chosen half is shaded as a large smooth `L.polygon` extending well beyond the visible map
-- [ ] Commits to the `useVectorShades` list; **undo/clear** available; local-only with the same sync seam
+- [x] Seeker places a **start pin** and an **end pin** (reusing MAP-010's temp-pin placement, `maxPins=2`)
+- [x] The tool splits the map along the **perpendicular through the start pin** (normal = start→end direction) into two half-planes
+- [x] The seeker **picks which half-plane to shade** ("Behind start" / "Toward end") — no assumption about which side
+- [x] The chosen half renders as a large `L.polygon` extending well beyond the visible map
+- [x] Commits to the `useVectorShades` list; **undo/clear** available (shared with the radius tool); local-only with the same sync seam
 
 **Size:** M
 
 **Implementation Notes:**
 
-- New helper `src/utils/halfPlane.ts`: `halfPlanePolygon(start, end, side, spanMeters?)` — compute the start→end direction, take its normal, and build a large polygon covering the chosen half-plane (planar-tangent approximation at Stillwater latitude is ample). Pure function → straightforward unit tests.
-- Reuse the temp-pin + control-panel plumbing from MAP-010; add a line-tool button to the seeker toolbar and a side-pick affordance.
-- Extend `fakeLeaflet` mock with `L.polygon` if not already present.
-
-**Tests to Write:**
-
-- `halfPlane.spec.ts`: perpendicular orientation; correct half selected for each `side`; polygon spans beyond bounds
-- `MapPanel.spec.ts` / `BaseMap.spec.ts`: two-pin placement, side pick, committed polygon renders
+- New pure helper `src/utils/halfPlane.ts`: `halfPlanePolygon(start, end, side, spanMeters?)` builds the half-plane ring in a local planar tangent (lng scaled by cos(lat)); the perpendicular's **normal** is the start→end direction, so the split passes through `start` (not the midpoint). `side: 'toward'` = the half containing the end pin, `'away'` = behind start. Default span 20 km blankets the play area. Also exports `sideOfPoint` (classify a point) for tests / a future tap-to-pick affordance. Returns `null` for a degenerate zero-length line.
+- `LineShade.side` finalized as `'toward' | 'away'` (was a `'left'|'right'` stub in MAP-010).
+- `BaseMap.drawVectorShades` renders `kind:'line'` via `halfPlanePolygon` → `L.polygon` (degenerate → skipped). Reuses the MAP-010 vector-shade layer/reconciliation and the shared `VECTOR_SHADE_STYLE`.
+- `MapPanel`: **Line** tool button + control panel (start/end hint, "Behind start / Toward end" side pick, Apply/Undo/Clear). Placement is shared: `placementMode = radius || line`, `maxPins` = 2 for line / 1 for radius; `onTempPins` routes to the active tool. All three seeker tools (freehand, radius, line) are mutually exclusive.
+- **Bug fixed in passing:** `useTimer` never cleared its `setInterval` on unmount, so a stray tick could fire after a test file's jsdom teardown and call `persist()` with `localStorage` gone (surfaced as an unhandled `ReferenceError` once these specs shifted suite timing). Added an `onScopeDispose` cleanup (guarded by `getCurrentScope()`), clearing the interval on unmount. Full suite now exits clean.
+- TDD: `halfPlane.spec.ts` (7: orientation, each side, split-through-start, diagonal, span, `sideOfPoint`), `BaseMap.spec.ts` (+2: line polygon, degenerate skip), `MapPanel.spec.ts` (+6: tool button, 2-pin panel, commit, side pick, mutual exclusion, hider-hidden). Full suite: 67 files / 1569 tests green; type-check OK; suite exits 0 (leak fixed).
 
 ---
 
