@@ -14,6 +14,37 @@ import poiGeo from '../assets/map/stillwater-poi.json'
 import { BRAND_COLORS } from '@/design/colors'
 import type { Position, Role, Zone } from '@/services/sync/protocol'
 import { geohashBounds } from '@/utils/geohash'
+import type { VectorShade } from '@/composables/useVectorShades'
+import { halfPlanePolygon } from '@/utils/halfPlane'
+
+/** A temporary placement pin the seeker drops for a shade tool (MAP-010). */
+export interface TempPin {
+  lat: number
+  lng: number
+}
+
+/** Meters per degree latitude (approx); longitude scales by cos(lat). */
+const M_PER_DEG_LAT = 111_320
+
+/**
+ * Approximate a geodesic circle as a ring of lat/lng points — used for the HOLE
+ * in the "outside" mask polygon (the disc itself renders as a smooth L.circle;
+ * only the hole needs this approximation). 64 segments is visually round.
+ */
+function circleRing(
+  center: { lat: number; lng: number },
+  radiusM: number,
+  segments = 64,
+): [number, number][] {
+  const dLat = radiusM / M_PER_DEG_LAT
+  const dLng = radiusM / (M_PER_DEG_LAT * Math.cos((center.lat * Math.PI) / 180))
+  const ring: [number, number][] = []
+  for (let i = 0; i < segments; i++) {
+    const t = (i / segments) * 2 * Math.PI
+    ring.push([center.lat + dLat * Math.sin(t), center.lng + dLng * Math.cos(t)])
+  }
+  return ring
+}
 
 /** A live position marker to draw (MAP-003). */
 export interface PlayerMarker {
@@ -29,6 +60,19 @@ export interface BusStop {
   lat: number
   lng: number
   name?: string | null
+}
+
+/**
+ * A seeker's ask-time position pin (MAP-009): where a seeker was when they asked
+ * a question. Shown on the hider's map, distinct from the live seeker dot.
+ */
+export interface AskedFromMarker {
+  /** Stable id (e.g. the question id) for reconciliation. */
+  id: string
+  lat: number
+  lng: number
+  /** Tooltip label, e.g. "Radar asked here". */
+  label?: string
 }
 
 /** Game-data overlay categories (MAP-002) and their legend colors. */
@@ -63,6 +107,24 @@ const props = withDefaults(
     inRangeStopIndices?: number[]
     /** When true, tapping a bus stop opens a popup with a pick button (hider). */
     stopsPickable?: boolean
+    /**
+     * Seeker ask-time position pins (MAP-009), shown to the hider. Rendered as a
+     * distinct teardrop "?" pin, above the live position dots.
+     */
+    askedFromMarkers?: AskedFromMarker[]
+    /**
+     * Vector shades to render (MAP-010/011): smooth circle/half-plane regions a
+     * seeker has committed. Coexists with the geohash `shadedCells`.
+     */
+    vectorShades?: VectorShade[]
+    /**
+     * When true, tapping the map drops/moves a temporary placement pin for a
+     * shade tool (MAP-010). `maxPins` bounds how many (1 for radius, 2 for line).
+     * The current pins are surfaced via `tempPinsChange`.
+     */
+    placementMode?: boolean
+    /** Max temp pins to keep while placing (radius=1, line=2). */
+    maxPins?: number
   }>(),
   {
     zone: null,
@@ -72,6 +134,10 @@ const props = withDefaults(
     busStops: () => [],
     inRangeStopIndices: () => [],
     stopsPickable: false,
+    askedFromMarkers: () => [],
+    vectorShades: () => [],
+    placementMode: false,
+    maxPins: 1,
   },
 )
 
@@ -79,6 +145,8 @@ const emit = defineEmits<{
   ready: [map: L.Map]
   /** The hider tapped a bus stop's pick button (MAP-007). */
   pickStop: [stop: BusStop, index: number]
+  /** The temporary placement pins changed (dropped/moved/cleared) — MAP-010. */
+  tempPinsChange: [pins: TempPin[]]
 }>()
 
 const container = ref<HTMLElement | null>(null)
@@ -167,6 +235,17 @@ onMounted(() => {
   drawZone()
   drawBusStops()
   drawMarkers()
+  drawAskedFrom()
+  drawVectorShades()
+
+  // Temp-pin placement (MAP-010): while placing, a map tap drops a pin (or moves
+  // the pin once maxPins is reached, dropping the oldest). Ignored otherwise, so
+  // the hider's bus-stop taps and normal panning are unaffected.
+  map.on('click', (e: L.LeafletMouseEvent) => {
+    if (!props.placementMode) return
+    dropTempPin(e.latlng.lat, e.latlng.lng)
+  })
+
   emit('ready', map)
 })
 
@@ -393,12 +472,208 @@ function drawMarkers() {
 // walk every PlayerMarker each tick just to detect the change.
 watch(() => props.markers, drawMarkers)
 
+// ── Ask-time position pins (MAP-009) ──
+// Where a seeker was when they asked a question, shown to the hider as a distinct
+// teardrop "?" pin so it reads differently from the round live seeker dot (and
+// sits ABOVE it when they overlap). Muted cyan ties it to "the seeker, earlier",
+// staying clear of the live-seeker bright cyan, POI warm colors, and zone red.
+const ASKED_FROM_PIN = '#4a7f8c' // muted/desaturated cyan
+let askedFromLayer: L.LayerGroup | null = null
+const askedFromById = new Map<string, { marker: L.Marker; entry: AskedFromMarker }>()
+
+/** Build the teardrop-with-"?" divIcon (distinct silhouette from the live dot). */
+function askedFromIcon(leaflet: typeof L): L.DivIcon {
+  const html =
+    `<span class="askedfrom-pin" style="--pin:${ASKED_FROM_PIN}" aria-hidden="true">` +
+    `<svg viewBox="0 0 24 32" width="24" height="32">` +
+    `<path d="M12 0C5.4 0 0 5.2 0 11.6 0 20.3 12 32 12 32s12-11.7 12-20.4C24 5.2 18.6 0 12 0z" ` +
+    `fill="${ASKED_FROM_PIN}" stroke="#ffffff" stroke-width="1.5"/>` +
+    `<text x="12" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">?</text>` +
+    `</svg></span>`
+  return leaflet.divIcon({
+    html,
+    className: 'askedfrom-pin-icon',
+    iconSize: [24, 32],
+    iconAnchor: [12, 32], // tip of the teardrop points at the position
+  })
+}
+
+function drawAskedFrom() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+
+  if (!askedFromLayer) {
+    askedFromLayer = leaflet.layerGroup()
+    askedFromLayer.addTo(map)
+  }
+
+  const next = new Map(props.askedFromMarkers.map((m) => [m.id, m]))
+  // Remove pins whose question is no longer active.
+  for (const [id, { marker }] of askedFromById) {
+    if (!next.has(id)) {
+      askedFromLayer.removeLayer(marker)
+      askedFromById.delete(id)
+    }
+  }
+  // Add or move the rest.
+  for (const m of props.askedFromMarkers) {
+    const existing = askedFromById.get(m.id)
+    if (!existing) {
+      const marker = leaflet.marker([m.lat, m.lng], {
+        icon: askedFromIcon(leaflet),
+        // Precedence on overlap (MAP-009): an L.marker lives in Leaflet's marker
+        // pane, which renders ABOVE the overlay pane holding the live-position
+        // circleMarkers — so the ask-time pin already sits on top of the current
+        // dot. A high zIndexOffset keeps it above other markers too.
+        zIndexOffset: 1000,
+      })
+      if (m.label) marker.bindTooltip(m.label, { direction: 'top' })
+      askedFromLayer.addLayer(marker)
+      askedFromById.set(m.id, { marker, entry: m })
+      continue
+    }
+    const { marker, entry } = existing
+    marker.setLatLng([m.lat, m.lng])
+    if (entry.label !== m.label && m.label) marker.bindTooltip(m.label, { direction: 'top' })
+    existing.entry = m
+  }
+}
+
+watch(() => props.askedFromMarkers, drawAskedFrom)
+
+// ── Temp placement pins (MAP-010) ──
+// Draggable markers the seeker drops to anchor a shade (radius center, or line
+// start/end). Kept as a small ordered list; committing/clearing happens in
+// MapPanel, which reads pins via `tempPinsChange`.
+let tempPinLayer: L.LayerGroup | null = null
+const tempPins: L.Marker[] = []
+
+function emitTempPins() {
+  emit(
+    'tempPinsChange',
+    tempPins.map((m) => {
+      const ll = m.getLatLng()
+      return { lat: ll.lat, lng: ll.lng }
+    }),
+  )
+}
+
+function dropTempPin(lat: number, lng: number) {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+  if (!tempPinLayer) {
+    tempPinLayer = leaflet.layerGroup()
+    tempPinLayer.addTo(map)
+  }
+  // At capacity: drop the oldest so a tap re-places rather than piling up.
+  while (tempPins.length >= props.maxPins) {
+    const old = tempPins.shift()
+    if (old) tempPinLayer.removeLayer(old)
+  }
+  const marker = leaflet.marker([lat, lng], { draggable: true })
+  // Dragging a pin updates the committed geometry preview live.
+  marker.on?.('drag', emitTempPins)
+  marker.on?.('dragend', emitTempPins)
+  tempPinLayer.addLayer(marker)
+  tempPins.push(marker)
+  emitTempPins()
+}
+
+/** Remove all temp pins (called when a tool is cancelled/committed). */
+function clearTempPins() {
+  if (tempPinLayer) for (const m of tempPins) tempPinLayer.removeLayer(m)
+  tempPins.length = 0
+  emitTempPins()
+}
+
+// Leaving placement mode clears the pins so a stale pin can't linger on the map.
+watch(
+  () => props.placementMode,
+  (on) => {
+    if (!on) clearTempPins()
+  },
+)
+
+// ── Vector shades (MAP-010/011): smooth circle / half-plane regions ──
+const VECTOR_SHADE_STYLE = {
+  color: '#64748b',
+  weight: 1,
+  fillColor: '#475569',
+  fillOpacity: 0.4,
+}
+// A generous span (deg) for the "outside" mask and (later) half-planes — large
+// enough to cover the whole playable area at Stillwater's scale.
+const MASK_SPAN_DEG = 2
+
+let vectorShadeLayer: L.LayerGroup | null = null
+const vectorShapesById = new Map<string, L.Layer>()
+
+/** Build the Leaflet layer for one vector shade. */
+function vectorShapeFor(leaflet: typeof L, shade: VectorShade): L.Layer | null {
+  if (shade.kind === 'radius') {
+    if (shade.mode === 'inside') {
+      // Shade the disc itself — a smooth native circle (accurate circumference).
+      return leaflet.circle([shade.center.lat, shade.center.lng], {
+        radius: shade.radiusM,
+        ...VECTOR_SHADE_STYLE,
+      })
+    }
+    // "outside": shade everything beyond the disc. A big rectangle with the disc
+    // punched out as a polygon hole. The circle is approximated as a ring of
+    // points for the hole (Leaflet polygons don't take a circular hole directly).
+    const outer: [number, number][] = [
+      [shade.center.lat - MASK_SPAN_DEG, shade.center.lng - MASK_SPAN_DEG],
+      [shade.center.lat - MASK_SPAN_DEG, shade.center.lng + MASK_SPAN_DEG],
+      [shade.center.lat + MASK_SPAN_DEG, shade.center.lng + MASK_SPAN_DEG],
+      [shade.center.lat + MASK_SPAN_DEG, shade.center.lng - MASK_SPAN_DEG],
+    ]
+    const hole = circleRing(shade.center, shade.radiusM)
+    return leaflet.polygon([outer, hole], VECTOR_SHADE_STYLE)
+  }
+  // Line (thermometer) half-plane: shade the chosen side of the perpendicular
+  // through the start pin (MAP-011).
+  const ring = halfPlanePolygon(shade.start, shade.end, shade.side)
+  if (!ring) return null
+  return leaflet.polygon(ring, VECTOR_SHADE_STYLE)
+}
+
+function drawVectorShades() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+  if (!vectorShadeLayer) {
+    vectorShadeLayer = leaflet.layerGroup()
+    vectorShadeLayer.addTo(map)
+  }
+  const next = new Map(props.vectorShades.map((s) => [s.id, s]))
+  // Remove shapes for shades that are gone (undo/clear).
+  for (const [id, layer] of vectorShapesById) {
+    if (!next.has(id)) {
+      vectorShadeLayer.removeLayer(layer)
+      vectorShapesById.delete(id)
+    }
+  }
+  // Add shapes for new shades (existing ones are immutable once committed).
+  for (const shade of props.vectorShades) {
+    if (vectorShapesById.has(shade.id)) continue
+    const shape = vectorShapeFor(leaflet, shade)
+    if (shape) {
+      vectorShadeLayer.addLayer(shape)
+      vectorShapesById.set(shade.id, shape)
+    }
+  }
+}
+
+watch(() => props.vectorShades, drawVectorShades)
+
+defineExpose({ map: mapInstance, clearTempPins })
+
 onBeforeUnmount(() => {
   mapInstance.value?.remove()
   mapInstance.value = null
 })
-
-defineExpose({ map: mapInstance })
 </script>
 
 <template>
@@ -469,6 +744,18 @@ defineExpose({ map: mapInstance })
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+}
+/* Ask-time position pin (MAP-009). Leaflet's default divIcon has a white box
+   background; strip it so only the teardrop SVG shows. Rendered outside the
+   scoped tree, so target globally. */
+:global(.askedfrom-pin-icon) {
+  background: transparent;
+  border: none;
+}
+:global(.askedfrom-pin) {
+  display: block;
+  line-height: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 /* Breached hiding-zone circle pulses (MAP-006). Leaflet renders the SVG path
    outside the scoped tree, so target it globally. */

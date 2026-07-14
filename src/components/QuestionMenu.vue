@@ -287,6 +287,7 @@ function hasQuestionIcon(questionId: string): boolean {
           <button
             v-for="question in questionsByCategory.get(category.id)"
             :key="question.id"
+            :data-testid="`question-tile-${question.id}`"
             class="question-tile"
             :class="{
               'tile-available':

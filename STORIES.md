@@ -3670,15 +3670,17 @@ describe('room creation and join', () => {
 
 ### MULTI-003b-2: Question & Curse Sync
 
-**Status:** `complete`
+**Status:** `complete` — ⚠️ see integration flag below
 **Depends On:** MULTI-003b-1
 
 **Story:** As a player, I need asked/answered questions and curse activations to appear on every device.
 
+> **⚠️ FLAG (integration gap — RESOLVED in QSYNC-004):** The relay bridge (`useQuestionCurseSync`) was built and unit-tested here but was originally **never mounted by any view**, so in the running app asks/answers/vetoes did not actually broadcast and the hider never saw them. The composable-level criteria below were delivered here; live-app integration (mounting the bridge in `GamePlayView` + routing `AskQuestionModal` through it) landed in **QSYNC-004** (Epic 12). These criteria are now fully delivered.
+
 **Acceptance Criteria:**
 
-- [x] Question asked/answered events sync immediately to all players
-- [x] Curse activations appear on all seeker devices
+- [x] Question asked/answered events sync immediately to all players — _bridge here; app integration in QSYNC-004_
+- [x] Curse activations appear on all seeker devices — _bridge here; app integration in QSYNC-004_
 - [x] Reuses `questionStore`/`cardStore` shapes (no parallel state)
 
 **Size:** L
@@ -3749,6 +3751,73 @@ describe('room creation and join', () => {
 > **Epic 10 (Multiplayer Sync) complete** — MULTI-001…004 all done.
 
 **Size:** M
+
+---
+
+### QSYNC-005: Hider-Answered Questions (in-app answer + manual seeker entry)
+
+**Status:** `complete`
+**Depends On:** QSYNC-004
+
+**Story:** As a hider, I want to answer a pending question **through the app** so the seeker sees my answer sync automatically; and as a seeker, when the hider answers **out-of-band** (verbally, text, etc.), I want to **manually enter** the hider's answer so the game record stays correct either way.
+
+**Context:**
+
+Today (post-QSYNC-004) a question asked by a seeker syncs to the hider's device, but the **answer is only ever recorded on the seeker's device** — `AskQuestionModal.handleSubmitAnswer` is the sole answer path, and `HiderView` has no answer UI. So the hider cannot answer in-app; the seeker always transcribes it. This card adds the hider-side answer path while keeping the manual-entry path as a first-class fallback (out-of-app answers are common in real play — the hider just says the answer aloud).
+
+**Acceptance Criteria:**
+
+- [x] When a question is pending, the **hider's** device shows an answer UI (the pending question text + Yes/No quick buttons + a free-text input) so the hider can answer in-app
+- [x] A hider in-app answer syncs to the seeker via the existing `question.answered` relay (reuses the QSYNC-004 bridge — no new protocol)
+- [x] The **seeker retains a manual-entry** path (the `AskQuestionModal` answer input) for when the hider answers outside the app — either device answering resolves the pending question
+- [x] The two paths reconcile: once answered on **either** device, the pending question clears on **both**, and a second (stale) answer is a safe no-op (guarded by `answerQuestion`'s precondition; the bridge surfaces divergence via `console.warn`, does not re-broadcast)
+- [x] Works offline / single-device (pass-the-phone) unchanged: the hider prompt records the answer without broadcasting when not in a room; the seeker manual-entry path is untouched
+
+**Size:** M
+
+**Implementation Notes:**
+
+- New `src/components/HiderAnswerPrompt.vue` — a focused, self-gating surface (renders only when `questionStore.pendingQuestion` is set). Shows the pending question + category, **Yes/No** quick buttons (the common radar/matching case), and a free-text input for anything else (distances, photo notes). Submits via the singleton `useQuestionCurseSync.answerQuestion`, so it broadcasts `question.answered` in a room and is silent (local-record-only) offline. Mounted in `HiderView` under the phase status.
+- Chose a **dedicated hider prompt over reusing `AskQuestionModal`**: the modal is seeker-oriented (Ask/Veto/Randomize controls, "record the hider's answer" framing) — surfacing those to the hider would be wrong. The dedicated component keeps roles clean and still reuses all the sync plumbing.
+- Provenance not recorded — kept out to avoid touching the wire format / store shape (the AC marked it optional).
+- Reconciliation verified: `questionStore.answerQuestion` already no-ops when nothing matches the pending question, so a second answer (both devices answered) returns `success:false`, does not re-broadcast, and does not double-record; an inbound relayed answer with nothing pending is a safe no-op (warns only).
+- TDD: `HiderAnswerPrompt.spec.ts` (7: hidden when idle, shows question, Yes/No/free-text answer via bridge, broadcasts in room, silent offline, submit-disabled-until-text), `useQuestionCurseSync.spec.ts` (+2: stale second answer no-op, inbound-answer-nothing-pending no-op). Full suite: 68 files / 1578 tests green; type-check OK; suite exits clean.
+
+**Follow-ups (not blocking):**
+
+- Answer provenance (who answered / manual-vs-in-app) could be added later if the UI wants to show it.
+- Typed per-category affordances (hit/miss, distance pickers) could replace free-text for specific categories; the current Yes/No + free-text covers all categories via the same `answer` string.
+- **Discoverability of the hider answer prompt** — tracked as **QSYNC-006** below.
+
+---
+
+### QSYNC-006: Surface the Hider Answer Prompt Regardless of Tab
+
+**Status:** `complete`
+**Depends On:** QSYNC-005
+
+**Story:** As a hider, when a seeker asks a question, I want to be told **wherever I am in the app** — not only if I happen to be on the Cards tab — so I don't miss a pending question I need to answer.
+
+**Context:**
+
+QSYNC-005 added `HiderAnswerPrompt`, but it's mounted inside `HiderView`, which only renders on the **Cards** tab. The default in-game tab is **Questions** (`GamePlayView.currentTab = 'questions'`), so a hider sitting on the default tab sees no indication that a question is pending until they navigate to Cards. Surfaced by the QSYNC-005 multiplayer E2E (`tests/e2e/multiplayer/question-sync.spec.ts`), which has to click to the Cards tab before the prompt is visible. Not a correctness bug (the answer flow works), but a real discoverability gap in live play — a hider could leave a seeker waiting simply because they were on another tab.
+
+**Acceptance Criteria:**
+
+- [x] When a question is pending and the viewer is the **hider**, there is a persistent, visible indication **independent of the current tab** — the answer prompt itself (always-mounted) plus a badge on the Cards nav item
+- [x] The indication clears once the question is answered (on either device) or vetoed (`hasPendingQuestion` drives both)
+- [x] Seekers are unaffected (the prompt banner and badge are gated on `currentViewRole === 'hider'`)
+- [x] Works in a room and offline/single-device; no new sync protocol (reads `questionStore.hasPendingQuestion` + role)
+- [x] The QSYNC-005 E2E is updated to assert the prompt appears on the hider's default tab + the Cards badge, and to answer without navigating to Cards first
+
+**Size:** S
+
+**Implementation Notes:**
+
+- Chose **both** the "always-mounted prompt" and the "nav badge" (the card floated either): the prompt moved out of the Cards-only `HiderView` into an always-mounted banner in `GamePlayView` (`v-if="isHiderView"`, the component self-gates on a pending question), which removes the Cards-tab coupling entirely; the badge adds an at-a-glance cue. Did **not** auto-switch tabs (jarring mid-interaction, per the card's own caution).
+- `BottomNav` gained a generic `badgeTabs?: NavTab[]` prop → a pulsing dot on any listed tab (`data-testid="nav-badge-{id}"`). `GamePlayView` passes `['cards']` when `isHiderView && hasPendingQuestion`.
+- Removed the now-redundant `HiderAnswerPrompt` from `HiderView` (it would double-render on the Cards tab alongside the banner).
+- TDD (red→green): `BottomNav.spec.ts` (+3: no badge by default, badge on listed tab, badge removed when unlisted); `GamePlayQuestionSync.spec.ts` (+3: prompt on the default Questions tab after a relayed ask, Cards badge appears then clears on answer, seeker sees neither). Updated the multiplayer E2E (`question-sync.spec.ts`) to assert the prompt + badge without visiting Cards. Full suite: 1584 unit tests green; multiplayer E2E green.
 
 ---
 
@@ -3922,6 +3991,49 @@ describe('hand limit warning display (BUG-001)', () => {
 - Added `effectiveAvailableSlots` computed property to CardDrawModal.vue
 - Updated `handLimitExceeded` to compare `keepCount > effectiveAvailableSlots`
 - Updated existing tests to reflect correct behavior with realistic scenarios
+
+---
+
+### QSYNC-004: Wire Question/Curse Sync Bridge Into the Live App
+
+**Status:** `complete`
+**Depends On:** None
+
+**Story:** As a player in a multiplayer game, when a seeker asks/answers/vetoes a question through the app, all devices (especially the hider) should see it — so the game state stays in sync across phones.
+
+**Bug Description:**
+
+`useQuestionCurseSync` (the WebSocket relay bridge for `question.asked` / `question.answered` / `question.vetoed` / `curse.activated` / `timetrap.triggered`) exists and is unit-tested, but is **imported and mounted by nothing** in the running app (zero non-test usages). The live ask path — `AskQuestionModal.handleAsk()` → `questionStore.askQuestion()` directly → Vue `@asked` → `SeekerView.handleQuestionAsked()` (an empty no-op) — never calls `sync.sendGameEvent`, so nothing broadcasts. Because the bridge subscribes to inbound events via `sync.onGameEvent` only on composable setup, an unmounted bridge also means the hider **receives** nothing. Result: questions asked through the app are local-only; the hider never sees them.
+
+**Discrepancy:** `MULTI-003b-2` (Epic 10) is marked `complete` with "Question asked/answered events sync immediately" checked, but the integration was never wired in. That criterion should be treated as **not delivered** until this card lands.
+
+**Root Cause:**
+
+The bridge composable was built and tested in isolation but never mounted, and `AskQuestionModal` calls `questionStore` actions directly instead of the bridge wrappers.
+
+**Acceptance Criteria:**
+
+- [x] `useQuestionCurseSync` is mounted for the whole game session (in `GamePlayView.vue`, which persists across the SeekerView/HiderView/MapPanel tab switches), so both roles keep the `onGameEvent` subscription
+- [x] `AskQuestionModal` routes ask / re-ask / randomize / answer / veto through the bridge wrappers instead of calling `questionStore` directly, so local actions broadcast
+- [x] The bridge is an app-singleton (mirroring `useSync`'s session pattern, with a `__resetQuestionCurseSync` test seam) so the mount point and the modal share one instance
+- [x] A hider on a second device sees a question appear when a seeker asks it, and sees the answer/veto when recorded (covered by the inbound-relay regression test)
+- [x] Echo safety preserved (originator does not re-apply its own event; server `from`-tag + `applyingRemote` guard)
+- [x] `MULTI-003b-2` acceptance note updated to reflect it was integrated here
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `useQuestionCurseSync` is now an **app-singleton** (`createQuestionCurseSync` factory + lazy `singleton` + `__resetQuestionCurseSync`, which also un-subscribes the previous instance's `onGameEvent` handler). Mirrors `useSync`'s pattern; a new `__setSyncSession` test seam on `useSync` lets integration tests install a fake-service session.
+- Added `reaskQuestion` / `randomizeQuestion` wrappers so re-asks (2× cost, same `question.asked` on the wire) and in-place randomizes (re-broadcast `question.asked` for the **new** id read back from the store) also sync.
+- `GamePlayView.vue` calls `useQuestionCurseSync()` once on setup so the inbound subscription persists across the tab `v-if` unmounts — the hider stays subscribed even off the questions tab.
+- `AskQuestionModal.vue` now calls the bridge wrappers for all five actions; it still reads `questionStore` directly for `pendingQuestion` / `getQuestionById` lookups. Offline (no room) the wrappers just call the store and skip the emit, so single-device play is unchanged.
+- TDD: `useQuestionCurseSync.spec.ts` (+4: singleton identity, reset, re-ask emit, randomize emits new id); new `GamePlayQuestionSync.spec.ts` (3: inbound relay reaches the store after mount, the same relay is a **no-op without the mount** — proving the mount is load-bearing, and an ask→answer round-trip); `AskQuestionModal.spec.ts` (+2: broadcasts in a room, silent offline). Full suite green: 65 files / 1517 tests; type-check OK.
+
+**Notes:**
+
+- Prerequisite for **MAP-009** (ask-time position now has a synced `question.asked` to attach to).
+- Hider answer surface unchanged: answers are still recorded on the **seeker's** device via `AskQuestionModal` (`HiderView` has no answer UI); wiring the bridge means that recorded answer now syncs. A dedicated hider-side answer UI, if wanted, is a separate follow-up.
 
 ---
 
@@ -4464,6 +4576,98 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 - Root cause of the reported "GPS not working": the render path was sound (confirmed by a new multiplayer E2E that drives a real granted geolocation and asserts the marker paints). Real-device failures (denied permission / no fix) were **silent** — no UI feedback — so `MapPanel` now derives a `gpsStatus` from `geo.ownPosition`/`geo.error` and renders a `data-testid="gps-status"` pill.
 - Legend/nav overlap: `.gameplay-map-tab` was `position: absolute; inset: 0`, which bypasses the parent's `.content-with-nav` padding and extends the map (and its `bottom: 10px` legend) under the fixed BottomNav. Fixed by setting `bottom: calc(60px + env(safe-area-inset-bottom))` on the map tab.
 - TDD: `MapPanel.spec.ts` (+3: locating / error / hidden-on-fix status states); new multiplayer E2E `tests/e2e/multiplayer/lobby-game.spec.ts` "the joiner sees their own GPS 'you' dot on the map". 1476 frontend tests pass; multiplayer + offline E2E green.
+
+---
+
+### MAP-009: Seeker Ask-Time Position Pin
+
+**Status:** `complete`
+**Depends On:** QSYNC-004
+
+**Story:** As a hider, I need to see where each seeker was **when they asked a question** — shown as a distinct pin, separate from their live position — so I understand what a Radar/Measuring answer was measured against while still tracking where the seeker is now.
+
+**Acceptance Criteria:**
+
+- [x] The asking seeker's position is captured at **ask-time** (their own live GPS) and carried on the `question.asked` payload and on the `AskedQuestion` record (new optional `askedFrom?: { lat; lng }`)
+- [x] The store `askQuestion(questionId, askedFrom?)` (and `reaskQuestion`) accept and persist `askedFrom`; persistence stays backward-compatible (optional field)
+- [x] The hider's map renders the ask-time position as a **muted/desaturated-cyan teardrop map pin with a white "?" glyph inside** — a distinct silhouette from the round live seeker dot, tied to the seeker by color
+- [x] The seeker's **live** position marker continues to render independently — both the live dot and the ask-time pin are visible at once
+- [x] When the two overlap (seeker hasn't moved), the **ask-time pin takes precedence** and is drawn on top of the live dot
+- [x] The pin is legible on a 320px mobile map and has an accessible tooltip/label
+
+**Size:** M
+
+**Implementation Notes:**
+
+- **`useGeolocation` made an app-singleton** (`__resetGeolocation` reset seam) so the sync bridge reads the SAME `ownPosition` that `MapPanel` populates via `start()` — a per-caller tracker would read `null`. This is the prerequisite the story anticipated (QSYNC-004 had made the bridge a singleton but not geolocation).
+- `AskedQuestion` gains optional `askedFrom?: {lat;lng}`. `questionStore.askQuestion(id, askedFrom?)` / `reaskQuestion(id, askedFrom?)` record it; `answerQuestion` carries it over to the answered record via its existing spread. Persistence is unchanged (optional field, backward-compatible).
+- Bridge wrappers stamp the LOCAL asker's `ownPosition` and include `askedFrom` in the `question.asked` emit; `applyRemoteEvent` reads `payload.askedFrom` via a `parseAskedFrom` guard (malformed → undefined, ask still applies). A hider applying a remote ask uses the **wire** position, never its own. Randomize re-broadcasts the pending question's preserved position.
+- Pin rendering: `BaseMap` gains an `askedFromMarkers` prop + `drawAskedFrom` using `L.marker` + `L.divIcon` (teardrop SVG with white "?", muted cyan `#4a7f8c`). Precedence: an `L.marker` sits in Leaflet's marker pane (above the overlay pane holding the live `circleMarker` dots), plus a high `zIndexOffset` — so an overlapping ask-time pin is never hidden. (`bringToFront` is a Path/FeatureGroup method, not valid on markers — pane order does the work.) `:global` CSS strips the divIcon's default white box.
+- `MapPanel` computes `askedFromMarkers` from `questionStore` (pending + answered questions carrying a position), **hider-only**, labeled by category (e.g. "Radar asked here"). Seekers get an empty list.
+- TDD: `useGeolocation.spec.ts` (+2 singleton), `questionStore.spec.ts` (+3 askedFrom store/omit/carry-over), `useQuestionCurseSync.spec.ts` (+5 emit/omit/inbound/no-self-stamp/malformed), `BaseMap.spec.ts` (+4 distinct icon / precedence / none / removal), `MapPanel.spec.ts` (+3 hider-only / seeker-none / no-position). Full suite: 65 files / 1534 tests green; type-check OK.
+
+---
+
+### MAP-010: Radius Shader (Vector Shade Foundation)
+
+**Status:** `ready`
+**Depends On:** MAP-005
+
+**Status:** `complete`
+
+**Story:** As a seeker, I need to drop a temporary pin and shade a configurable radius around it (inside or outside the circle) so I can quickly mark the region a Radar answer rules out — with a smooth, accurate circle.
+
+**Acceptance Criteria:**
+
+- [x] Seeker can drop a **temporary draggable pin** on the map (tap to place, drag to reposition)
+- [x] A control panel sets a **configurable radius** (feet input for the ¼-mile-scale map) and an **inside/outside** toggle (shade the disc, or everything outside it — for Radar miss vs hit)
+- [x] The disc renders as a **smooth `L.circle`** (native SVG — accurate circumference, no polygon approximation)
+- [x] Applying commits the shade to a local reactive list (`useVectorShades`); shades render on the map; **undo/clear** available
+- [x] Vector shades are **local to the drawing seeker** for now, with a documented seam for later cross-seeker sync
+- [x] Coexists with the existing geohash freehand/auto-shading (both models render); mobile-friendly at 320px
+
+**Size:** L
+
+**Implementation Notes:**
+
+- New composable `src/composables/useVectorShades.ts` — app-singleton reactive list (`__resetVectorShades` seam). Shades are a discriminated union (`RadiusShade` now; `LineShade` type defined for MAP-011 so the API is stable). API: `shades`, `addRadiusShade`, `addLineShade`, `removeShade`, `clearShades`. Local-only with a documented sync seam (shaped like MAP-005's `ruledout` union for a future broadcast layer). Monotonic id counter (no `Date`/random).
+- `BaseMap`: new `vectorShades` / `placementMode` / `maxPins` props + `tempPinsChange` emit. Temp pins are draggable `L.marker`s dropped on `map.on('click')` while placing (at capacity the oldest is dropped); `drag`/`dragend` re-emit the pins live. `drawVectorShades` renders **inside** as a smooth `L.circle` (reusing `drawZone`'s pattern) and **outside** as an `L.polygon` with a big outer ring and a circular **hole** (`circleRing` 64-seg approximation — only the hole is approximated; the visible disc edge in inside-mode is a true circle). Leaving placement mode clears temp pins. `clearTempPins` exposed.
+- `MapPanel`: extended the seeker `shade-toolbar` with a **Radius** tool button + a `radius-panel` control panel (feet input, inside/outside toggle, Apply, Undo, Clear). Tool state lives here (mirrors the freehand `undoStack` split); radius/line and freehand are mutually exclusive. Feet → meters at apply. Vector shades passed down to `BaseMap`; hider never sees the tool.
+- `fakeLeaflet` mock extended with `map.on` capture (+ `fireMapEvent`), draggable `L.marker` (records latlng + drag handlers + `getLatLng`), and `L.circle`/`L.polygon` factories that record calls.
+- TDD: `useVectorShades.spec.ts` (8), `BaseMap.spec.ts` (+6: placement drop/ignore/replace, inside circle, outside polygon-with-hole, removal), `MapPanel.spec.ts` (+6: tool button, panel/placement toggle, inside commit, outside commit, undo/clear, hider-hidden). Full suite: 66 files / 1554 tests green; type-check OK.
+
+**Follow-ups (not blocking):**
+
+- Cross-seeker **sync** of vector shades is deferred (local-only per the card); the seam is documented in `useVectorShades`.
+- The "outside" mask uses a fixed ±2° span — ample for Stillwater; a future card could tie it to the map bounds if the play area grows.
+
+---
+
+### MAP-011: Line (Thermometer) Shader
+
+**Status:** `complete`
+**Depends On:** MAP-010
+
+**Story:** As a seeker, after a Thermometer (hotter/colder) answer, I need to place a start and end pin and shade one side of the perpendicular through the start pin, so I can rule out the half of the map the answer eliminates.
+
+**Acceptance Criteria:**
+
+- [x] Seeker places a **start pin** and an **end pin** (reusing MAP-010's temp-pin placement, `maxPins=2`)
+- [x] The tool splits the map along the **perpendicular through the start pin** (normal = start→end direction) into two half-planes
+- [x] The seeker **picks which half-plane to shade** ("Behind start" / "Toward end") — no assumption about which side
+- [x] The chosen half renders as a large `L.polygon` extending well beyond the visible map
+- [x] Commits to the `useVectorShades` list; **undo/clear** available (shared with the radius tool); local-only with the same sync seam
+
+**Size:** M
+
+**Implementation Notes:**
+
+- New pure helper `src/utils/halfPlane.ts`: `halfPlanePolygon(start, end, side, spanMeters?)` builds the half-plane ring in a local planar tangent (lng scaled by cos(lat)); the perpendicular's **normal** is the start→end direction, so the split passes through `start` (not the midpoint). `side: 'toward'` = the half containing the end pin, `'away'` = behind start. Default span 20 km blankets the play area. Also exports `sideOfPoint` (classify a point) for tests / a future tap-to-pick affordance. Returns `null` for a degenerate zero-length line.
+- `LineShade.side` finalized as `'toward' | 'away'` (was a `'left'|'right'` stub in MAP-010).
+- `BaseMap.drawVectorShades` renders `kind:'line'` via `halfPlanePolygon` → `L.polygon` (degenerate → skipped). Reuses the MAP-010 vector-shade layer/reconciliation and the shared `VECTOR_SHADE_STYLE`.
+- `MapPanel`: **Line** tool button + control panel (start/end hint, "Behind start / Toward end" side pick, Apply/Undo/Clear). Placement is shared: `placementMode = radius || line`, `maxPins` = 2 for line / 1 for radius; `onTempPins` routes to the active tool. All three seeker tools (freehand, radius, line) are mutually exclusive.
+- **Bug fixed in passing:** `useTimer` never cleared its `setInterval` on unmount, so a stray tick could fire after a test file's jsdom teardown and call `persist()` with `localStorage` gone (surfaced as an unhandled `ReferenceError` once these specs shifted suite timing). Added an `onScopeDispose` cleanup (guarded by `getCurrentScope()`), clearing the interval on unmount. Full suite now exits clean.
+- TDD: `halfPlane.spec.ts` (7: orientation, each side, split-through-start, diagonal, span, `sideOfPoint`), `BaseMap.spec.ts` (+2: line polygon, degenerate skip), `MapPanel.spec.ts` (+6: tool button, 2-pin panel, commit, side pick, mutual exclusion, hider-hidden). Full suite: 67 files / 1569 tests green; type-check OK; suite exits 0 (leak fixed).
 
 ---
 

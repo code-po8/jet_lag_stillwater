@@ -75,11 +75,27 @@ export function createGeolocationTracker(
   return { ownPosition, error, start, stop }
 }
 
+// App-wide singleton tracker. One device has one GPS position, and multiple
+// consumers must observe the SAME `ownPosition`: MapPanel calls `start()` and
+// the question-sync bridge (QSYNC-004 / MAP-009) reads `ownPosition` to stamp a
+// question's ask-time position. A per-caller tracker would read `null` (only the
+// starter's instance ever gets fixes), so this must be shared.
+let singleton: GeolocationTracker | null = null
+
 /**
- * Convenience: a tracker bound to the app-wide sync session, so fixes flow to
- * the room automatically.
+ * Convenience: the app-wide tracker bound to the sync session, so fixes flow to
+ * the room automatically and every consumer shares one `ownPosition`.
  */
 export function useGeolocation(): GeolocationTracker {
-  const sync = useSync()
-  return createGeolocationTracker({ send: (pos) => sync.sendPosition(pos) })
+  if (!singleton) {
+    const sync = useSync()
+    singleton = createGeolocationTracker({ send: (pos) => sync.sendPosition(pos) })
+  }
+  return singleton
+}
+
+/** Test/teardown helper to reset the singleton (mirrors `__resetSyncSession`). */
+export function __resetGeolocation(): void {
+  singleton?.stop()
+  singleton = null
 }

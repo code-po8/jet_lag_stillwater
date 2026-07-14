@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createGeolocationTracker } from '../useGeolocation'
+import { setActivePinia, createPinia } from 'pinia'
+import { createGeolocationTracker, useGeolocation, __resetGeolocation } from '../useGeolocation'
+import { __resetSyncSession } from '../useSync'
 import type { Position } from '@/services/sync/protocol'
 
 /** Mock the browser geolocation API. */
@@ -94,5 +96,33 @@ describe('createGeolocationTracker', () => {
     const tracker = createGeolocationTracker({ geolocation: undefined, send })
     expect(() => tracker.start()).not.toThrow()
     expect(tracker.error.value).toBeTruthy()
+  })
+})
+
+describe('useGeolocation (app singleton, MAP-009)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    __resetSyncSession()
+    __resetGeolocation()
+  })
+  afterEach(() => {
+    __resetGeolocation()
+    __resetSyncSession()
+  })
+
+  it('returns the SAME tracker instance to every caller', () => {
+    // MapPanel starts GPS; the sync bridge reads ownPosition. They must observe
+    // one shared tracker, else the bridge sees a never-started null position.
+    const a = useGeolocation()
+    const b = useGeolocation()
+    expect(a).toBe(b)
+    expect(a.ownPosition).toBe(b.ownPosition)
+  })
+
+  it('__resetGeolocation clears the singleton', () => {
+    const a = useGeolocation()
+    __resetGeolocation()
+    const b = useGeolocation()
+    expect(a).not.toBe(b)
   })
 })

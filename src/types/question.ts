@@ -100,6 +100,13 @@ export interface AskedQuestion {
   vetoed?: boolean
   /** Whether this is a re-ask (costs double cards) */
   isReask?: boolean
+  /**
+   * The asking seeker's position at ask-time (MAP-009). Captured from the
+   * seeker's live GPS when the question is asked and synced to the hider so
+   * their map can pin where a Radar/Measuring answer was measured from. Optional
+   * and backward-compatible: offline/single-device or pre-MAP-009 records omit it.
+   */
+  askedFrom?: { lat: number; lng: number }
 }
 
 /**
@@ -162,7 +169,8 @@ export const QUESTION_CATEGORIES: QuestionCategory[] = [
     id: QuestionCategoryId.Tentacle,
     name: 'Tentacle',
     format: 'Of all the [location type] within [distance] of me, which are you closest to?',
-    description: 'Identifies which specific location the hider is nearest to. Hider must be within [distance] of seekers to answer.',
+    description:
+      'Identifies which specific location the hider is nearest to. Hider must be within [distance] of seekers to answer.',
     cardsDraw: 4,
     cardsKeep: 2,
     responseTimeMinutes: 5,
@@ -175,7 +183,7 @@ export const QUESTION_CATEGORIES: QuestionCategory[] = [
  */
 export function createAskedQuestion(
   questionId: string,
-  categoryId: QuestionCategoryId
+  categoryId: QuestionCategoryId,
 ): AskedQuestion {
   return {
     questionId,
@@ -190,7 +198,7 @@ export function createAskedQuestion(
  * Get a category by its ID
  */
 export function getCategoryById(id: QuestionCategoryId): QuestionCategory | undefined {
-  return QUESTION_CATEGORIES.find(c => c.id === id)
+  return QUESTION_CATEGORIES.find((c) => c.id === id)
 }
 
 /**
@@ -214,5 +222,5 @@ export function isCategoryAvailable(category: QuestionCategory, gameSize: GameSi
  * Get all categories available for a given game size
  */
 export function getCategoriesForGameSize(gameSize: GameSize): QuestionCategory[] {
-  return QUESTION_CATEGORIES.filter(c => c.availableIn.includes(gameSize))
+  return QUESTION_CATEGORIES.filter((c) => c.availableIn.includes(gameSize))
 }
