@@ -3754,6 +3754,45 @@ describe('room creation and join', () => {
 
 ---
 
+### QSYNC-005: Hider-Answered Questions (in-app answer + manual seeker entry)
+
+**Status:** `ready`
+**Depends On:** QSYNC-004
+
+**Story:** As a hider, I want to answer a pending question **through the app** so the seeker sees my answer sync automatically; and as a seeker, when the hider answers **out-of-band** (verbally, text, etc.), I want to **manually enter** the hider's answer so the game record stays correct either way.
+
+**Context:**
+
+Today (post-QSYNC-004) a question asked by a seeker syncs to the hider's device, but the **answer is only ever recorded on the seeker's device** — `AskQuestionModal.handleSubmitAnswer` is the sole answer path, and `HiderView` has no answer UI. So the hider cannot answer in-app; the seeker always transcribes it. This card adds the hider-side answer path while keeping the manual-entry path as a first-class fallback (out-of-app answers are common in real play — the hider just says the answer aloud).
+
+**Acceptance Criteria:**
+
+- [ ] When a question is pending, the **hider's** device shows an answer UI (the pending question + an input/affordance appropriate to the question type) so the hider can answer in-app
+- [ ] A hider in-app answer syncs to the seeker via the existing `question.answered` relay (reuses the QSYNC-004 bridge — no new protocol)
+- [ ] The **seeker retains a manual-entry** path (the current `AskQuestionModal` answer input) for when the hider answers outside the app — either device answering resolves the pending question
+- [ ] The two paths are reconciled: once answered on **either** device, the pending question is cleared on **both**, and a second (stale) answer is a safe no-op (guarded like the existing `applyingRemote` / precondition checks; surfaced via the divergence `console.warn` if it mismatches)
+- [ ] Answer provenance is acceptable to record (who answered / whether it was manual) if cheap; not required if it complicates the model
+- [ ] Works offline / single-device (pass-the-phone) unchanged: the same seeker manual-entry path still applies when not in a room
+
+**Size:** M
+
+**Implementation Notes / Open Questions:**
+
+- Reuses the `question.answered` game event and `answerQuestion` bridge wrapper from **QSYNC-004** — the hider path is a new UI surface that calls the same wrapper, not new sync plumbing.
+- Decide the hider answer surface: a section in `HiderView`, or a shared `AskQuestionModal` shown to the hider when `pendingQuestion` is set. Prefer reusing `AskQuestionModal`/its answer section if the role-gating is clean.
+- Radar/yes-no vs free-text: the store's `answer` is a free string today; a hider-friendly UI may want typed affordances (Yes/No, hit/miss, distance) that still serialize to the same `answer` field. Keep the wire format unchanged.
+- Race: seeker manual entry and hider in-app answer could both fire. The store's `answerQuestion` already no-ops if no matching pending question — verify that makes the second answer safe, and that the relayed echo doesn't double-record.
+- Relates to the MAP-009 pin work only loosely (both ride the QSYNC-004 bridge); no hard dependency between them.
+
+**Tests to Write:**
+
+- Hider in-app answer emits `question.answered` and clears the pending question on both devices (bridge round-trip test)
+- Seeker manual entry still works in a room and offline (existing behavior preserved)
+- Double-answer (both devices) resolves once and the second is a safe no-op
+- Hider answer UI renders only for the hider role when a question is pending
+
+---
+
 ## Epic 11: Branding & Visual Identity
 
 Logo and branding assets to give the app a polished, recognizable identity.
