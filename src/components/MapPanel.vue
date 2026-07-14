@@ -10,6 +10,7 @@ import { useZone, type BusStopLike } from '@/composables/useZone'
 import { useSync } from '@/composables/useSync'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useShading } from '@/composables/useShading'
+import { useVectorShades, type LatLng } from '@/composables/useVectorShades'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useQuestionStore } from '@/stores/questionStore'
 import { getCategoryById } from '@/types/question'
@@ -23,6 +24,7 @@ const geo = useGeolocation()
 const gameStore = useGameStore()
 const questionStore = useQuestionStore()
 const { cells: shadedCells, shadeFreehand, autoShadeRadar, unshadeLocal } = useShading()
+const vectorShades = useVectorShades()
 
 const isHider = computed(() => sync.role.value === 'hider')
 const isSeeker = computed(() => sync.role.value === 'seeker')
@@ -33,6 +35,57 @@ const undoStack = ref<string[]>([]) // last applied set of cells (for undo)
 
 function toggleFreehand() {
   freehandActive.value = !freehandActive.value
+  if (freehandActive.value) radiusActive.value = false // one tool at a time
+}
+
+// ── Radius shader (MAP-010): vector-shade a configurable disc, inside/outside ──
+const radiusActive = ref(false)
+const radiusFeet = ref(500) // default matches the ~300ft–¼mi play scale
+const radiusMode = ref<'inside' | 'outside'>('inside')
+const radiusPin = ref<LatLng | null>(null) // temp placement pin (center)
+// Ids of vector shades this device committed, for order-independent undo.
+const vectorUndo = ref<string[]>([])
+
+function toggleRadiusTool() {
+  radiusActive.value = !radiusActive.value
+  if (radiusActive.value) freehandActive.value = false
+  else radiusPin.value = null // leaving the tool clears the pending pin
+}
+
+/** BaseMap reports the current temp pin(s); the radius tool uses the first. */
+function onTempPins(pins: LatLng[]) {
+  radiusPin.value = pins[0] ?? null
+}
+
+const canApplyRadius = computed(() => radiusActive.value && radiusPin.value !== null)
+
+/** Commit the pending disc as a vector shade. */
+function applyRadius() {
+  if (!radiusPin.value) return
+  const meters = radiusFeet.value * 0.3048
+  const id = vectorShades.addRadiusShade(
+    { lat: radiusPin.value.lat, lng: radiusPin.value.lng },
+    meters,
+    radiusMode.value,
+  )
+  vectorUndo.value = [...vectorUndo.value, id]
+  radiusPin.value = null // ready to place the next one
+}
+
+/** Undo the most recent vector shade this device added. */
+function undoVector() {
+  const last = vectorUndo.value[vectorUndo.value.length - 1]
+  if (!last) return
+  vectorShades.removeShade(last)
+  vectorUndo.value = vectorUndo.value.slice(0, -1)
+}
+
+const canUndoVector = computed(() => vectorUndo.value.length > 0)
+
+/** Clear all vector shades (this device's local set). */
+function clearVector() {
+  vectorShades.clearShades()
+  vectorUndo.value = []
 }
 
 /** Auto-shade from the most recent ¼-mile radar "no" relative to our position. */
@@ -221,7 +274,11 @@ function pickStopFromMap(stop: BusStop) {
       :in-range-stop-indices="inRangeStopIndices"
       :stops-pickable="isHider"
       :asked-from-markers="askedFromMarkers"
+      :vector-shades="vectorShades.shades.value"
+      :placement-mode="radiusActive"
+      :max-pins="1"
       @pick-stop="pickStopFromMap"
+      @temp-pins-change="onTempPins"
     />
 
     <!-- Seeker shading toolbar (MAP-005): all controls have text labels. -->
@@ -255,6 +312,17 @@ function pickStopFromMap(stop: BusStop) {
       <button
         type="button"
         class="shade-btn"
+        :class="{ 'shade-btn-active': radiusActive }"
+        data-testid="shade-radius-btn"
+        :aria-pressed="radiusActive"
+        title="Radius shade — drop a pin and shade a circle from a Radar answer"
+        @click="toggleRadiusTool"
+      >
+        ⊙ <span class="shade-btn-label">Radius</span>
+      </button>
+      <button
+        type="button"
+        class="shade-btn"
         data-testid="shade-undo-btn"
         :disabled="!canUndo"
         title="Undo the last shading action"
@@ -262,6 +330,89 @@ function pickStopFromMap(stop: BusStop) {
       >
         ↺ <span class="shade-btn-label">Undo</span>
       </button>
+    </div>
+
+    <!-- Radius shader control panel (MAP-010): shown while the tool is active. -->
+    <div
+      v-if="isSeeker && radiusActive"
+      class="radius-panel"
+      data-testid="radius-panel"
+      role="group"
+      aria-label="Radius shade options"
+    >
+      <p class="radius-panel-hint" data-testid="radius-hint">
+        {{
+          radiusPin
+            ? 'Pin placed. Adjust the radius, then apply.'
+            : 'Tap the map to place the center pin.'
+        }}
+      </p>
+      <label class="radius-field">
+        <span>Radius (ft)</span>
+        <input
+          v-model.number="radiusFeet"
+          type="number"
+          min="50"
+          step="50"
+          data-testid="radius-input"
+          class="radius-input"
+        />
+      </label>
+      <div class="radius-mode" role="radiogroup" aria-label="Shade inside or outside">
+        <button
+          type="button"
+          class="radius-mode-btn"
+          :class="{ 'radius-mode-active': radiusMode === 'inside' }"
+          :aria-pressed="radiusMode === 'inside'"
+          data-testid="radius-mode-inside"
+          title="Shade the disc (Radar miss / not within)"
+          @click="radiusMode = 'inside'"
+        >
+          Inside
+        </button>
+        <button
+          type="button"
+          class="radius-mode-btn"
+          :class="{ 'radius-mode-active': radiusMode === 'outside' }"
+          :aria-pressed="radiusMode === 'outside'"
+          data-testid="radius-mode-outside"
+          title="Shade everything outside the disc (Radar hit / within)"
+          @click="radiusMode = 'outside'"
+        >
+          Outside
+        </button>
+      </div>
+      <div class="radius-actions">
+        <button
+          type="button"
+          class="radius-apply"
+          data-testid="radius-apply-btn"
+          :disabled="!canApplyRadius"
+          @click="applyRadius"
+        >
+          Apply
+        </button>
+        <button
+          type="button"
+          class="radius-clear"
+          data-testid="vector-undo-btn"
+          :disabled="!canUndoVector"
+          title="Undo the last radius/line shade"
+          @click="undoVector"
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          class="radius-clear"
+          data-testid="vector-clear-btn"
+          :disabled="!canUndoVector"
+          title="Clear all radius/line shades"
+          @click="clearVector"
+        >
+          Clear
+        </button>
+      </div>
     </div>
 
     <!-- Hiding-zone sheet (labeled) -->
@@ -345,6 +496,93 @@ function pickStopFromMap(stop: BusStop) {
 }
 .shade-btn-label {
   font-weight: 600;
+}
+/* Radius shader control panel (MAP-010). Bottom-right, clear of the toolbar
+   (which sits at bottom: 10px) — stacked just above it. Mobile-friendly at
+   320px: a compact card. */
+.radius-panel {
+  position: absolute;
+  right: 10px;
+  bottom: 210px;
+  z-index: 600;
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid var(--color-ui-border, #475569);
+  border-radius: 10px;
+  padding: 10px;
+  color: var(--color-ui-text-primary, #f8fafc);
+  font-size: 0.8rem;
+}
+.radius-panel-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-ui-text-secondary, #94a3b8);
+}
+.radius-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.radius-input {
+  width: 84px;
+  min-height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--color-ui-border, #475569);
+  background: var(--color-ui-bg, #0f172a);
+  color: inherit;
+  padding: 0 8px;
+  font-size: 0.85rem;
+}
+.radius-mode {
+  display: flex;
+  gap: 6px;
+}
+.radius-mode-btn {
+  flex: 1;
+  min-height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--color-ui-border, #475569);
+  background: rgba(30, 41, 59, 0.9);
+  color: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.radius-mode-active {
+  border-color: var(--color-brand-cyan, #00aaff);
+  box-shadow: 0 0 0 2px rgba(0, 170, 255, 0.35);
+}
+.radius-actions {
+  display: flex;
+  gap: 6px;
+}
+.radius-apply,
+.radius-clear {
+  flex: 1;
+  min-height: 36px;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.radius-apply {
+  background: var(--color-brand-cyan, #00aaff);
+  color: #06263a;
+}
+.radius-clear {
+  background: rgba(51, 65, 85, 0.9);
+  color: var(--color-ui-text-primary, #f8fafc);
+  border: 1px solid var(--color-ui-border, #475569);
+}
+.radius-apply:disabled,
+.radius-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .breach-banner {
   position: absolute;

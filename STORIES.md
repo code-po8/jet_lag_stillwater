@@ -4585,32 +4585,33 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 **Status:** `ready`
 **Depends On:** MAP-005
 
+**Status:** `complete`
+
 **Story:** As a seeker, I need to drop a temporary pin and shade a configurable radius around it (inside or outside the circle) so I can quickly mark the region a Radar answer rules out — with a smooth, accurate circle.
 
 **Acceptance Criteria:**
 
-- [ ] Seeker can drop a **temporary draggable pin** on the map (tap to place, drag to reposition)
-- [ ] A control panel sets a **configurable radius** (with sensible units for the ¼-mile-scale map) and an **inside/outside** toggle (shade the disc, or everything outside it — for Radar miss vs hit)
-- [ ] The shaded region renders as a **smooth `L.circle`** (native SVG — satisfies the "smooth/accurate circumference" requirement; no polygon approximation)
-- [ ] Applying commits the shade to a local reactive list (`useVectorShades`); shades render on the map; **undo/clear** available
-- [ ] Vector shades are **local to the drawing seeker** for now, with a documented seam for later cross-seeker sync
-- [ ] Coexists with the existing geohash freehand/auto-shading (both models render); mobile-friendly at 320px
+- [x] Seeker can drop a **temporary draggable pin** on the map (tap to place, drag to reposition)
+- [x] A control panel sets a **configurable radius** (feet input for the ¼-mile-scale map) and an **inside/outside** toggle (shade the disc, or everything outside it — for Radar miss vs hit)
+- [x] The disc renders as a **smooth `L.circle`** (native SVG — accurate circumference, no polygon approximation)
+- [x] Applying commits the shade to a local reactive list (`useVectorShades`); shades render on the map; **undo/clear** available
+- [x] Vector shades are **local to the drawing seeker** for now, with a documented seam for later cross-seeker sync
+- [x] Coexists with the existing geohash freehand/auto-shading (both models render); mobile-friendly at 320px
 
 **Size:** L
 
 **Implementation Notes:**
 
-- New composable `src/composables/useVectorShades.ts` (singleton reactive list): `shades`, `addRadiusShade`, `addLineShade`, `removeShade`, `clearShades`, plus a documented sync seam (kept local for now, shaped so a future broadcast layer drops in — cf. MAP-005's union-only `ruledout`).
-- Reuse the `L.circle([lat,lng],{radius:meters})` pattern from `BaseMap.drawZone` (BaseMap.vue ~288–309) for smooth circle rendering.
-- Temp-pin wiring through `BaseMap`: a `placementMode` prop, draggable `L.marker`s, `map.on('click')`, a `tempPinsChange` emit, plus a `vectorShades` prop + `drawVectorShades`. Split responsibilities like the existing freehand tool: **BaseMap** owns Leaflet interaction, **MapPanel** owns tool state/control panel/undo (mirrors `applyFreehand`/`undoStack`).
-- Extend the `MapPanel` seeker `shade-toolbar` (MapPanel.vue ~193–231) with the radius tool button.
-- Extend `fakeLeaflet` mock with draggable `L.marker` and `map.on` capture.
+- New composable `src/composables/useVectorShades.ts` — app-singleton reactive list (`__resetVectorShades` seam). Shades are a discriminated union (`RadiusShade` now; `LineShade` type defined for MAP-011 so the API is stable). API: `shades`, `addRadiusShade`, `addLineShade`, `removeShade`, `clearShades`. Local-only with a documented sync seam (shaped like MAP-005's `ruledout` union for a future broadcast layer). Monotonic id counter (no `Date`/random).
+- `BaseMap`: new `vectorShades` / `placementMode` / `maxPins` props + `tempPinsChange` emit. Temp pins are draggable `L.marker`s dropped on `map.on('click')` while placing (at capacity the oldest is dropped); `drag`/`dragend` re-emit the pins live. `drawVectorShades` renders **inside** as a smooth `L.circle` (reusing `drawZone`'s pattern) and **outside** as an `L.polygon` with a big outer ring and a circular **hole** (`circleRing` 64-seg approximation — only the hole is approximated; the visible disc edge in inside-mode is a true circle). Leaving placement mode clears temp pins. `clearTempPins` exposed.
+- `MapPanel`: extended the seeker `shade-toolbar` with a **Radius** tool button + a `radius-panel` control panel (feet input, inside/outside toggle, Apply, Undo, Clear). Tool state lives here (mirrors the freehand `undoStack` split); radius/line and freehand are mutually exclusive. Feet → meters at apply. Vector shades passed down to `BaseMap`; hider never sees the tool.
+- `fakeLeaflet` mock extended with `map.on` capture (+ `fireMapEvent`), draggable `L.marker` (records latlng + drag handlers + `getLatLng`), and `L.circle`/`L.polygon` factories that record calls.
+- TDD: `useVectorShades.spec.ts` (8), `BaseMap.spec.ts` (+6: placement drop/ignore/replace, inside circle, outside polygon-with-hole, removal), `MapPanel.spec.ts` (+6: tool button, panel/placement toggle, inside commit, outside commit, undo/clear, hider-hidden). Full suite: 66 files / 1554 tests green; type-check OK.
 
-**Tests to Write:**
+**Follow-ups (not blocking):**
 
-- `useVectorShades.spec.ts`: add/remove/clear radius shade; local-only semantics
-- `BaseMap.spec.ts`: placement mode drops/moves a temp pin; committed radius shade renders as a circle; emits `tempPinsChange`
-- `MapPanel.spec.ts`: radius tool button, radius input, inside/outside toggle, undo/clear
+- Cross-seeker **sync** of vector shades is deferred (local-only per the card); the seam is documented in `useVectorShades`.
+- The "outside" mask uses a fixed ±2° span — ample for Stillwater; a future card could tie it to the map bounds if the play area grows.
 
 ---
 

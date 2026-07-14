@@ -14,6 +14,36 @@ import poiGeo from '../assets/map/stillwater-poi.json'
 import { BRAND_COLORS } from '@/design/colors'
 import type { Position, Role, Zone } from '@/services/sync/protocol'
 import { geohashBounds } from '@/utils/geohash'
+import type { VectorShade } from '@/composables/useVectorShades'
+
+/** A temporary placement pin the seeker drops for a shade tool (MAP-010). */
+export interface TempPin {
+  lat: number
+  lng: number
+}
+
+/** Meters per degree latitude (approx); longitude scales by cos(lat). */
+const M_PER_DEG_LAT = 111_320
+
+/**
+ * Approximate a geodesic circle as a ring of lat/lng points — used for the HOLE
+ * in the "outside" mask polygon (the disc itself renders as a smooth L.circle;
+ * only the hole needs this approximation). 64 segments is visually round.
+ */
+function circleRing(
+  center: { lat: number; lng: number },
+  radiusM: number,
+  segments = 64,
+): [number, number][] {
+  const dLat = radiusM / M_PER_DEG_LAT
+  const dLng = radiusM / (M_PER_DEG_LAT * Math.cos((center.lat * Math.PI) / 180))
+  const ring: [number, number][] = []
+  for (let i = 0; i < segments; i++) {
+    const t = (i / segments) * 2 * Math.PI
+    ring.push([center.lat + dLat * Math.sin(t), center.lng + dLng * Math.cos(t)])
+  }
+  return ring
+}
 
 /** A live position marker to draw (MAP-003). */
 export interface PlayerMarker {
@@ -81,6 +111,19 @@ const props = withDefaults(
      * distinct teardrop "?" pin, above the live position dots.
      */
     askedFromMarkers?: AskedFromMarker[]
+    /**
+     * Vector shades to render (MAP-010/011): smooth circle/half-plane regions a
+     * seeker has committed. Coexists with the geohash `shadedCells`.
+     */
+    vectorShades?: VectorShade[]
+    /**
+     * When true, tapping the map drops/moves a temporary placement pin for a
+     * shade tool (MAP-010). `maxPins` bounds how many (1 for radius, 2 for line).
+     * The current pins are surfaced via `tempPinsChange`.
+     */
+    placementMode?: boolean
+    /** Max temp pins to keep while placing (radius=1, line=2). */
+    maxPins?: number
   }>(),
   {
     zone: null,
@@ -91,6 +134,9 @@ const props = withDefaults(
     inRangeStopIndices: () => [],
     stopsPickable: false,
     askedFromMarkers: () => [],
+    vectorShades: () => [],
+    placementMode: false,
+    maxPins: 1,
   },
 )
 
@@ -98,6 +144,8 @@ const emit = defineEmits<{
   ready: [map: L.Map]
   /** The hider tapped a bus stop's pick button (MAP-007). */
   pickStop: [stop: BusStop, index: number]
+  /** The temporary placement pins changed (dropped/moved/cleared) — MAP-010. */
+  tempPinsChange: [pins: TempPin[]]
 }>()
 
 const container = ref<HTMLElement | null>(null)
@@ -187,6 +235,16 @@ onMounted(() => {
   drawBusStops()
   drawMarkers()
   drawAskedFrom()
+  drawVectorShades()
+
+  // Temp-pin placement (MAP-010): while placing, a map tap drops a pin (or moves
+  // the pin once maxPins is reached, dropping the oldest). Ignored otherwise, so
+  // the hider's bus-stop taps and normal panning are unaffected.
+  map.on('click', (e: L.LeafletMouseEvent) => {
+    if (!props.placementMode) return
+    dropTempPin(e.latlng.lat, e.latlng.lng)
+  })
+
   emit('ready', map)
 })
 
@@ -483,12 +541,135 @@ function drawAskedFrom() {
 
 watch(() => props.askedFromMarkers, drawAskedFrom)
 
+// ── Temp placement pins (MAP-010) ──
+// Draggable markers the seeker drops to anchor a shade (radius center, or line
+// start/end). Kept as a small ordered list; committing/clearing happens in
+// MapPanel, which reads pins via `tempPinsChange`.
+let tempPinLayer: L.LayerGroup | null = null
+const tempPins: L.Marker[] = []
+
+function emitTempPins() {
+  emit(
+    'tempPinsChange',
+    tempPins.map((m) => {
+      const ll = m.getLatLng()
+      return { lat: ll.lat, lng: ll.lng }
+    }),
+  )
+}
+
+function dropTempPin(lat: number, lng: number) {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+  if (!tempPinLayer) {
+    tempPinLayer = leaflet.layerGroup()
+    tempPinLayer.addTo(map)
+  }
+  // At capacity: drop the oldest so a tap re-places rather than piling up.
+  while (tempPins.length >= props.maxPins) {
+    const old = tempPins.shift()
+    if (old) tempPinLayer.removeLayer(old)
+  }
+  const marker = leaflet.marker([lat, lng], { draggable: true })
+  // Dragging a pin updates the committed geometry preview live.
+  marker.on?.('drag', emitTempPins)
+  marker.on?.('dragend', emitTempPins)
+  tempPinLayer.addLayer(marker)
+  tempPins.push(marker)
+  emitTempPins()
+}
+
+/** Remove all temp pins (called when a tool is cancelled/committed). */
+function clearTempPins() {
+  if (tempPinLayer) for (const m of tempPins) tempPinLayer.removeLayer(m)
+  tempPins.length = 0
+  emitTempPins()
+}
+
+// Leaving placement mode clears the pins so a stale pin can't linger on the map.
+watch(
+  () => props.placementMode,
+  (on) => {
+    if (!on) clearTempPins()
+  },
+)
+
+// ── Vector shades (MAP-010/011): smooth circle / half-plane regions ──
+const VECTOR_SHADE_STYLE = {
+  color: '#64748b',
+  weight: 1,
+  fillColor: '#475569',
+  fillOpacity: 0.4,
+}
+// A generous span (deg) for the "outside" mask and (later) half-planes — large
+// enough to cover the whole playable area at Stillwater's scale.
+const MASK_SPAN_DEG = 2
+
+let vectorShadeLayer: L.LayerGroup | null = null
+const vectorShapesById = new Map<string, L.Layer>()
+
+/** Build the Leaflet layer for one vector shade. */
+function vectorShapeFor(leaflet: typeof L, shade: VectorShade): L.Layer | null {
+  if (shade.kind === 'radius') {
+    if (shade.mode === 'inside') {
+      // Shade the disc itself — a smooth native circle (accurate circumference).
+      return leaflet.circle([shade.center.lat, shade.center.lng], {
+        radius: shade.radiusM,
+        ...VECTOR_SHADE_STYLE,
+      })
+    }
+    // "outside": shade everything beyond the disc. A big rectangle with the disc
+    // punched out as a polygon hole. The circle is approximated as a ring of
+    // points for the hole (Leaflet polygons don't take a circular hole directly).
+    const outer: [number, number][] = [
+      [shade.center.lat - MASK_SPAN_DEG, shade.center.lng - MASK_SPAN_DEG],
+      [shade.center.lat - MASK_SPAN_DEG, shade.center.lng + MASK_SPAN_DEG],
+      [shade.center.lat + MASK_SPAN_DEG, shade.center.lng + MASK_SPAN_DEG],
+      [shade.center.lat + MASK_SPAN_DEG, shade.center.lng - MASK_SPAN_DEG],
+    ]
+    const hole = circleRing(shade.center, shade.radiusM)
+    return leaflet.polygon([outer, hole], VECTOR_SHADE_STYLE)
+  }
+  // Line half-plane rendering lands in MAP-011.
+  return null
+}
+
+function drawVectorShades() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+  if (!vectorShadeLayer) {
+    vectorShadeLayer = leaflet.layerGroup()
+    vectorShadeLayer.addTo(map)
+  }
+  const next = new Map(props.vectorShades.map((s) => [s.id, s]))
+  // Remove shapes for shades that are gone (undo/clear).
+  for (const [id, layer] of vectorShapesById) {
+    if (!next.has(id)) {
+      vectorShadeLayer.removeLayer(layer)
+      vectorShapesById.delete(id)
+    }
+  }
+  // Add shapes for new shades (existing ones are immutable once committed).
+  for (const shade of props.vectorShades) {
+    if (vectorShapesById.has(shade.id)) continue
+    const shape = vectorShapeFor(leaflet, shade)
+    if (shape) {
+      vectorShadeLayer.addLayer(shape)
+      vectorShapesById.set(shade.id, shape)
+    }
+  }
+}
+
+watch(() => props.vectorShades, drawVectorShades)
+
+defineExpose({ map: mapInstance, clearTempPins })
+
 onBeforeUnmount(() => {
   mapInstance.value?.remove()
   mapInstance.value = null
 })
-
-defineExpose({ map: mapInstance })
 </script>
 
 <template>
