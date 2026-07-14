@@ -125,6 +125,44 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     expect(questions.askedQuestions.some((q) => q.questionId === RADAR_Q)).toBe(true)
   })
 
+  // ── QSYNC-005: both devices may answer; the second answer is a safe no-op ──
+
+  it('a stale second answer (both devices answered) is a safe no-op', () => {
+    // The hider answers in-app AND the seeker manually enters an answer: whoever
+    // is first clears the pending question; the second answer must not throw,
+    // double-record, or re-broadcast (nothing pending → answerQuestion no-ops).
+    enterRoom()
+    const questions = useQuestionStore()
+    const sync = useSync()
+    const sent: unknown[] = []
+    const bridge = useQuestionCurseSync()
+
+    bridge.askQuestion(RADAR_Q)
+    bridge.answerQuestion(RADAR_Q, 'Yes') // first answer wins
+    // Start counting emits AFTER the first (legitimate) answer.
+    sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+    const res = bridge.answerQuestion(RADAR_Q, 'No') // stale second answer
+    expect(res.success).toBe(false)
+    expect(sent).toHaveLength(0)
+    // The recorded answer is the FIRST one; not overwritten or duplicated.
+    const recorded = questions.askedQuestions.filter((q) => q.questionId === RADAR_Q)
+    expect(recorded).toHaveLength(1)
+    expect(recorded[0]!.answer).toBe('Yes')
+  })
+
+  it('an inbound remote answer with nothing pending is a safe no-op', () => {
+    enterRoom()
+    const questions = useQuestionStore()
+    const bridge = useQuestionCurseSync()
+    // No pending question locally (e.g. already answered) — applying a relayed
+    // answer must not throw or create a phantom asked-question.
+    expect(() =>
+      bridge.applyRemoteEvent('question.answered', { questionId: RADAR_Q, answer: 'Yes' }),
+    ).not.toThrow()
+    expect(questions.askedQuestions).toHaveLength(0)
+  })
+
   // ── QSYNC-004: singleton + reask/randomize wrappers ──
 
   it('useQuestionCurseSync returns the SAME instance (app-singleton)', () => {
