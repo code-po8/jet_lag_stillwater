@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import MapPanel from '../MapPanel.vue'
 import { useSync, __resetSyncSession } from '@/composables/useSync'
+import { useVectorShades, __resetVectorShades } from '@/composables/useVectorShades'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useQuestionStore } from '@/stores/questionStore'
 import { QUARTER_MILE_M } from '@/services/sync/protocol'
@@ -21,8 +22,11 @@ vi.mock('../BaseMap.vue', () => ({
       'inRangeStopIndices',
       'stopsPickable',
       'askedFromMarkers',
+      'vectorShades',
+      'placementMode',
+      'maxPins',
     ],
-    emits: ['pickStop'],
+    emits: ['pickStop', 'tempPinsChange'],
     template: `<div
       data-testid="base-map-stub"
       :data-marker-count="(markers || []).length"
@@ -33,9 +37,16 @@ vi.mock('../BaseMap.vue', () => ({
       :data-pickable="String(!!stopsPickable)"
       :data-askedfrom="(askedFromMarkers || []).length"
       :data-askedfrom-label="(askedFromMarkers || []).map(m => m.label).join('|')"
+      :data-vectorshades="(vectorShades || []).length"
+      :data-vectormode="(vectorShades || []).map(s => s.mode).join(',')"
+      :data-placement="String(!!placementMode)"
+      :data-maxpins="maxPins"
     ><button
       data-testid="map-pick-first-stop"
       @click="busStops && busStops.length && $emit('pickStop', busStops[0], 0)"
+    /><button
+      data-testid="map-drop-pin"
+      @click="$emit('tempPinsChange', [{ lat: 36.12, lng: -97.07 }])"
     /></div>`,
   },
 }))
@@ -68,12 +79,14 @@ describe('MapPanel (MAP-004)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     __resetSyncSession()
+    __resetVectorShades()
     geoState.position = null
     geoState.error = null
   })
   afterEach(() => {
     cleanup()
     __resetSyncSession()
+    __resetVectorShades()
   })
 
   it('shows the zone sheet with an empty state initially', () => {
@@ -348,5 +361,100 @@ describe('MapPanel (MAP-004)', () => {
     await nextTick()
 
     expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-askedfrom', '0')
+  })
+
+  // ── Radius shader (MAP-010) ──
+
+  function asSeeker() {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+  }
+
+  it('shows a Radius tool button in the seeker toolbar', async () => {
+    asSeeker()
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('shade-radius-btn')).toHaveTextContent(/radius/i)
+  })
+
+  it('opens the radius control panel and enables placement mode when the tool is toggled', async () => {
+    asSeeker()
+    render(MapPanel)
+    await nextTick()
+
+    expect(screen.queryByTestId('radius-panel')).toBeNull()
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-placement', 'false')
+
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+
+    expect(screen.getByTestId('radius-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-placement', 'true')
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-maxpins', '1')
+  })
+
+  it('commits an inside radius shade after placing a pin and applying', async () => {
+    asSeeker()
+    const v = useVectorShades()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+    // Apply is disabled until a pin is placed.
+    expect(screen.getByTestId('radius-apply-btn')).toBeDisabled()
+
+    // Simulate BaseMap reporting a dropped pin, then apply.
+    await fireEvent.click(screen.getByTestId('map-drop-pin'))
+    await fireEvent.click(screen.getByTestId('radius-apply-btn'))
+
+    expect(v.shades.value).toHaveLength(1)
+    expect(v.shades.value[0]).toMatchObject({ kind: 'radius', mode: 'inside' })
+    // Radius input default 500 ft → meters.
+    expect((v.shades.value[0] as { radiusM: number }).radiusM).toBeCloseTo(500 * 0.3048, 1)
+    // The committed shade is passed back down to the map.
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-vectorshades', '1')
+  })
+
+  it('commits an OUTSIDE shade when the outside mode is selected', async () => {
+    asSeeker()
+    const v = useVectorShades()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+    await fireEvent.click(screen.getByTestId('radius-mode-outside'))
+    await fireEvent.click(screen.getByTestId('map-drop-pin'))
+    await fireEvent.click(screen.getByTestId('radius-apply-btn'))
+
+    expect(v.shades.value[0]).toMatchObject({ mode: 'outside' })
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-vectormode', 'outside')
+  })
+
+  it('undoes and clears vector shades', async () => {
+    asSeeker()
+    const v = useVectorShades()
+    render(MapPanel)
+    await nextTick()
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+
+    // Commit two shades.
+    await fireEvent.click(screen.getByTestId('map-drop-pin'))
+    await fireEvent.click(screen.getByTestId('radius-apply-btn'))
+    await fireEvent.click(screen.getByTestId('map-drop-pin'))
+    await fireEvent.click(screen.getByTestId('radius-apply-btn'))
+    expect(v.shades.value).toHaveLength(2)
+
+    await fireEvent.click(screen.getByTestId('vector-undo-btn'))
+    expect(v.shades.value).toHaveLength(1)
+
+    await fireEvent.click(screen.getByTestId('vector-clear-btn'))
+    expect(v.shades.value).toHaveLength(0)
+  })
+
+  it('does not show the radius tool for a hider', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.queryByTestId('shade-radius-btn')).toBeNull()
   })
 })

@@ -5,18 +5,31 @@ import BaseMap from '../BaseMap.vue'
 
 // A minimal Leaflet stand-in (jsdom can't run real Leaflet rendering).
 function fakeLeaflet() {
+  // Capture map event handlers (e.g. 'click') so tests can fire a map tap.
+  const mapHandlers: Record<string, Array<(e: unknown) => void>> = {}
   const map = {
     addTo: vi.fn(),
     fitBounds: vi.fn(),
     remove: vi.fn(),
     setView: vi.fn(),
+    on: vi.fn((type: string, fn: (e: unknown) => void) => {
+      ;(mapHandlers[type] ??= []).push(fn)
+    }),
+  }
+  /** Fire a captured map event (e.g. a click at a latlng). */
+  function fireMapEvent(type: string, e: unknown) {
+    for (const fn of mapHandlers[type] ?? []) fn(e)
   }
   const layer = {
     addTo: vi.fn().mockReturnThis(),
     getBounds: vi.fn().mockReturnValue({ isValid: () => true }),
     setStyle: vi.fn().mockReturnThis(),
   }
+  // The hiding-zone circle is a single shared stub; vector-shade circles are
+  // recorded separately (see `circles` below) since there can be many.
   const circle = { addTo: vi.fn().mockReturnThis(), remove: vi.fn() }
+  const circles: Array<{ latlng: unknown; opts: unknown }> = []
+  const polygons: Array<{ latlngs: unknown; opts: unknown }> = []
   const group = {
     addLayer: vi.fn(),
     removeLayer: vi.fn(),
@@ -39,6 +52,13 @@ function fakeLeaflet() {
     bindTooltip: ReturnType<typeof vi.fn>
   }> = []
   const divIcons: Array<{ options: { html?: string } }> = []
+  // Draggable temp placement pins (MAP-010): record latlng + captured drag
+  // handlers so tests can move a pin and assert tempPinsChange.
+  const tempPins: Array<{
+    latlng: { lat: number; lng: number }
+    opts: { draggable?: boolean }
+    handlers: Record<string, Array<() => void>>
+  }> = []
   // Capture click handlers registered via DomEvent.on so tests can fire them.
   const domClicks: Array<(e: unknown) => void> = []
   const L = {
@@ -56,7 +76,24 @@ function fakeLeaflet() {
       markers.push(m)
       return m
     }),
-    marker: vi.fn((_latlng: unknown, opts: unknown) => {
+    marker: vi.fn((latlng: [number, number], opts: { draggable?: boolean; icon?: unknown }) => {
+      // Draggable pins are the MAP-010 temp pins; icon'd pins are MAP-009 ask pins.
+      if (opts?.draggable) {
+        const state = {
+          latlng: { lat: latlng[0], lng: latlng[1] },
+          opts,
+          handlers: {} as Record<string, Array<() => void>>,
+        }
+        const m = {
+          ...state,
+          on: vi.fn((type: string, fn: () => void) => {
+            ;(state.handlers[type] ??= []).push(fn)
+          }),
+          getLatLng: () => state.latlng,
+        }
+        tempPins.push(state)
+        return m
+      }
       const m = {
         opts,
         setLatLng: vi.fn().mockReturnThis(),
@@ -70,7 +107,14 @@ function fakeLeaflet() {
       divIcons.push(icon)
       return icon
     }),
-    circle: vi.fn().mockReturnValue(circle),
+    circle: vi.fn((latlng: unknown, opts: unknown) => {
+      circles.push({ latlng, opts })
+      return { ...circle }
+    }),
+    polygon: vi.fn((latlngs: unknown, opts: unknown) => {
+      polygons.push({ latlngs, opts })
+      return { addTo: vi.fn().mockReturnThis() }
+    }),
     layerGroup: vi.fn().mockReturnValue(group),
     rectangle: vi.fn(() => {
       const r = { addTo: vi.fn() }
@@ -93,7 +137,22 @@ function fakeLeaflet() {
       stop: vi.fn(),
     },
   }
-  return { L, map, layer, circle, group, markers, rects, pins, divIcons, domClicks }
+  return {
+    L,
+    map,
+    layer,
+    circle,
+    circles,
+    polygons,
+    group,
+    markers,
+    rects,
+    pins,
+    divIcons,
+    tempPins,
+    domClicks,
+    fireMapEvent,
+  }
 }
 
 describe('BaseMap (MAP-001)', () => {
@@ -319,6 +378,106 @@ describe('BaseMap (MAP-001)', () => {
     // The single pin was removed from its group; L.marker not re-created.
     expect(fake.group.removeLayer).toHaveBeenCalled()
     expect(fake.L.marker).toHaveBeenCalledTimes(1)
+  })
+
+  // ── Temp-pin placement + vector shades (MAP-010) ──
+
+  it('drops a draggable temp pin on map click while placing, and emits tempPinsChange', async () => {
+    const onTempPinsChange = vi.fn()
+    render(BaseMap, {
+      props: { leaflet: fake.L as never, placementMode: true, maxPins: 1, onTempPinsChange },
+    })
+    await nextTick()
+
+    fake.fireMapEvent('click', { latlng: { lat: 36.12, lng: -97.07 } })
+
+    expect(fake.tempPins).toHaveLength(1)
+    expect(fake.tempPins[0]!.opts.draggable).toBe(true)
+    expect(onTempPinsChange).toHaveBeenLastCalledWith([{ lat: 36.12, lng: -97.07 }])
+  })
+
+  it('ignores map clicks when not in placement mode', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never, placementMode: false } })
+    await nextTick()
+    fake.fireMapEvent('click', { latlng: { lat: 1, lng: 1 } })
+    expect(fake.tempPins).toHaveLength(0)
+  })
+
+  it('at capacity (maxPins=1) a new tap replaces the old pin', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never, placementMode: true, maxPins: 1 } })
+    await nextTick()
+    fake.fireMapEvent('click', { latlng: { lat: 1, lng: 1 } })
+    fake.fireMapEvent('click', { latlng: { lat: 2, lng: 2 } })
+    // Both markers were created, but the old one was removed from the group.
+    expect(fake.tempPins).toHaveLength(2)
+    expect(fake.group.removeLayer).toHaveBeenCalled()
+  })
+
+  it('renders an inside radius shade as a smooth L.circle', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        vectorShades: [
+          {
+            kind: 'radius',
+            id: 'r1',
+            center: { lat: 36.12, lng: -97.07 },
+            radiusM: 800,
+            mode: 'inside',
+          },
+        ],
+      },
+    })
+    await nextTick()
+
+    expect(fake.circles).toHaveLength(1)
+    expect(fake.circles[0]!.latlng).toEqual([36.12, -97.07])
+    expect((fake.circles[0]!.opts as { radius: number }).radius).toBe(800)
+    // Inside mode does not need the polygon mask.
+    expect(fake.polygons).toHaveLength(0)
+  })
+
+  it('renders an outside radius shade as a polygon with a circular hole', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        vectorShades: [
+          {
+            kind: 'radius',
+            id: 'r1',
+            center: { lat: 36.12, lng: -97.07 },
+            radiusM: 800,
+            mode: 'outside',
+          },
+        ],
+      },
+    })
+    await nextTick()
+
+    expect(fake.polygons).toHaveLength(1)
+    // Two rings: the outer mask + the circular hole.
+    const rings = fake.polygons[0]!.latlngs as unknown[][]
+    expect(rings).toHaveLength(2)
+    expect(rings[1]!.length).toBeGreaterThan(16) // hole approximated as a ring
+  })
+
+  it('removes a vector shade shape when the shade is gone (undo/clear)', async () => {
+    const shade = {
+      kind: 'radius' as const,
+      id: 'r1',
+      center: { lat: 1, lng: 1 },
+      radiusM: 100,
+      mode: 'inside' as const,
+    }
+    const { rerender } = render(BaseMap, {
+      props: { leaflet: fake.L as never, vectorShades: [shade] },
+    })
+    await nextTick()
+    await rerender({ leaflet: fake.L as never, vectorShades: [] })
+    await nextTick()
+    expect(fake.group.removeLayer).toHaveBeenCalled()
+    // Not re-created on removal.
+    expect(fake.circles).toHaveLength(1)
   })
 
   it('adds only new shading rectangles on a union update (MAP-005 perf)', async () => {
