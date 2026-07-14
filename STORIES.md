@@ -3787,6 +3787,41 @@ Today (post-QSYNC-004) a question asked by a seeker syncs to the hider's device,
 
 - Answer provenance (who answered / manual-vs-in-app) could be added later if the UI wants to show it.
 - Typed per-category affordances (hit/miss, distance pickers) could replace free-text for specific categories; the current Yes/No + free-text covers all categories via the same `answer` string.
+- **Discoverability of the hider answer prompt** — tracked as **QSYNC-006** below.
+
+---
+
+### QSYNC-006: Surface the Hider Answer Prompt Regardless of Tab
+
+**Status:** `ready`
+**Depends On:** QSYNC-005
+
+**Story:** As a hider, when a seeker asks a question, I want to be told **wherever I am in the app** — not only if I happen to be on the Cards tab — so I don't miss a pending question I need to answer.
+
+**Context:**
+
+QSYNC-005 added `HiderAnswerPrompt`, but it's mounted inside `HiderView`, which only renders on the **Cards** tab. The default in-game tab is **Questions** (`GamePlayView.currentTab = 'questions'`), so a hider sitting on the default tab sees no indication that a question is pending until they navigate to Cards. Surfaced by the QSYNC-005 multiplayer E2E (`tests/e2e/multiplayer/question-sync.spec.ts`), which has to click to the Cards tab before the prompt is visible. Not a correctness bug (the answer flow works), but a real discoverability gap in live play — a hider could leave a seeker waiting simply because they were on another tab.
+
+**Acceptance Criteria:**
+
+- [ ] When a question is pending and the viewer is the **hider**, there is a persistent, visible indication **independent of the current tab** (e.g. a badge on the Cards/Questions nav item, a top banner, or auto-switching the hider to the answer surface)
+- [ ] The indication clears once the question is answered (on either device) or vetoed
+- [ ] Seekers are unaffected (no hider-answer affordance shown to them)
+- [ ] Works in a room and offline/single-device; no new sync protocol (reads `questionStore.pendingQuestion` + role, like `HiderAnswerPrompt`)
+- [ ] The QSYNC-005 E2E is updated/extended to assert the tab-independent indication (drop the "click to Cards first" workaround)
+
+**Size:** S
+
+**Implementation Notes / Open Questions:**
+
+- Cheapest option: a **nav badge** on the relevant BottomNav tab (`BottomNav.vue`) driven by `hasPendingQuestion && isHider`. Most discoverable option: **auto-switch** the hider to Cards (or a dedicated answer view) when a pending question arrives — but auto-switching mid-interaction can be jarring; a badge + optional banner is likely the better default.
+- Consider whether the answer prompt should live somewhere always-mounted (e.g. `GamePlayView` as a top banner for the hider) rather than only inside `HiderView`, so it shows on every tab. That would also remove the "Cards tab only" coupling entirely.
+- Keep the existing `HiderAnswerPrompt` component; this card is about **where/when it (or a pointer to it) surfaces**, not the answering logic.
+
+**Tests to Write:**
+
+- `BottomNav.spec.ts` (or `GamePlayView` spec): a pending question shows the hider indication; clears on answer; not shown to seekers
+- Extend the multiplayer E2E to assert the indication appears without navigating to Cards first
 
 ---
 
