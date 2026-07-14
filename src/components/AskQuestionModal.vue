@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useQuestionStore } from '@/stores/questionStore'
+import { useQuestionCurseSync } from '@/composables/useQuestionCurseSync'
 import { getCategoryById, type Question } from '@/types/question'
 
 interface Props {
@@ -22,6 +23,12 @@ const emit = defineEmits<{
 }>()
 
 const questionStore = useQuestionStore()
+// Route question actions through the sync bridge (QSYNC-004) so they broadcast
+// to the room (ask/re-ask/randomize/answer/veto). The bridge wraps the same
+// questionStore actions and only emits when in a room, so offline play is
+// unchanged. `questionStore` is still used directly for read-only lookups
+// (pendingQuestion / getQuestionById) below.
+const questionSync = useQuestionCurseSync()
 
 // State for answer input
 const answerText = ref('')
@@ -86,16 +93,17 @@ function handleCancel() {
 function handleAsk() {
   if (!props.question || !category.value) return
 
-  // Use reaskQuestion for re-asks, askQuestion for normal asks
+  // Use reaskQuestion for re-asks, askQuestion for normal asks. Routed through
+  // the sync bridge so the ask broadcasts to the room (QSYNC-004).
   const result = props.isReask
-    ? questionStore.reaskQuestion(props.question.id)
-    : questionStore.askQuestion(props.question.id)
+    ? questionSync.reaskQuestion(props.question.id)
+    : questionSync.askQuestion(props.question.id)
 
   if (result.success) {
     showConfirmation.value = true
     confirmationMessage.value = props.isReask
-      ? 'Question re-asked (2x cost)! Waiting for hider\'s response.'
-      : 'Question asked! Waiting for hider\'s response.'
+      ? "Question re-asked (2x cost)! Waiting for hider's response."
+      : "Question asked! Waiting for hider's response."
     emit('asked', {
       questionId: props.question.id,
       cardsDraw: result.cardsDraw!,
@@ -107,7 +115,7 @@ function handleAsk() {
 function handleSubmitAnswer() {
   if (!displayedQuestion.value || !category.value) return
 
-  const result = questionStore.answerQuestion(displayedQuestion.value.id, answerText.value)
+  const result = questionSync.answerQuestion(displayedQuestion.value.id, answerText.value)
   if (result.success) {
     confirmationMessage.value = 'Answer recorded! Hider draws cards.'
     emit('answered', {
@@ -124,7 +132,7 @@ function handleSubmitAnswer() {
 function handleVeto() {
   if (!displayedQuestion.value || !category.value) return
 
-  const result = questionStore.vetoQuestion(displayedQuestion.value.id)
+  const result = questionSync.vetoQuestion(displayedQuestion.value.id)
   if (result.success) {
     confirmationMessage.value = 'Question vetoed! Returned to available.'
     emit('vetoed', {
@@ -141,7 +149,7 @@ function handleRandomize() {
   if (!displayedQuestion.value) return
 
   const originalId = displayedQuestion.value.id
-  const result = questionStore.randomizeQuestion(originalId)
+  const result = questionSync.randomizeQuestion(originalId)
   if (result.success) {
     confirmationMessage.value = 'Question randomized! Answer the new question.'
     emit('randomized', {
@@ -164,7 +172,10 @@ function handleRandomize() {
         <div class="flex items-center justify-between">
           <div>
             <span class="text-lg font-semibold">{{ category.name }}</span>
-            <span v-if="isReask" class="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+            <span
+              v-if="isReask"
+              class="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700"
+            >
               Re-ask (2x cost)
             </span>
           </div>
@@ -200,7 +211,9 @@ function handleRandomize() {
       </div>
 
       <!-- Footer / Actions -->
-      <div class="flex flex-col gap-3 border-t border-gray-200 px-6 py-4 sm:flex-row sm:flex-wrap sm:justify-end">
+      <div
+        class="flex flex-col gap-3 border-t border-gray-200 px-6 py-4 sm:flex-row sm:flex-wrap sm:justify-end"
+      >
         <template v-if="!showAnswerSection">
           <button
             type="button"

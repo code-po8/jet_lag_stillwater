@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { useQuestionCurseSync } from '../useQuestionCurseSync'
+import { useQuestionCurseSync, __resetQuestionCurseSync } from '../useQuestionCurseSync'
 import { useRoomStore } from '@/stores/roomStore'
 import { useQuestionStore } from '@/stores/questionStore'
 import { useSync, __resetSyncSession } from '@/composables/useSync'
@@ -13,9 +13,11 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     __resetSyncSession()
+    __resetQuestionCurseSync()
   })
   afterEach(() => {
     __resetSyncSession()
+    __resetQuestionCurseSync()
   })
 
   function enterRoom() {
@@ -113,5 +115,63 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     bridge.applyRemoteEvent('question.answered', { questionId: RADAR_Q, answer: 'yes' })
     expect(questions.pendingQuestion).toBeNull()
     expect(questions.askedQuestions.some((q) => q.questionId === RADAR_Q)).toBe(true)
+  })
+
+  // ── QSYNC-004: singleton + reask/randomize wrappers ──
+
+  it('useQuestionCurseSync returns the SAME instance (app-singleton)', () => {
+    const a = useQuestionCurseSync()
+    const b = useQuestionCurseSync()
+    expect(a).toBe(b)
+  })
+
+  it('__resetQuestionCurseSync clears the singleton', () => {
+    const a = useQuestionCurseSync()
+    __resetQuestionCurseSync()
+    const b = useQuestionCurseSync()
+    expect(a).not.toBe(b)
+  })
+
+  it('emits question.asked when a re-ask succeeds in a room', () => {
+    enterRoom()
+    const sync = useSync()
+    const sent: Array<{ kind: string; payload: unknown }> = []
+    sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+    const bridge = useQuestionCurseSync()
+    // Re-ask requires the question to have been asked AND answered before, so
+    // establish that precondition first, then clear the sent log.
+    bridge.askQuestion(RADAR_Q)
+    bridge.answerQuestion(RADAR_Q, 'yes')
+    sent.length = 0
+
+    // A re-ask replays the ask (2x cost handled in the store); on the wire it is
+    // the same question.asked event so the hider sees the pending question.
+    const res = bridge.reaskQuestion(RADAR_Q)
+    expect(res.success).toBe(true)
+    expect(sent).toEqual([{ kind: 'question.asked', payload: { questionId: RADAR_Q } }])
+  })
+
+  it('emits question.asked with the NEW id when a randomize succeeds in a room', () => {
+    enterRoom()
+    const questions = useQuestionStore()
+    const sync = useSync()
+    const sent: Array<{ kind: string; payload: Record<string, unknown> }> = []
+    sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+    const bridge = useQuestionCurseSync()
+    // Randomize needs a pending question first.
+    bridge.askQuestion(RADAR_Q)
+    sent.length = 0
+
+    const res = bridge.randomizeQuestion(RADAR_Q)
+    expect(res.success).toBe(true)
+    // The pending question is now a different radar question, broadcast so the
+    // hider's pending question tracks the swap.
+    expect(sent).toHaveLength(1)
+    expect(sent[0]!.kind).toBe('question.asked')
+    const newId = questions.pendingQuestion!.questionId
+    expect(sent[0]!.payload).toEqual({ questionId: newId })
+    expect(newId).not.toBe(RADAR_Q)
   })
 })
