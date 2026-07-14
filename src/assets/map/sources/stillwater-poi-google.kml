@@ -1066,15 +1066,6 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name><![CDATA[Granny's Kitchen]]></name>
-        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            -97.0582487,36.1143768,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
         <name>Hatch Early Mood Food</name>
         <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
         <Point>
@@ -1134,15 +1125,6 @@
         <Point>
           <coordinates>
             -97.0587484,36.1137762,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>Good Little Eater</name>
-        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            -97.0589795,36.1114604,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1287,15 +1269,6 @@
         <Point>
           <coordinates>
             -97.0508963,36.1402567,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name><![CDATA[Bad Brad's Bar-B-Q]]></name>
-        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            -97.131195,36.116703,0
           </coordinates>
         </Point>
       </Placemark>
@@ -1548,15 +1521,6 @@
         <Point>
           <coordinates>
             -97.0568744,36.1265453,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>Thai Loco Restaurant</name>
-        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            -97.0869944,36.1154583,0
           </coordinates>
         </Point>
       </Placemark>

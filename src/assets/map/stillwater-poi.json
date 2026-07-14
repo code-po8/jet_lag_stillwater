@@ -4,7 +4,7 @@
     "source": "Merged: OpenStreetMap (fallback) + Google My Maps export + manual overrides",
     "bakedFor": "Stillwater, OK",
     "generatedBy": "scripts/bake-stillwater-poi.mjs (merge)",
-    "sources": { "osm": 194, "google": 299, "manual": 0, "overrides": 22, "droppedByPolicy": 150 }
+    "sources": { "osm": 194, "google": 295, "manual": 0, "overrides": 22, "droppedByPolicy": 150 }
   },
   "features": [
     {
@@ -269,11 +269,6 @@
     },
     {
       "type": "Feature",
-      "properties": { "kind": "restaurant", "name": "Granny's Kitchen" },
-      "geometry": { "type": "Point", "coordinates": [-97.0582487, 36.1143768] }
-    },
-    {
-      "type": "Feature",
       "properties": { "kind": "restaurant", "name": "Hatch Early Mood Food" },
       "geometry": { "type": "Point", "coordinates": [-97.0582183, 36.1114165] }
     },
@@ -306,11 +301,6 @@
       "type": "Feature",
       "properties": { "kind": "restaurant", "name": "Louie's Grill & Bar" },
       "geometry": { "type": "Point", "coordinates": [-97.0587484, 36.1137762] }
-    },
-    {
-      "type": "Feature",
-      "properties": { "kind": "restaurant", "name": "Good Little Eater" },
-      "geometry": { "type": "Point", "coordinates": [-97.0589795, 36.1114604] }
     },
     {
       "type": "Feature",
@@ -391,11 +381,6 @@
       "type": "Feature",
       "properties": { "kind": "restaurant", "name": "La Carreta Mexican Bar and Grill" },
       "geometry": { "type": "Point", "coordinates": [-97.0508963, 36.1402567] }
-    },
-    {
-      "type": "Feature",
-      "properties": { "kind": "restaurant", "name": "Bad Brad's Bar-B-Q" },
-      "geometry": { "type": "Point", "coordinates": [-97.131195, 36.116703] }
     },
     {
       "type": "Feature",
@@ -536,11 +521,6 @@
       "type": "Feature",
       "properties": { "kind": "restaurant", "name": "McAlister's Deli" },
       "geometry": { "type": "Point", "coordinates": [-97.0568744, 36.1265453] }
-    },
-    {
-      "type": "Feature",
-      "properties": { "kind": "restaurant", "name": "Thai Loco Restaurant" },
-      "geometry": { "type": "Point", "coordinates": [-97.0869944, 36.1154583] }
     },
     {
       "type": "Feature",
