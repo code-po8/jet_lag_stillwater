@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSync } from '@/composables/useSync'
+import { useQuestionCurseSync } from '@/composables/useQuestionCurseSync'
 import HiderView from './HiderView.vue'
 import SeekerView from './SeekerView.vue'
 import BottomNav, { type NavTab } from '@/components/BottomNav.vue'
@@ -31,6 +32,14 @@ const router = useRouter()
 const gameStore = useGameStore()
 const roomStore = useRoomStore()
 const sync = useSync()
+
+// Mount the question/curse sync bridge for the whole game session (QSYNC-004).
+// GamePlayView persists across the SeekerView/HiderView/MapPanel tab switches
+// (those `v-if`-unmount), so mounting the bridge here keeps its inbound
+// `onGameEvent` subscription alive for BOTH roles — the hider must stay
+// subscribed to receive relayed asks/answers even while not on the questions
+// tab. It's an app-singleton, so this shares one instance with AskQuestionModal.
+useQuestionCurseSync()
 
 // Host-only Admin tab visibility (ADMIN-001). Uses the persisted-or-live host
 // flag so it survives a mid-game refresh (same source as the role-lock UI).

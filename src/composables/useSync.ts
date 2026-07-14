@@ -344,3 +344,12 @@ export function useSync(): SyncSession {
 export function __resetSyncSession(): void {
   singleton = null
 }
+
+/**
+ * Test-only seam: install a pre-built session (e.g. one wired to a fake
+ * SyncService) as the app singleton, so integration tests can drive the real
+ * inbound dispatch path. Mirrors `__resetSyncSession`; not used in production.
+ */
+export function __setSyncSession(session: SyncSession): void {
+  singleton = session
+}

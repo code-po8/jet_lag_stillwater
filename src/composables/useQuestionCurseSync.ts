@@ -1,9 +1,15 @@
 /**
- * Question & curse sync bridge (MULTI-003b-2).
+ * Question & curse sync bridge (MULTI-003b-2, wired into the app in QSYNC-004).
  *
- * Relays local question (ask/answer/veto) and curse-activation actions to the
- * room, and applies inbound ones to the local stores. Reuses the existing
- * questionStore / cardStore (no parallel state).
+ * Relays local question (ask/re-ask/randomize/answer/veto) and curse-activation
+ * actions to the room, and applies inbound ones to the local stores. Reuses the
+ * existing questionStore / cardStore (no parallel state).
+ *
+ * App-singleton (QSYNC-004): mounted once in `GamePlayView` so the `onGameEvent`
+ * subscription persists across the SeekerView/HiderView/MapPanel tab switches
+ * (they `v-if`-unmount), and so the modal and the view share ONE instance — the
+ * modal calls the wrappers, the view owns the inbound subscription. Mirrors
+ * `useSync`'s singleton + `__reset*` pattern.
  *
  * Echo safety: applying a remote event sets `applyingRemote`, so the same store
  * action does not re-broadcast. The server also tags events with `from` and
@@ -23,7 +29,9 @@ import type { GameEventKind } from '@/services/sync/protocol'
 /** Common shape of the precondition-guarded store actions we replay. */
 type ApplyResult = { success: boolean; error?: string }
 
-export function useQuestionCurseSync() {
+export type QuestionCurseSync = ReturnType<typeof createQuestionCurseSync>
+
+function createQuestionCurseSync() {
   const room = useRoomStore()
   const questions = useQuestionStore()
   const cards = useCardStore()
@@ -40,6 +48,30 @@ export function useQuestionCurseSync() {
   function askQuestion(questionId: string) {
     const res = questions.askQuestion(questionId)
     if (res.success) emit('question.asked', { questionId })
+    return res
+  }
+  /**
+   * Re-ask (2x card cost, handled in the store). On the wire it is the SAME
+   * `question.asked` event — the remote side just needs the pending question to
+   * appear; the doubled cost is a hider-local card concern.
+   */
+  function reaskQuestion(questionId: string) {
+    const res = questions.reaskQuestion(questionId)
+    if (res.success) emit('question.asked', { questionId })
+    return res
+  }
+  /**
+   * Randomize a pending question in-place. The store swaps the pending question
+   * to a new id in the same category, so we broadcast a fresh `question.asked`
+   * for the NEW id (read back from the store) — the remote pending question then
+   * tracks the swap. Returns the store result (carries `newQuestionId`).
+   */
+  function randomizeQuestion(questionId: string) {
+    const res = questions.randomizeQuestion(questionId)
+    if (res.success) {
+      const newId = questions.pendingQuestion?.questionId ?? res.newQuestionId
+      if (newId) emit('question.asked', { questionId: newId })
+    }
     return res
   }
   function answerQuestion(questionId: string, answer: string) {
@@ -126,6 +158,8 @@ export function useQuestionCurseSync() {
 
   return {
     askQuestion,
+    reaskQuestion,
+    randomizeQuestion,
     answerQuestion,
     vetoQuestion,
     activateCurse,
@@ -133,4 +167,24 @@ export function useQuestionCurseSync() {
     applyRemoteEvent,
     stopQuestionCurseSync: stop,
   }
+}
+
+// App-wide singleton bridge — mounted once in GamePlayView (QSYNC-004). Both the
+// mount point (owns the inbound subscription) and AskQuestionModal (calls the
+// wrappers) share this instance.
+let singleton: QuestionCurseSync | null = null
+
+export function useQuestionCurseSync(): QuestionCurseSync {
+  if (!singleton) singleton = createQuestionCurseSync()
+  return singleton
+}
+
+/**
+ * Test/teardown helper to reset the singleton. Also un-subscribes the previous
+ * instance's `onGameEvent` handler so a fresh session doesn't accumulate stale
+ * subscribers (mirrors `__resetSyncSession`).
+ */
+export function __resetQuestionCurseSync(): void {
+  singleton?.stopQuestionCurseSync()
+  singleton = null
 }

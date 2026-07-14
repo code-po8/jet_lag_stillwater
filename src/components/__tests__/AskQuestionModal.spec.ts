@@ -3,6 +3,9 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import AskQuestionModal from '../AskQuestionModal.vue'
 import { useQuestionStore } from '@/stores/questionStore'
+import { useRoomStore } from '@/stores/roomStore'
+import { useSync, __resetSyncSession } from '@/composables/useSync'
+import { __resetQuestionCurseSync } from '@/composables/useQuestionCurseSync'
 import { ALL_QUESTIONS } from '@/data/questions'
 import { QUESTION_CATEGORIES, type Question } from '@/types/question'
 
@@ -12,6 +15,11 @@ describe('AskQuestionModal', () => {
   beforeEach(() => {
     // Create a fresh Pinia instance before each test
     setActivePinia(createPinia())
+    // The modal routes actions through the singleton sync bridge (QSYNC-004);
+    // reset it (and the sync singleton it wraps) so each test gets a fresh
+    // bridge bound to this test's stores. Offline (no room) → no broadcast.
+    __resetSyncSession()
+    __resetQuestionCurseSync()
 
     // Get a known question for testing
     testQuestion = ALL_QUESTIONS.find((q) => q.categoryId === 'matching')!
@@ -19,6 +27,8 @@ describe('AskQuestionModal', () => {
 
   afterEach(() => {
     cleanup()
+    __resetSyncSession()
+    __resetQuestionCurseSync()
   })
 
   describe('modal display', () => {
@@ -222,6 +232,37 @@ describe('AskQuestionModal', () => {
 
       // Should show confirmation that question was asked
       expect(screen.getByText(/question asked/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('sync broadcast (QSYNC-004)', () => {
+    it('broadcasts question.asked over the wire when asking in a room', async () => {
+      // In a room, the ask must go through the bridge and emit a game.event so
+      // the hider sees it — this is the integration QSYNC-004 wires up.
+      const room = useRoomStore()
+      room.code = 'ABCD'
+      room.rejoinToken = 'tok'
+      room.self = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+
+      const sync = useSync()
+      const sent: Array<{ kind: string; payload: unknown }> = []
+      sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+      render(AskQuestionModal, { props: { question: testQuestion } })
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      expect(sent).toEqual([{ kind: 'question.asked', payload: { questionId: testQuestion.id } }])
+    })
+
+    it('does NOT broadcast when offline (no room)', async () => {
+      const sync = useSync()
+      const sent: unknown[] = []
+      sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+      render(AskQuestionModal, { props: { question: testQuestion } })
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      expect(sent).toHaveLength(0)
     })
   })
 

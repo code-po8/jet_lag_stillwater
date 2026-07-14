@@ -3670,15 +3670,17 @@ describe('room creation and join', () => {
 
 ### MULTI-003b-2: Question & Curse Sync
 
-**Status:** `complete`
+**Status:** `complete` — ⚠️ see integration flag below
 **Depends On:** MULTI-003b-1
 
 **Story:** As a player, I need asked/answered questions and curse activations to appear on every device.
 
+> **⚠️ FLAG (integration gap — RESOLVED in QSYNC-004):** The relay bridge (`useQuestionCurseSync`) was built and unit-tested here but was originally **never mounted by any view**, so in the running app asks/answers/vetoes did not actually broadcast and the hider never saw them. The composable-level criteria below were delivered here; live-app integration (mounting the bridge in `GamePlayView` + routing `AskQuestionModal` through it) landed in **QSYNC-004** (Epic 12). These criteria are now fully delivered.
+
 **Acceptance Criteria:**
 
-- [x] Question asked/answered events sync immediately to all players
-- [x] Curse activations appear on all seeker devices
+- [x] Question asked/answered events sync immediately to all players — _bridge here; app integration in QSYNC-004_
+- [x] Curse activations appear on all seeker devices — _bridge here; app integration in QSYNC-004_
 - [x] Reuses `questionStore`/`cardStore` shapes (no parallel state)
 
 **Size:** L
@@ -3922,6 +3924,49 @@ describe('hand limit warning display (BUG-001)', () => {
 - Added `effectiveAvailableSlots` computed property to CardDrawModal.vue
 - Updated `handLimitExceeded` to compare `keepCount > effectiveAvailableSlots`
 - Updated existing tests to reflect correct behavior with realistic scenarios
+
+---
+
+### QSYNC-004: Wire Question/Curse Sync Bridge Into the Live App
+
+**Status:** `complete`
+**Depends On:** None
+
+**Story:** As a player in a multiplayer game, when a seeker asks/answers/vetoes a question through the app, all devices (especially the hider) should see it — so the game state stays in sync across phones.
+
+**Bug Description:**
+
+`useQuestionCurseSync` (the WebSocket relay bridge for `question.asked` / `question.answered` / `question.vetoed` / `curse.activated` / `timetrap.triggered`) exists and is unit-tested, but is **imported and mounted by nothing** in the running app (zero non-test usages). The live ask path — `AskQuestionModal.handleAsk()` → `questionStore.askQuestion()` directly → Vue `@asked` → `SeekerView.handleQuestionAsked()` (an empty no-op) — never calls `sync.sendGameEvent`, so nothing broadcasts. Because the bridge subscribes to inbound events via `sync.onGameEvent` only on composable setup, an unmounted bridge also means the hider **receives** nothing. Result: questions asked through the app are local-only; the hider never sees them.
+
+**Discrepancy:** `MULTI-003b-2` (Epic 10) is marked `complete` with "Question asked/answered events sync immediately" checked, but the integration was never wired in. That criterion should be treated as **not delivered** until this card lands.
+
+**Root Cause:**
+
+The bridge composable was built and tested in isolation but never mounted, and `AskQuestionModal` calls `questionStore` actions directly instead of the bridge wrappers.
+
+**Acceptance Criteria:**
+
+- [x] `useQuestionCurseSync` is mounted for the whole game session (in `GamePlayView.vue`, which persists across the SeekerView/HiderView/MapPanel tab switches), so both roles keep the `onGameEvent` subscription
+- [x] `AskQuestionModal` routes ask / re-ask / randomize / answer / veto through the bridge wrappers instead of calling `questionStore` directly, so local actions broadcast
+- [x] The bridge is an app-singleton (mirroring `useSync`'s session pattern, with a `__resetQuestionCurseSync` test seam) so the mount point and the modal share one instance
+- [x] A hider on a second device sees a question appear when a seeker asks it, and sees the answer/veto when recorded (covered by the inbound-relay regression test)
+- [x] Echo safety preserved (originator does not re-apply its own event; server `from`-tag + `applyingRemote` guard)
+- [x] `MULTI-003b-2` acceptance note updated to reflect it was integrated here
+
+**Size:** M
+
+**Implementation Notes:**
+
+- `useQuestionCurseSync` is now an **app-singleton** (`createQuestionCurseSync` factory + lazy `singleton` + `__resetQuestionCurseSync`, which also un-subscribes the previous instance's `onGameEvent` handler). Mirrors `useSync`'s pattern; a new `__setSyncSession` test seam on `useSync` lets integration tests install a fake-service session.
+- Added `reaskQuestion` / `randomizeQuestion` wrappers so re-asks (2× cost, same `question.asked` on the wire) and in-place randomizes (re-broadcast `question.asked` for the **new** id read back from the store) also sync.
+- `GamePlayView.vue` calls `useQuestionCurseSync()` once on setup so the inbound subscription persists across the tab `v-if` unmounts — the hider stays subscribed even off the questions tab.
+- `AskQuestionModal.vue` now calls the bridge wrappers for all five actions; it still reads `questionStore` directly for `pendingQuestion` / `getQuestionById` lookups. Offline (no room) the wrappers just call the store and skip the emit, so single-device play is unchanged.
+- TDD: `useQuestionCurseSync.spec.ts` (+4: singleton identity, reset, re-ask emit, randomize emits new id); new `GamePlayQuestionSync.spec.ts` (3: inbound relay reaches the store after mount, the same relay is a **no-op without the mount** — proving the mount is load-bearing, and an ask→answer round-trip); `AskQuestionModal.spec.ts` (+2: broadcasts in a room, silent offline). Full suite green: 65 files / 1517 tests; type-check OK.
+
+**Notes:**
+
+- Prerequisite for **MAP-009** (ask-time position now has a synced `question.asked` to attach to).
+- Hider answer surface unchanged: answers are still recorded on the **seeker's** device via `AskQuestionModal` (`HiderView` has no answer UI); wiring the bridge means that recorded answer now syncs. A dedicated hider-side answer UI, if wanted, is a separate follow-up.
 
 ---
 
@@ -4464,6 +4509,103 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 - Root cause of the reported "GPS not working": the render path was sound (confirmed by a new multiplayer E2E that drives a real granted geolocation and asserts the marker paints). Real-device failures (denied permission / no fix) were **silent** — no UI feedback — so `MapPanel` now derives a `gpsStatus` from `geo.ownPosition`/`geo.error` and renders a `data-testid="gps-status"` pill.
 - Legend/nav overlap: `.gameplay-map-tab` was `position: absolute; inset: 0`, which bypasses the parent's `.content-with-nav` padding and extends the map (and its `bottom: 10px` legend) under the fixed BottomNav. Fixed by setting `bottom: calc(60px + env(safe-area-inset-bottom))` on the map tab.
 - TDD: `MapPanel.spec.ts` (+3: locating / error / hidden-on-fix status states); new multiplayer E2E `tests/e2e/multiplayer/lobby-game.spec.ts` "the joiner sees their own GPS 'you' dot on the map". 1476 frontend tests pass; multiplayer + offline E2E green.
+
+---
+
+### MAP-009: Seeker Ask-Time Position Pin
+
+**Status:** `ready`
+**Depends On:** QSYNC-004
+
+**Story:** As a hider, I need to see where each seeker was **when they asked a question** — shown as a distinct pin, separate from their live position — so I understand what a Radar/Measuring answer was measured against while still tracking where the seeker is now.
+
+**Acceptance Criteria:**
+
+- [ ] The asking seeker's position is captured at **ask-time** (their own live GPS) and carried on the `question.asked` payload and on the `AskedQuestion` record (new optional `askedFrom?: { lat; lng }`)
+- [ ] The store `askQuestion(questionId, askedFrom?)` (and `reaskQuestion`) accept and persist `askedFrom`; persistence stays backward-compatible (optional field)
+- [ ] The hider's map renders the ask-time position as a **muted/desaturated-cyan teardrop map pin with a white "?" glyph inside** — a distinct silhouette from the round live seeker dot, tied to the seeker by color
+- [ ] The seeker's **live** position marker continues to render independently — both the live dot and the ask-time pin are visible at once
+- [ ] When the two overlap (seeker hasn't moved), the **ask-time pin takes precedence** and is drawn on top of the live dot (draw order / `bringToFront`)
+- [ ] The pin is legible on a 320px mobile map and has an accessible tooltip/label
+
+**Size:** M
+
+**Implementation Notes:**
+
+- The ask-time pin needs a Leaflet `L.divIcon`/SVG `L.marker` (a teardrop-with-glyph can't be done with the existing `circleMarker` styling used for live dots). Add a small `drawAskedFrom`/`askedFromMarkers` path in `BaseMap.vue` alongside the existing `drawMarkers`.
+- Existing marker palette to stay clear of: live hider indigo `#4f46e5`, live seeker cyan (`BRAND_COLORS.cyan`), POI orange/gold/green, zone red, bus-stop/POI white. Use a muted cyan for the ask-time pin so it reads as "the seeker, earlier."
+- Thread `askedFrom` through the **wrapper** path (`useQuestionCurseSync.askQuestion` reads singleton `useGeolocation().ownPosition`, includes it in the emit payload; `applyRemoteEvent` reads `payload.askedFrom`). Depends on QSYNC-004 having made the bridge + geolocation app-singletons.
+- Extend the `fakeLeaflet` mock (`BaseMap.spec.ts`) with `L.marker` + `L.divIcon`.
+
+**Tests to Write:**
+
+- `questionStore.spec.ts`: `askQuestion`/`reaskQuestion` store and persist `askedFrom`; absent `askedFrom` stays valid
+- `useQuestionCurseSync.spec.ts`: emit payload includes `askedFrom`; inbound applies it
+- `BaseMap.spec.ts`: ask-time pin rendered with distinct icon; overlaps live dot with higher precedence
+
+---
+
+### MAP-010: Radius Shader (Vector Shade Foundation)
+
+**Status:** `ready`
+**Depends On:** MAP-005
+
+**Story:** As a seeker, I need to drop a temporary pin and shade a configurable radius around it (inside or outside the circle) so I can quickly mark the region a Radar answer rules out — with a smooth, accurate circle.
+
+**Acceptance Criteria:**
+
+- [ ] Seeker can drop a **temporary draggable pin** on the map (tap to place, drag to reposition)
+- [ ] A control panel sets a **configurable radius** (with sensible units for the ¼-mile-scale map) and an **inside/outside** toggle (shade the disc, or everything outside it — for Radar miss vs hit)
+- [ ] The shaded region renders as a **smooth `L.circle`** (native SVG — satisfies the "smooth/accurate circumference" requirement; no polygon approximation)
+- [ ] Applying commits the shade to a local reactive list (`useVectorShades`); shades render on the map; **undo/clear** available
+- [ ] Vector shades are **local to the drawing seeker** for now, with a documented seam for later cross-seeker sync
+- [ ] Coexists with the existing geohash freehand/auto-shading (both models render); mobile-friendly at 320px
+
+**Size:** L
+
+**Implementation Notes:**
+
+- New composable `src/composables/useVectorShades.ts` (singleton reactive list): `shades`, `addRadiusShade`, `addLineShade`, `removeShade`, `clearShades`, plus a documented sync seam (kept local for now, shaped so a future broadcast layer drops in — cf. MAP-005's union-only `ruledout`).
+- Reuse the `L.circle([lat,lng],{radius:meters})` pattern from `BaseMap.drawZone` (BaseMap.vue ~288–309) for smooth circle rendering.
+- Temp-pin wiring through `BaseMap`: a `placementMode` prop, draggable `L.marker`s, `map.on('click')`, a `tempPinsChange` emit, plus a `vectorShades` prop + `drawVectorShades`. Split responsibilities like the existing freehand tool: **BaseMap** owns Leaflet interaction, **MapPanel** owns tool state/control panel/undo (mirrors `applyFreehand`/`undoStack`).
+- Extend the `MapPanel` seeker `shade-toolbar` (MapPanel.vue ~193–231) with the radius tool button.
+- Extend `fakeLeaflet` mock with draggable `L.marker` and `map.on` capture.
+
+**Tests to Write:**
+
+- `useVectorShades.spec.ts`: add/remove/clear radius shade; local-only semantics
+- `BaseMap.spec.ts`: placement mode drops/moves a temp pin; committed radius shade renders as a circle; emits `tempPinsChange`
+- `MapPanel.spec.ts`: radius tool button, radius input, inside/outside toggle, undo/clear
+
+---
+
+### MAP-011: Line (Thermometer) Shader
+
+**Status:** `ready`
+**Depends On:** MAP-010
+
+**Story:** As a seeker, after a Thermometer (hotter/colder) answer, I need to place a start and end pin and shade one side of the perpendicular through the start pin, so I can rule out the half of the map the answer eliminates.
+
+**Acceptance Criteria:**
+
+- [ ] Seeker places a **start pin** and an **end pin** (reusing MAP-010's temp-pin placement)
+- [ ] The tool draws the **perpendicular line through the start pin** (perpendicular to the start→end direction), dividing the map into two half-planes
+- [ ] The seeker **taps which half-plane to shade** (whichever the hotter/colder answer ruled out) — no assumption about which side
+- [ ] The chosen half is shaded as a large smooth `L.polygon` extending well beyond the visible map
+- [ ] Commits to the `useVectorShades` list; **undo/clear** available; local-only with the same sync seam
+
+**Size:** M
+
+**Implementation Notes:**
+
+- New helper `src/utils/halfPlane.ts`: `halfPlanePolygon(start, end, side, spanMeters?)` — compute the start→end direction, take its normal, and build a large polygon covering the chosen half-plane (planar-tangent approximation at Stillwater latitude is ample). Pure function → straightforward unit tests.
+- Reuse the temp-pin + control-panel plumbing from MAP-010; add a line-tool button to the seeker toolbar and a side-pick affordance.
+- Extend `fakeLeaflet` mock with `L.polygon` if not already present.
+
+**Tests to Write:**
+
+- `halfPlane.spec.ts`: perpendicular orientation; correct half selected for each `side`; polygon spans beyond bounds
+- `MapPanel.spec.ts` / `BaseMap.spec.ts`: two-pin placement, side pick, committed polygon renders
 
 ---
 
