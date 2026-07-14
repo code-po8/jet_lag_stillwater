@@ -15,6 +15,7 @@ import { BRAND_COLORS } from '@/design/colors'
 import type { Position, Role, Zone } from '@/services/sync/protocol'
 import { geohashBounds } from '@/utils/geohash'
 import type { VectorShade } from '@/composables/useVectorShades'
+import { halfPlanePolygon } from '@/utils/halfPlane'
 
 /** A temporary placement pin the seeker drops for a shade tool (MAP-010). */
 export interface TempPin {
@@ -631,8 +632,11 @@ function vectorShapeFor(leaflet: typeof L, shade: VectorShade): L.Layer | null {
     const hole = circleRing(shade.center, shade.radiusM)
     return leaflet.polygon([outer, hole], VECTOR_SHADE_STYLE)
   }
-  // Line half-plane rendering lands in MAP-011.
-  return null
+  // Line (thermometer) half-plane: shade the chosen side of the perpendicular
+  // through the start pin (MAP-011).
+  const ring = halfPlanePolygon(shade.start, shade.end, shade.side)
+  if (!ring) return null
+  return leaflet.polygon(ring, VECTOR_SHADE_STYLE)
 }
 
 function drawVectorShades() {

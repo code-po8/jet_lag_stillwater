@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, getCurrentScope, onScopeDispose } from 'vue'
 
 export interface UseTimerOptions {
   /** Callback function called at each tick interval */
@@ -125,6 +125,20 @@ export function useTimer(options: UseTimerOptions = {}) {
     if (startTimestamp !== null) {
       elapsed.value = pausedElapsed + (now - startTimestamp)
     }
+  }
+
+  // Clear the interval when the owning component/effect scope is disposed, so a
+  // tick can't fire after unmount (which previously leaked past jsdom teardown
+  // in the test suite — a stray tick called persist() with localStorage gone).
+  // Guarded by getCurrentScope() so calling useTimer() outside a scope (unit
+  // tests) doesn't warn.
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      if (intervalId !== null) {
+        clearInterval(intervalId)
+        intervalId = null
+      }
+    })
   }
 
   return {

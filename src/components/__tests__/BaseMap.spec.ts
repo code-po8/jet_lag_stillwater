@@ -461,6 +461,49 @@ describe('BaseMap (MAP-001)', () => {
     expect(rings[1]!.length).toBeGreaterThan(16) // hole approximated as a ring
   })
 
+  it('renders a line (thermometer) shade as a half-plane polygon (MAP-011)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        vectorShades: [
+          {
+            kind: 'line',
+            id: 'l1',
+            start: { lat: 36.12, lng: -97.07 },
+            end: { lat: 36.13, lng: -97.07 },
+            side: 'toward',
+          },
+        ],
+      },
+    })
+    await nextTick()
+
+    expect(fake.polygons).toHaveLength(1)
+    // A single ring (the half-plane), unlike the outside-radius mask (2 rings).
+    const ring = fake.polygons[0]!.latlngs as [number, number][]
+    expect(Array.isArray(ring[0])).toBe(true)
+    expect(ring.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('does not render a degenerate line shade (start === end)', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        vectorShades: [
+          {
+            kind: 'line',
+            id: 'l1',
+            start: { lat: 36.12, lng: -97.07 },
+            end: { lat: 36.12, lng: -97.07 },
+            side: 'toward',
+          },
+        ],
+      },
+    })
+    await nextTick()
+    expect(fake.polygons).toHaveLength(0)
+  })
+
   it('removes a vector shade shape when the shade is gone (undo/clear)', async () => {
     const shade = {
       kind: 'radius' as const,
