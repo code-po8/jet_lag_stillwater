@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { ref } from 'vue'
-import { render, cleanup } from '@testing-library/vue'
+import { ref, nextTick } from 'vue'
+import { render, screen, cleanup } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import GamePlayView from '../GamePlayView.vue'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
@@ -115,5 +115,50 @@ describe('GamePlayView question sync integration (QSYNC-004)', () => {
 
     expect(questions.pendingQuestion).toBeNull()
     expect(questions.askedQuestions.some((q) => q.questionId === RADAR_Q)).toBe(true)
+  })
+
+  // ── QSYNC-006: the hider is alerted on ANY tab, not just Cards ──
+
+  it('shows the hider answer prompt on the default (Questions) tab when a question arrives', async () => {
+    enterRoomSeeking('hider')
+    render(GamePlayView)
+    // Default tab is Questions — the prompt used to live in the Cards-only
+    // HiderView, so it was invisible here. It must now be visible regardless.
+    expect(screen.queryByTestId('hider-answer-prompt')).toBeNull()
+
+    relayGameEvent('question.asked', { questionId: RADAR_Q })
+    await nextTick()
+
+    expect(screen.getByTestId('hider-answer-prompt')).toBeInTheDocument()
+  })
+
+  it('badges the Cards nav tab while a question is pending for the hider', async () => {
+    enterRoomSeeking('hider')
+    render(GamePlayView)
+    expect(screen.queryByTestId('nav-badge-cards')).toBeNull()
+
+    relayGameEvent('question.asked', { questionId: RADAR_Q })
+    await nextTick()
+    expect(screen.getByTestId('nav-badge-cards')).toBeInTheDocument()
+
+    // Answered → prompt and badge clear.
+    relayGameEvent('question.answered', { questionId: RADAR_Q, answer: 'no' })
+    await nextTick()
+    expect(screen.queryByTestId('hider-answer-prompt')).toBeNull()
+    expect(screen.queryByTestId('nav-badge-cards')).toBeNull()
+  })
+
+  it('does NOT show the hider prompt or badge to a seeker', async () => {
+    enterRoomSeeking('seeker')
+    const questions = useQuestionStore()
+    render(GamePlayView)
+
+    // A seeker on this device asks locally (pending set), but the seeker must not
+    // see the hider-answer surface.
+    questions.askQuestion(RADAR_Q)
+    await nextTick()
+
+    expect(screen.queryByTestId('hider-answer-prompt')).toBeNull()
+    expect(screen.queryByTestId('nav-badge-cards')).toBeNull()
   })
 })

@@ -273,4 +273,31 @@ describe('BottomNav', () => {
       expect(wrapper.find('[data-testid="nav-tab-history-icon"]').exists()).toBe(true)
     })
   })
+
+  // QSYNC-006: a badge draws attention to a tab (e.g. Cards when a question is
+  // pending for the hider), independent of which tab is active.
+  describe('tab badge', () => {
+    it('shows no badges by default', () => {
+      wrapper = mount(BottomNav, { props: { currentTab: 'questions' } })
+      expect(wrapper.find('[data-testid="nav-badge-cards"]').exists()).toBe(false)
+    })
+
+    it('renders a badge on a tab listed in badgeTabs', () => {
+      wrapper = mount(BottomNav, {
+        props: { currentTab: 'questions', badgeTabs: ['cards'] },
+      })
+      expect(wrapper.find('[data-testid="nav-badge-cards"]').exists()).toBe(true)
+      // Only the listed tab is badged.
+      expect(wrapper.find('[data-testid="nav-badge-history"]').exists()).toBe(false)
+    })
+
+    it('removes the badge when the tab is no longer in badgeTabs', async () => {
+      wrapper = mount(BottomNav, {
+        props: { currentTab: 'questions', badgeTabs: ['cards'] },
+      })
+      expect(wrapper.find('[data-testid="nav-badge-cards"]').exists()).toBe(true)
+      await wrapper.setProps({ badgeTabs: [] })
+      expect(wrapper.find('[data-testid="nav-badge-cards"]').exists()).toBe(false)
+    })
+  })
 })

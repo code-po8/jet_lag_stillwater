@@ -10,7 +10,6 @@ import PowerupDuplicateModal from '@/components/PowerupDuplicateModal.vue'
 import PowerupMoveModal from '@/components/PowerupMoveModal.vue'
 import HidingPeriodTimer from '@/components/HidingPeriodTimer.vue'
 import QuestionResponseTimer from '@/components/QuestionResponseTimer.vue'
-import HiderAnswerPrompt from '@/components/HiderAnswerPrompt.vue'
 import AddCardModal from '@/components/AddCardModal.vue'
 import DevSkipHidingPeriod from '@/components/DevSkipHidingPeriod.vue'
 import HiderGuide from '@/components/HiderGuide.vue'
@@ -285,10 +284,6 @@ function handleAddCardCancel() {
     <div data-testid="phase-status" class="hider-phase-status">
       {{ getPhaseDisplayText() }}
     </div>
-
-    <!-- Hider answer prompt (QSYNC-005): answer a seeker's pending question
-         in-app. Renders itself only when a question is pending. -->
-    <HiderAnswerPrompt />
 
     <!-- Move In Progress Banner -->
     <div
