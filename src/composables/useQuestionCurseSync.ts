@@ -24,10 +24,27 @@ import { useRoomStore } from '@/stores/roomStore'
 import { useQuestionStore } from '@/stores/questionStore'
 import { useCardStore } from '@/stores/cardStore'
 import { useSync } from './useSync'
+import { useGeolocation } from './useGeolocation'
 import type { GameEventKind } from '@/services/sync/protocol'
 
 /** Common shape of the precondition-guarded store actions we replay. */
 type ApplyResult = { success: boolean; error?: string }
+
+/** A bare lat/lng — the ask-time position stamped on a question (MAP-009). */
+type LatLng = { lat: number; lng: number }
+
+/**
+ * Validate an inbound `askedFrom` payload field (untyped over the wire) into a
+ * LatLng, or undefined if absent/malformed — a bad position must not block the
+ * ask from applying.
+ */
+function parseAskedFrom(raw: unknown): LatLng | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const { lat, lng } = raw as Record<string, unknown>
+  if (typeof lat !== 'number' || typeof lng !== 'number') return undefined
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined
+  return { lat, lng }
+}
 
 export type QuestionCurseSync = ReturnType<typeof createQuestionCurseSync>
 
@@ -36,6 +53,7 @@ function createQuestionCurseSync() {
   const questions = useQuestionStore()
   const cards = useCardStore()
   const sync = useSync()
+  const geo = useGeolocation()
 
   let applyingRemote = false
 
@@ -44,33 +62,53 @@ function createQuestionCurseSync() {
     sync.sendGameEvent(kind, payload)
   }
 
+  /**
+   * The LOCAL asker's ask-time position (MAP-009): the seeker's own live GPS at
+   * the moment they ask. Undefined offline / before a fix. Read only for locally
+   * originated asks — a remote apply uses the position from the wire instead, so
+   * the hider never overwrites it with their own location.
+   */
+  function ownAskedFrom(): LatLng | undefined {
+    const p = geo.ownPosition.value
+    return p ? { lat: p.lat, lng: p.lng } : undefined
+  }
+
   // ── Local action wrappers (call these instead of the raw store actions) ──
   function askQuestion(questionId: string) {
-    const res = questions.askQuestion(questionId)
-    if (res.success) emit('question.asked', { questionId })
+    const askedFrom = ownAskedFrom()
+    const res = questions.askQuestion(questionId, askedFrom)
+    if (res.success) emit('question.asked', { questionId, ...(askedFrom ? { askedFrom } : {}) })
     return res
   }
   /**
    * Re-ask (2x card cost, handled in the store). On the wire it is the SAME
    * `question.asked` event — the remote side just needs the pending question to
-   * appear; the doubled cost is a hider-local card concern.
+   * appear; the doubled cost is a hider-local card concern. A re-ask is a fresh
+   * ask, so it carries its own ask-time position (MAP-009).
    */
   function reaskQuestion(questionId: string) {
-    const res = questions.reaskQuestion(questionId)
-    if (res.success) emit('question.asked', { questionId })
+    const askedFrom = ownAskedFrom()
+    const res = questions.reaskQuestion(questionId, askedFrom)
+    if (res.success) emit('question.asked', { questionId, ...(askedFrom ? { askedFrom } : {}) })
     return res
   }
   /**
    * Randomize a pending question in-place. The store swaps the pending question
    * to a new id in the same category, so we broadcast a fresh `question.asked`
    * for the NEW id (read back from the store) — the remote pending question then
-   * tracks the swap. Returns the store result (carries `newQuestionId`).
+   * tracks the swap. The randomized question keeps the original's ask-time
+   * position (the store preserves it), which we re-broadcast so the hider's pin
+   * follows the swap. Returns the store result (carries `newQuestionId`).
    */
   function randomizeQuestion(questionId: string) {
     const res = questions.randomizeQuestion(questionId)
     if (res.success) {
-      const newId = questions.pendingQuestion?.questionId ?? res.newQuestionId
-      if (newId) emit('question.asked', { questionId: newId })
+      const pending = questions.pendingQuestion
+      const newId = pending?.questionId ?? res.newQuestionId
+      if (newId) {
+        const askedFrom = pending?.askedFrom
+        emit('question.asked', { questionId: newId, ...(askedFrom ? { askedFrom } : {}) })
+      }
     }
     return res
   }
@@ -116,7 +154,10 @@ function createQuestionCurseSync() {
       switch (kind) {
         case 'question.asked':
           if (typeof payload.questionId === 'string')
-            res = questions.askQuestion(payload.questionId)
+            // Carry the asker's ask-time position from the wire (MAP-009) so the
+            // hider pins where the question was measured from. Missing/malformed
+            // → undefined, and the ask still applies.
+            res = questions.askQuestion(payload.questionId, parseAskedFrom(payload.askedFrom))
           break
         case 'question.answered':
           if (typeof payload.questionId === 'string' && typeof payload.answer === 'string') {

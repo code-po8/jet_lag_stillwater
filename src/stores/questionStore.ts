@@ -184,8 +184,12 @@ export const useQuestionStore = defineStore('questions', () => {
   /**
    * Ask a question - marks it as pending and returns draw/keep values.
    * Prevents asking if another question is already pending or if question was already asked.
+   *
+   * `askedFrom` (MAP-009) is the asking seeker's ask-time GPS position, recorded
+   * on the pending question so the hider's map can pin where the answer was
+   * measured from. Optional — offline/single-device asks simply omit it.
    */
-  function askQuestion(questionId: string): ActionResult {
+  function askQuestion(questionId: string, askedFrom?: { lat: number; lng: number }): ActionResult {
     // Check if a question is already pending
     if (pendingQuestion.value !== null) {
       return { success: false, error: 'A question is already pending' }
@@ -216,6 +220,7 @@ export const useQuestionStore = defineStore('questions', () => {
       answer: '',
       askedAt: new Date(),
       vetoed: false,
+      ...(askedFrom ? { askedFrom } : {}),
     }
 
     return {
@@ -301,9 +306,7 @@ export const useQuestionStore = defineStore('questions', () => {
     const originalAskedAt = pendingQuestion.value.askedAt
 
     // Get available questions from the same category (excluding the current one)
-    const availableInCategory = getAvailableQuestions(categoryId).filter(
-      (q) => q.id !== questionId,
-    )
+    const availableInCategory = getAvailableQuestions(categoryId).filter((q) => q.id !== questionId)
 
     if (availableInCategory.length === 0) {
       return { success: false, error: 'No other questions available in this category' }
@@ -342,9 +345,7 @@ export const useQuestionStore = defineStore('questions', () => {
    * Returns true if the question was asked and answered (not vetoed).
    */
   function wasQuestionAsked(questionId: string): boolean {
-    return askedQuestions.value.some(
-      (aq) => aq.questionId === questionId && !aq.vetoed,
-    )
+    return askedQuestions.value.some((aq) => aq.questionId === questionId && !aq.vetoed)
   }
 
   /**
@@ -364,7 +365,10 @@ export const useQuestionStore = defineStore('questions', () => {
    * Re-ask a previously asked question at double the card cost.
    * The hider will draw double the normal cards.
    */
-  function reaskQuestion(questionId: string): ActionResult {
+  function reaskQuestion(
+    questionId: string,
+    askedFrom?: { lat: number; lng: number },
+  ): ActionResult {
     // Check if a question is already pending
     if (pendingQuestion.value !== null) {
       return { success: false, error: 'A question is already pending' }
@@ -387,7 +391,8 @@ export const useQuestionStore = defineStore('questions', () => {
       return { success: false, error: 'Question category not found' }
     }
 
-    // Mark the question as pending with isReask flag
+    // Mark the question as pending with isReask flag. A re-ask is a fresh ask, so
+    // it carries its own ask-time position (MAP-009).
     pendingQuestion.value = {
       questionId,
       categoryId: question.categoryId,
@@ -395,6 +400,7 @@ export const useQuestionStore = defineStore('questions', () => {
       askedAt: new Date(),
       vetoed: false,
       isReask: true,
+      ...(askedFrom ? { askedFrom } : {}),
     }
 
     // Return doubled draw/keep values

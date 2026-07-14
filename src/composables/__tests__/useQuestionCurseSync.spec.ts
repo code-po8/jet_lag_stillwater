@@ -4,6 +4,7 @@ import { useQuestionCurseSync, __resetQuestionCurseSync } from '../useQuestionCu
 import { useRoomStore } from '@/stores/roomStore'
 import { useQuestionStore } from '@/stores/questionStore'
 import { useSync, __resetSyncSession } from '@/composables/useSync'
+import { useGeolocation, __resetGeolocation } from '@/composables/useGeolocation'
 
 // A real radar question id from the data set.
 const RADAR_Q = 'radar-0.5-miles'
@@ -14,10 +15,12 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     localStorage.clear()
     __resetSyncSession()
     __resetQuestionCurseSync()
+    __resetGeolocation()
   })
   afterEach(() => {
     __resetSyncSession()
     __resetQuestionCurseSync()
+    __resetGeolocation()
   })
 
   function enterRoom() {
@@ -25,6 +28,11 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     room.code = 'ABCD'
     room.rejoinToken = 'tok'
     room.self = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+  }
+
+  /** Seed the singleton tracker's live position (as if a GPS fix arrived). */
+  function setOwnPosition(lat: number, lng: number) {
+    useGeolocation().ownPosition.value = { lat, lng, accuracy: 5, ts: 1000 }
   }
 
   it('emits question.asked when a local ask succeeds in a room', () => {
@@ -173,5 +181,83 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     const newId = questions.pendingQuestion!.questionId
     expect(sent[0]!.payload).toEqual({ questionId: newId })
     expect(newId).not.toBe(RADAR_Q)
+  })
+
+  // ── MAP-009: ask-time position (askedFrom) ──
+
+  it('includes askedFrom in the emit payload and on the pending question', () => {
+    enterRoom()
+    setOwnPosition(36.12, -97.07)
+    const sync = useSync()
+    const questions = useQuestionStore()
+    const sent: Array<{ kind: string; payload: Record<string, unknown> }> = []
+    sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+    const bridge = useQuestionCurseSync()
+    bridge.askQuestion(RADAR_Q)
+
+    expect(sent).toEqual([
+      {
+        kind: 'question.asked',
+        payload: { questionId: RADAR_Q, askedFrom: { lat: 36.12, lng: -97.07 } },
+      },
+    ])
+    expect(questions.pendingQuestion?.askedFrom).toEqual({ lat: 36.12, lng: -97.07 })
+  })
+
+  it('omits askedFrom when there is no GPS fix', () => {
+    enterRoom()
+    // No setOwnPosition — ownPosition is null.
+    const sync = useSync()
+    const sent: Array<{ kind: string; payload: Record<string, unknown> }> = []
+    sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+    const bridge = useQuestionCurseSync()
+    bridge.askQuestion(RADAR_Q)
+
+    expect(sent).toEqual([{ kind: 'question.asked', payload: { questionId: RADAR_Q } }])
+  })
+
+  it('applies an inbound askedFrom to the local (hider) store', () => {
+    enterRoom()
+    const questions = useQuestionStore()
+    const bridge = useQuestionCurseSync()
+
+    bridge.applyRemoteEvent('question.asked', {
+      questionId: RADAR_Q,
+      askedFrom: { lat: 36.5, lng: -97.5 },
+    })
+
+    expect(questions.pendingQuestion?.askedFrom).toEqual({ lat: 36.5, lng: -97.5 })
+  })
+
+  it('a hider applying a remote ask does NOT stamp its OWN position over the wire value', () => {
+    enterRoom()
+    // This device (the hider) has its own GPS fix, which must be ignored when
+    // applying a remote ask — the ask-time position is the SEEKER's, from the wire.
+    setOwnPosition(1, 1)
+    const questions = useQuestionStore()
+    const bridge = useQuestionCurseSync()
+
+    bridge.applyRemoteEvent('question.asked', {
+      questionId: RADAR_Q,
+      askedFrom: { lat: 36.5, lng: -97.5 },
+    })
+
+    expect(questions.pendingQuestion?.askedFrom).toEqual({ lat: 36.5, lng: -97.5 })
+  })
+
+  it('ignores a malformed inbound askedFrom (ask still applies)', () => {
+    enterRoom()
+    const questions = useQuestionStore()
+    const bridge = useQuestionCurseSync()
+
+    bridge.applyRemoteEvent('question.asked', {
+      questionId: RADAR_Q,
+      askedFrom: { lat: 'nope' },
+    })
+
+    expect(questions.pendingQuestion?.questionId).toBe(RADAR_Q)
+    expect(questions.pendingQuestion?.askedFrom).toBeUndefined()
   })
 })

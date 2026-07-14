@@ -31,6 +31,19 @@ export interface BusStop {
   name?: string | null
 }
 
+/**
+ * A seeker's ask-time position pin (MAP-009): where a seeker was when they asked
+ * a question. Shown on the hider's map, distinct from the live seeker dot.
+ */
+export interface AskedFromMarker {
+  /** Stable id (e.g. the question id) for reconciliation. */
+  id: string
+  lat: number
+  lng: number
+  /** Tooltip label, e.g. "Radar asked here". */
+  label?: string
+}
+
 /** Game-data overlay categories (MAP-002) and their legend colors. */
 const POI_STYLE: Record<string, { color: string; label: string }> = {
   'bus-stop': { color: '#ffffff', label: 'Bus stop' },
@@ -63,6 +76,11 @@ const props = withDefaults(
     inRangeStopIndices?: number[]
     /** When true, tapping a bus stop opens a popup with a pick button (hider). */
     stopsPickable?: boolean
+    /**
+     * Seeker ask-time position pins (MAP-009), shown to the hider. Rendered as a
+     * distinct teardrop "?" pin, above the live position dots.
+     */
+    askedFromMarkers?: AskedFromMarker[]
   }>(),
   {
     zone: null,
@@ -72,6 +90,7 @@ const props = withDefaults(
     busStops: () => [],
     inRangeStopIndices: () => [],
     stopsPickable: false,
+    askedFromMarkers: () => [],
   },
 )
 
@@ -167,6 +186,7 @@ onMounted(() => {
   drawZone()
   drawBusStops()
   drawMarkers()
+  drawAskedFrom()
   emit('ready', map)
 })
 
@@ -393,6 +413,76 @@ function drawMarkers() {
 // walk every PlayerMarker each tick just to detect the change.
 watch(() => props.markers, drawMarkers)
 
+// ── Ask-time position pins (MAP-009) ──
+// Where a seeker was when they asked a question, shown to the hider as a distinct
+// teardrop "?" pin so it reads differently from the round live seeker dot (and
+// sits ABOVE it when they overlap). Muted cyan ties it to "the seeker, earlier",
+// staying clear of the live-seeker bright cyan, POI warm colors, and zone red.
+const ASKED_FROM_PIN = '#4a7f8c' // muted/desaturated cyan
+let askedFromLayer: L.LayerGroup | null = null
+const askedFromById = new Map<string, { marker: L.Marker; entry: AskedFromMarker }>()
+
+/** Build the teardrop-with-"?" divIcon (distinct silhouette from the live dot). */
+function askedFromIcon(leaflet: typeof L): L.DivIcon {
+  const html =
+    `<span class="askedfrom-pin" style="--pin:${ASKED_FROM_PIN}" aria-hidden="true">` +
+    `<svg viewBox="0 0 24 32" width="24" height="32">` +
+    `<path d="M12 0C5.4 0 0 5.2 0 11.6 0 20.3 12 32 12 32s12-11.7 12-20.4C24 5.2 18.6 0 12 0z" ` +
+    `fill="${ASKED_FROM_PIN}" stroke="#ffffff" stroke-width="1.5"/>` +
+    `<text x="12" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">?</text>` +
+    `</svg></span>`
+  return leaflet.divIcon({
+    html,
+    className: 'askedfrom-pin-icon',
+    iconSize: [24, 32],
+    iconAnchor: [12, 32], // tip of the teardrop points at the position
+  })
+}
+
+function drawAskedFrom() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+
+  if (!askedFromLayer) {
+    askedFromLayer = leaflet.layerGroup()
+    askedFromLayer.addTo(map)
+  }
+
+  const next = new Map(props.askedFromMarkers.map((m) => [m.id, m]))
+  // Remove pins whose question is no longer active.
+  for (const [id, { marker }] of askedFromById) {
+    if (!next.has(id)) {
+      askedFromLayer.removeLayer(marker)
+      askedFromById.delete(id)
+    }
+  }
+  // Add or move the rest.
+  for (const m of props.askedFromMarkers) {
+    const existing = askedFromById.get(m.id)
+    if (!existing) {
+      const marker = leaflet.marker([m.lat, m.lng], {
+        icon: askedFromIcon(leaflet),
+        // Precedence on overlap (MAP-009): an L.marker lives in Leaflet's marker
+        // pane, which renders ABOVE the overlay pane holding the live-position
+        // circleMarkers — so the ask-time pin already sits on top of the current
+        // dot. A high zIndexOffset keeps it above other markers too.
+        zIndexOffset: 1000,
+      })
+      if (m.label) marker.bindTooltip(m.label, { direction: 'top' })
+      askedFromLayer.addLayer(marker)
+      askedFromById.set(m.id, { marker, entry: m })
+      continue
+    }
+    const { marker, entry } = existing
+    marker.setLatLng([m.lat, m.lng])
+    if (entry.label !== m.label && m.label) marker.bindTooltip(m.label, { direction: 'top' })
+    existing.entry = m
+  }
+}
+
+watch(() => props.askedFromMarkers, drawAskedFrom)
+
 onBeforeUnmount(() => {
   mapInstance.value?.remove()
   mapInstance.value = null
@@ -469,6 +559,18 @@ defineExpose({ map: mapInstance })
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+}
+/* Ask-time position pin (MAP-009). Leaflet's default divIcon has a white box
+   background; strip it so only the teardrop SVG shows. Rendered outside the
+   scoped tree, so target globally. */
+:global(.askedfrom-pin-icon) {
+  background: transparent;
+  border: none;
+}
+:global(.askedfrom-pin) {
+  display: block;
+  line-height: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 /* Breached hiding-zone circle pulses (MAP-006). Leaflet renders the SVG path
    outside the scoped tree, so target it globally. */

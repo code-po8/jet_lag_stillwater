@@ -225,6 +225,35 @@ describe('questionStore actions', () => {
       expect(store.hasPendingQuestion).toBe(true)
     })
 
+    it('records askedFrom on the pending question when provided (MAP-009)', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      store.askQuestion(question.id, { lat: 36.12, lng: -97.07 })
+
+      expect(store.pendingQuestion?.askedFrom).toEqual({ lat: 36.12, lng: -97.07 })
+    })
+
+    it('omits askedFrom when not provided (offline/single-device)', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      store.askQuestion(question.id)
+
+      expect(store.pendingQuestion?.askedFrom).toBeUndefined()
+    })
+
+    it('carries askedFrom over to the answered record (MAP-009)', () => {
+      const store = useQuestionStore()
+      const question = ALL_QUESTIONS[0]!
+
+      store.askQuestion(question.id, { lat: 36.12, lng: -97.07 })
+      store.answerQuestion(question.id, 'yes')
+
+      const answered = store.askedQuestions.find((q) => q.questionId === question.id)
+      expect(answered?.askedFrom).toEqual({ lat: 36.12, lng: -97.07 })
+    })
+
     it('should return draw/keep values when question asked', () => {
       const store = useQuestionStore()
       const question = ALL_QUESTIONS.find((q) => q.categoryId === QuestionCategoryId.Matching)!
@@ -687,9 +716,7 @@ describe('questionStore persistence', () => {
     expect(localStorage.setItem).toHaveBeenCalled()
 
     // Verify persisted data contains the asked question
-    const persistedKey = Object.keys(mockStorage).find((key) =>
-      key.includes('questions'),
-    )
+    const persistedKey = Object.keys(mockStorage).find((key) => key.includes('questions'))
     expect(persistedKey).toBeDefined()
 
     const persistedData = JSON.parse(mockStorage[persistedKey!]!)

@@ -4553,34 +4553,30 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 ### MAP-009: Seeker Ask-Time Position Pin
 
-**Status:** `ready`
+**Status:** `complete`
 **Depends On:** QSYNC-004
 
 **Story:** As a hider, I need to see where each seeker was **when they asked a question** — shown as a distinct pin, separate from their live position — so I understand what a Radar/Measuring answer was measured against while still tracking where the seeker is now.
 
 **Acceptance Criteria:**
 
-- [ ] The asking seeker's position is captured at **ask-time** (their own live GPS) and carried on the `question.asked` payload and on the `AskedQuestion` record (new optional `askedFrom?: { lat; lng }`)
-- [ ] The store `askQuestion(questionId, askedFrom?)` (and `reaskQuestion`) accept and persist `askedFrom`; persistence stays backward-compatible (optional field)
-- [ ] The hider's map renders the ask-time position as a **muted/desaturated-cyan teardrop map pin with a white "?" glyph inside** — a distinct silhouette from the round live seeker dot, tied to the seeker by color
-- [ ] The seeker's **live** position marker continues to render independently — both the live dot and the ask-time pin are visible at once
-- [ ] When the two overlap (seeker hasn't moved), the **ask-time pin takes precedence** and is drawn on top of the live dot (draw order / `bringToFront`)
-- [ ] The pin is legible on a 320px mobile map and has an accessible tooltip/label
+- [x] The asking seeker's position is captured at **ask-time** (their own live GPS) and carried on the `question.asked` payload and on the `AskedQuestion` record (new optional `askedFrom?: { lat; lng }`)
+- [x] The store `askQuestion(questionId, askedFrom?)` (and `reaskQuestion`) accept and persist `askedFrom`; persistence stays backward-compatible (optional field)
+- [x] The hider's map renders the ask-time position as a **muted/desaturated-cyan teardrop map pin with a white "?" glyph inside** — a distinct silhouette from the round live seeker dot, tied to the seeker by color
+- [x] The seeker's **live** position marker continues to render independently — both the live dot and the ask-time pin are visible at once
+- [x] When the two overlap (seeker hasn't moved), the **ask-time pin takes precedence** and is drawn on top of the live dot
+- [x] The pin is legible on a 320px mobile map and has an accessible tooltip/label
 
 **Size:** M
 
 **Implementation Notes:**
 
-- The ask-time pin needs a Leaflet `L.divIcon`/SVG `L.marker` (a teardrop-with-glyph can't be done with the existing `circleMarker` styling used for live dots). Add a small `drawAskedFrom`/`askedFromMarkers` path in `BaseMap.vue` alongside the existing `drawMarkers`.
-- Existing marker palette to stay clear of: live hider indigo `#4f46e5`, live seeker cyan (`BRAND_COLORS.cyan`), POI orange/gold/green, zone red, bus-stop/POI white. Use a muted cyan for the ask-time pin so it reads as "the seeker, earlier."
-- Thread `askedFrom` through the **wrapper** path (`useQuestionCurseSync.askQuestion` reads singleton `useGeolocation().ownPosition`, includes it in the emit payload; `applyRemoteEvent` reads `payload.askedFrom`). Depends on QSYNC-004 having made the bridge + geolocation app-singletons.
-- Extend the `fakeLeaflet` mock (`BaseMap.spec.ts`) with `L.marker` + `L.divIcon`.
-
-**Tests to Write:**
-
-- `questionStore.spec.ts`: `askQuestion`/`reaskQuestion` store and persist `askedFrom`; absent `askedFrom` stays valid
-- `useQuestionCurseSync.spec.ts`: emit payload includes `askedFrom`; inbound applies it
-- `BaseMap.spec.ts`: ask-time pin rendered with distinct icon; overlaps live dot with higher precedence
+- **`useGeolocation` made an app-singleton** (`__resetGeolocation` reset seam) so the sync bridge reads the SAME `ownPosition` that `MapPanel` populates via `start()` — a per-caller tracker would read `null`. This is the prerequisite the story anticipated (QSYNC-004 had made the bridge a singleton but not geolocation).
+- `AskedQuestion` gains optional `askedFrom?: {lat;lng}`. `questionStore.askQuestion(id, askedFrom?)` / `reaskQuestion(id, askedFrom?)` record it; `answerQuestion` carries it over to the answered record via its existing spread. Persistence is unchanged (optional field, backward-compatible).
+- Bridge wrappers stamp the LOCAL asker's `ownPosition` and include `askedFrom` in the `question.asked` emit; `applyRemoteEvent` reads `payload.askedFrom` via a `parseAskedFrom` guard (malformed → undefined, ask still applies). A hider applying a remote ask uses the **wire** position, never its own. Randomize re-broadcasts the pending question's preserved position.
+- Pin rendering: `BaseMap` gains an `askedFromMarkers` prop + `drawAskedFrom` using `L.marker` + `L.divIcon` (teardrop SVG with white "?", muted cyan `#4a7f8c`). Precedence: an `L.marker` sits in Leaflet's marker pane (above the overlay pane holding the live `circleMarker` dots), plus a high `zIndexOffset` — so an overlapping ask-time pin is never hidden. (`bringToFront` is a Path/FeatureGroup method, not valid on markers — pane order does the work.) `:global` CSS strips the divIcon's default white box.
+- `MapPanel` computes `askedFromMarkers` from `questionStore` (pending + answered questions carrying a position), **hider-only**, labeled by category (e.g. "Radar asked here"). Seekers get an empty list.
+- TDD: `useGeolocation.spec.ts` (+2 singleton), `questionStore.spec.ts` (+3 askedFrom store/omit/carry-over), `useQuestionCurseSync.spec.ts` (+5 emit/omit/inbound/no-self-stamp/malformed), `BaseMap.spec.ts` (+4 distinct icon / precedence / none / removal), `MapPanel.spec.ts` (+3 hider-only / seeker-none / no-position). Full suite: 65 files / 1534 tests green; type-check OK.
 
 ---
 
