@@ -126,4 +126,56 @@ test.describe('multiplayer question sync + map pin (2 browsers)', () => {
     await hostCtx.close()
     await joinCtx.close()
   })
+
+  // Issue #25: with the seeker's ask modal STILL OPEN (awaiting the answer), the
+  // hider answering must dismiss the seeker's modal and surface the answer —
+  // previously the open modal silently reverted to the "Ask" prompt.
+  test('seeker keeps ask modal open → hider answers → seeker modal closes and shows the answer', async ({
+    browser,
+  }) => {
+    const hostCtx = await browser.newContext()
+    const joinCtx = await browser.newContext()
+
+    const { page: seeker, code } = await createHost(hostCtx, 'Hank')
+    const hider = await joinRoom(joinCtx, code, 'Sam')
+
+    await expect(seeker.getByTestId('lobby-roster')).toContainText('Sam')
+    await seeker.getByTestId('lobby-roster').getByRole('button', { name: 'Sam' }).click()
+    await expect(seeker.getByTestId('start-game-btn')).toBeEnabled()
+    await expect(hider.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
+
+    await seeker.getByTestId('start-game-btn').click()
+    await expect(seeker).toHaveURL(/\/game/)
+    await expect(hider).toHaveURL(/\/game/)
+
+    // End the hiding period so questions unlock.
+    await seeker.getByTestId('bottom-nav').getByRole('button', { name: 'Admin' }).click()
+    await seeker.getByTestId('admin-end-hiding-btn').click()
+    await seeker.getByTestId('admin-end-hiding-confirm-btn').click()
+
+    // Seeker asks a radar question and LEAVES THE MODAL OPEN (does not navigate).
+    await seeker.getByTestId('bottom-nav').getByRole('button', { name: 'Questions' }).click()
+    const tile = seeker.getByTestId(`question-tile-${RADAR_QUESTION_ID}`)
+    await expect(tile).toBeEnabled({ timeout: 15_000 })
+    await tile.click()
+    await expect(seeker.getByTestId('ask-question-modal')).toBeVisible()
+    await seeker.getByRole('button', { name: 'Ask', exact: true }).click()
+    // Modal stays open in answer mode (the seeker is waiting for the answer).
+    await expect(seeker.getByTestId('answer-section')).toBeVisible()
+
+    // Hider answers "No" in-app.
+    await expect(hider.getByTestId('hider-answer-prompt')).toBeVisible({ timeout: 15_000 })
+    await hider.getByTestId('hider-answer-no').click()
+
+    // The seeker's still-open modal dismisses itself (issue #25 bug #1)...
+    await expect(seeker.getByTestId('ask-question-modal')).toBeHidden({ timeout: 15_000 })
+    // ...and the answer is recorded in the seeker's history.
+    await seeker.getByTestId('bottom-nav').getByRole('button', { name: 'History' }).click()
+    await expect(seeker.getByTestId(`history-item-${RADAR_QUESTION_ID}`)).toContainText(/no/i, {
+      timeout: 15_000,
+    })
+
+    await hostCtx.close()
+    await joinCtx.close()
+  })
 })

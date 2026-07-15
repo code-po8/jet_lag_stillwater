@@ -108,6 +108,24 @@ describe('QuestionMenu', () => {
 
       expect(emitted().questionSelect).toBeUndefined()
     })
+
+    // Issue #25: the seeker must be able to reopen the answer modal for the
+    // pending question (e.g. to record the answer after closing it), so clicking
+    // the pending tile itself re-emits questionSelect for that question.
+    it('should re-emit questionSelect when the pending question tile is clicked', async () => {
+      enterSeekingPhase()
+      const questionStore = useQuestionStore()
+      questionStore.askQuestion(MEASURING_Q) // leaves it pending
+
+      const { emitted } = render(QuestionMenu)
+      const tile = screen.getByTitle(MEASURING_TITLE)
+      await fireEvent.click(tile)
+      await nextTick()
+
+      expect(emitted()).toHaveProperty('questionSelect')
+      const payload = emitted().questionSelect![0] as unknown[]
+      expect((payload[0] as { id: string }).id).toBe(MEASURING_Q)
+    })
   })
 
   describe('status indicators', () => {

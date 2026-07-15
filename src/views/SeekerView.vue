@@ -107,6 +107,23 @@ function handleQuestionAnswered() {
 }
 
 /**
+ * Close the modal (issue #25): fired after the seeker submits an answer, or when
+ * the hider answers on their device while the seeker's modal is still open.
+ */
+function handleModalCloseRequest() {
+  selectedQuestion.value = null
+  isReaskMode.value = false
+}
+
+/**
+ * The hider answered on their device while the seeker's modal was open (issue
+ * #25). Surface it so the seeker knows the answer arrived.
+ */
+function handleRemoteAnswered(event: { questionId: string; answer: string }) {
+  notifications.notify(`Hider answered: ${event.answer}`, 'info')
+}
+
+/**
  * Handle card draw event from AskQuestionModal
  * Draws cards from the deck and shows the CardDrawModal for selection
  */
@@ -295,8 +312,10 @@ function handleCurseActivationCancel() {
       :question="selectedQuestion"
       :is-reask="isReaskMode"
       @cancel="handleModalClose"
+      @close="handleModalCloseRequest"
       @asked="handleQuestionAsked"
       @answered="handleQuestionAnswered"
+      @remote-answered="handleRemoteAnswered"
       @card-draw="handleCardDraw"
     />
 

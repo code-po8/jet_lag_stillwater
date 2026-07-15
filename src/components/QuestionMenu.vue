@@ -102,6 +102,13 @@ function isQuestionSelectable(questionId: string): boolean {
  * Handle question click
  */
 function handleQuestionClick(question: Question) {
+  // Reopen the answer modal for the pending question (issue #25) so the seeker
+  // can record the answer even after dismissing the modal. The modal opens in
+  // answer mode because the store already has this question pending.
+  if (getQuestionStatus(question.id) === 'pending') {
+    emit('questionSelect', question)
+    return
+  }
   if (isQuestionSelectable(question.id)) {
     emit('questionSelect', question)
   }
@@ -296,14 +303,18 @@ function hasQuestionIcon(questionId: string): boolean {
               'tile-pending': getQuestionStatus(question.id) === 'pending',
               'tile-locked':
                 isHidingPeriodPhase ||
-                (!isQuestionSelectable(question.id) && getQuestionStatus(question.id) !== 'asked'),
+                (!isQuestionSelectable(question.id) &&
+                  getQuestionStatus(question.id) !== 'asked' &&
+                  getQuestionStatus(question.id) !== 'pending'),
               'tile-has-icon': hasQuestionIcon(question.id),
             }"
             :style="{
               '--tile-color': getCategoryColor(category.id as QuestionCategoryId),
             }"
             :disabled="
-              !isQuestionSelectable(question.id) && getQuestionStatus(question.id) !== 'asked'
+              !isQuestionSelectable(question.id) &&
+              getQuestionStatus(question.id) !== 'asked' &&
+              getQuestionStatus(question.id) !== 'pending'
             "
             @click="
               getQuestionStatus(question.id) === 'asked'
