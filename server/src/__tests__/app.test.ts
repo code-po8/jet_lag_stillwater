@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { buildApp } from '../app.js'
+import { buildApp, parseWebOrigins } from '../app.js'
 import type { FastifyInstance } from 'fastify'
 
 describe('backend app', () => {
@@ -78,6 +78,49 @@ describe('backend app', () => {
         headers: { origin: 'https://evil.example.com' },
       })
       expect(res.headers['access-control-allow-origin']).not.toBe('https://evil.example.com')
+    })
+
+    it('allows any origin in a comma-separated WEB_ORIGIN list', async () => {
+      app = buildApp({
+        logger: false,
+        webOrigin: 'https://web.example.com, https://custom.example.com',
+      })
+      for (const origin of ['https://web.example.com', 'https://custom.example.com']) {
+        const res = await app.inject({ method: 'GET', url: '/health', headers: { origin } })
+        expect(res.headers['access-control-allow-origin']).toBe(origin)
+      }
+    })
+
+    it('still rejects an origin not in the list', async () => {
+      app = buildApp({
+        logger: false,
+        webOrigin: 'https://web.example.com, https://custom.example.com',
+      })
+      const res = await app.inject({
+        method: 'GET',
+        url: '/health',
+        headers: { origin: 'https://evil.example.com' },
+      })
+      expect(res.headers['access-control-allow-origin']).not.toBe('https://evil.example.com')
+    })
+  })
+
+  describe('parseWebOrigins', () => {
+    it('returns an empty array for undefined or empty input', () => {
+      expect(parseWebOrigins(undefined)).toEqual([])
+      expect(parseWebOrigins('')).toEqual([])
+      expect(parseWebOrigins('  ')).toEqual([])
+    })
+
+    it('parses a single origin', () => {
+      expect(parseWebOrigins('https://a.example.com')).toEqual(['https://a.example.com'])
+    })
+
+    it('splits, trims, and drops empty entries from a list', () => {
+      expect(parseWebOrigins('https://a.example.com, https://b.example.com,')).toEqual([
+        'https://a.example.com',
+        'https://b.example.com',
+      ])
     })
   })
 })
