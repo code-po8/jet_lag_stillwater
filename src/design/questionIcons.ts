@@ -1161,6 +1161,28 @@ export function getQuestionIcon(questionId: string): IconDefinition | null {
 }
 
 /**
+ * A short range/distance badge for a question (issue #26).
+ *
+ * Radar, thermometer and tentacle questions all share one icon per category, so
+ * a seeker can't tell a 0.5-mile radar from a 25-mile radar without opening each
+ * one. This returns the distance embedded in the question id (e.g. '0.5', '25',
+ * '15') to overlay on the tile as a distinguishing mark. Returns null when there
+ * is no meaningful numeric range (matching/photo questions, or a custom question),
+ * so those tiles are left unbadged.
+ */
+export function getQuestionRangeBadge(questionId: string): string | null {
+  // radar-0.5-miles, thermometer-3-miles → the number before "-miles".
+  const milesMatch = questionId.match(/^(?:radar|thermometer)-(\d+(?:\.\d+)?)-miles?$/)
+  if (milesMatch) return milesMatch[1]!
+
+  // tentacle-1mi-museums, tentacle-15mi-zoos → the number before "mi".
+  const tentacleMatch = questionId.match(/^tentacle-(\d+(?:\.\d+)?)mi-/)
+  if (tentacleMatch) return tentacleMatch[1]!
+
+  return null
+}
+
+/**
  * Get the icon definition for a category
  */
 export function getCategoryIcon(categoryId: string): IconDefinition | null {

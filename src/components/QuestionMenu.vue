@@ -8,6 +8,7 @@ import { getCategoryColor } from '@/design/colors'
 import {
   getQuestionIcon,
   getCategoryIcon as getCategoryIconDef,
+  getQuestionRangeBadge,
   FALLBACK_ICON,
   type IconDefinition,
 } from '@/design/questionIcons'
@@ -236,6 +237,14 @@ function getQuestionTileIcon(questionId: string): IconDefinition {
 function hasQuestionIcon(questionId: string): boolean {
   return getQuestionIcon(questionId) !== null
 }
+
+/**
+ * The range/distance badge for a tile (issue #26), e.g. '0.5' or '25'. Null for
+ * questions without a meaningful range (their icons are already distinct).
+ */
+function rangeBadge(questionId: string): string | null {
+  return getQuestionRangeBadge(questionId)
+}
 </script>
 
 <template>
@@ -345,6 +354,15 @@ function hasQuestionIcon(questionId: string): boolean {
             </svg>
             <!-- Fallback text label -->
             <span v-else class="tile-label">{{ getQuestionShortLabel(question) }}</span>
+            <!-- Range badge (issue #26): the distance, so radar/thermometer tiles
+                 that share one icon are distinguishable at a glance. -->
+            <span
+              v-if="rangeBadge(question.id)"
+              class="tile-range-badge"
+              data-testid="tile-range-badge"
+              aria-hidden="true"
+              >{{ rangeBadge(question.id) }}</span
+            >
             <!-- Pending indicator -->
             <span v-if="getQuestionStatus(question.id) === 'pending'" class="tile-pending-indicator"
               >⏳</span
@@ -696,6 +714,28 @@ function hasQuestionIcon(questionId: string): boolean {
   top: 2px;
   right: 2px;
   font-size: 0.7rem;
+}
+
+/* Range badge (issue #26): the question's distance overlaid on the icon so
+   same-icon radar/thermometer tiles are distinguishable at a glance. A small
+   high-contrast pill pinned to the bottom of the tile. */
+.tile-range-badge {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 1.1rem;
+  padding: 0 3px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-shadow: none;
+  pointer-events: none;
 }
 
 .tile-locked {
