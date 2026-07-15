@@ -56,6 +56,13 @@ vi.mock('../BaseMap.vue', () => ({
       data-testid="map-drop-two-pins"
       @click="$emit('tempPinsChange', [{ lat: 36.12, lng: -97.07 }, { lat: 36.13, lng: -97.07 }])"
     /></div>`,
+    // MapPanel calls baseMap.clearTempPins() via a template ref; the real one
+    // drops the temp pins and emits an empty tempPinsChange. Mirror that.
+    methods: {
+      clearTempPins(this: { $emit: (event: string, ...args: unknown[]) => void }) {
+        this.$emit('tempPinsChange', [])
+      },
+    },
   },
 }))
 
@@ -490,6 +497,30 @@ describe('MapPanel (MAP-004)', () => {
       start: { lat: 36.12, lng: -97.07 },
       end: { lat: 36.13, lng: -97.07 },
     })
+  })
+
+  it('clears misplaced pins so the seeker can re-place before sending', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('thermometer-0.5-miles')
+
+    render(MapPanel)
+    await nextTick()
+
+    // Place two pins → Send is enabled.
+    await fireEvent.click(screen.getByTestId('thermo-place-btn'))
+    await fireEvent.click(screen.getByTestId('map-drop-two-pins'))
+    expect(screen.getByTestId('thermo-send-btn')).toBeEnabled()
+
+    // Clear resets the pins so Send is disabled again (nothing is sent).
+    await fireEvent.click(screen.getByTestId('thermo-clear-btn'))
+    await nextTick()
+    expect(screen.getByTestId('thermo-send-btn')).toBeDisabled()
+    expect(questions.pendingQuestion?.thermometerVector).toBeUndefined()
+
+    // Still in placement mode, so the seeker can drop fresh pins right away.
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-placement', 'true')
   })
 
   // ── Radius shader (MAP-010) ──

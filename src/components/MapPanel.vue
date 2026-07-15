@@ -36,6 +36,9 @@ const questionSync = useQuestionCurseSync()
 const isHider = computed(() => sync.role.value === 'hider')
 const isSeeker = computed(() => sync.role.value === 'seeker')
 
+// Ref to BaseMap so tools can drop/clear the temporary placement pins it owns.
+const baseMap = ref<InstanceType<typeof BaseMap> | null>(null)
+
 // Manual freehand shading state (seeker tool).
 const freehandActive = ref(false)
 const undoStack = ref<string[]>([]) // last applied set of cells (for undo)
@@ -180,6 +183,19 @@ function sendThermometerVector() {
   thermoEnd.value = null
   thermoActive.value = false
 }
+
+/**
+ * Clear the placed start/end pins so the seeker can re-place them before sending
+ * (issue #29): recovers from a misplaced tap. Stays in placement mode so a fresh
+ * tap drops a new pin immediately.
+ */
+function clearThermoPins() {
+  thermoStart.value = null
+  thermoEnd.value = null
+  baseMap.value?.clearTempPins()
+}
+
+const canClearThermo = computed(() => thermoStart.value !== null || thermoEnd.value !== null)
 
 /** Undo the most recent vector shade this device added. */
 function undoVector() {
@@ -402,6 +418,7 @@ function pickStopFromMap(stop: BusStop) {
     </div>
 
     <BaseMap
+      ref="baseMap"
       :zone="isSeeker ? null : zone"
       :markers="markers"
       :breached="isBreached"
@@ -655,7 +672,7 @@ function pickStopFromMap(stop: BusStop) {
               ? 'Tap the map to place your START pin (where you began).'
               : !thermoEnd
                 ? 'Tap the map to place your END pin (where you traveled to).'
-                : 'Both pins placed. Send them to the hider.'
+                : 'Both pins placed — drag to adjust, Clear to redo, or send.'
         }}
       </p>
       <div class="radius-actions">
@@ -669,6 +686,16 @@ function pickStopFromMap(stop: BusStop) {
           @click="toggleThermoTool"
         >
           {{ thermoActive ? 'Placing…' : 'Place pins' }}
+        </button>
+        <button
+          type="button"
+          class="radius-clear"
+          data-testid="thermo-clear-btn"
+          :disabled="!canClearThermo"
+          title="Clear the placed pins and start over"
+          @click="clearThermoPins"
+        >
+          Clear
         </button>
         <button
           type="button"

@@ -222,8 +222,16 @@ test.describe('multiplayer question sync + map pin (2 browsers)', () => {
     await expect(map).toBeVisible()
     await expect(seeker.getByTestId('thermo-panel')).toBeVisible({ timeout: 15_000 })
     await seeker.getByTestId('thermo-place-btn').click()
-    // Two distinct taps on the map = start pin then end pin.
     const box = (await map.boundingBox())!
+    // A wrong first attempt: place two pins, then Clear to redo (issue #29 —
+    // recover from a misplaced tap without sending).
+    await seeker.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.3)
+    await seeker.mouse.click(box.x + box.width * 0.35, box.y + box.height * 0.35)
+    await expect(seeker.getByTestId('thermo-send-btn')).toBeEnabled()
+    await seeker.getByTestId('thermo-clear-btn').click()
+    await expect(seeker.getByTestId('thermo-send-btn')).toBeDisabled()
+
+    // Re-place the two pins correctly = start pin then end pin, then send.
     await seeker.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.5)
     await seeker.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.5)
     await expect(seeker.getByTestId('thermo-send-btn')).toBeEnabled()
