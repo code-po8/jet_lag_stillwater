@@ -410,12 +410,19 @@ describe('BaseMap (MAP-001)', () => {
     const iconHtml = fake.divIcons.map((d) => (d.options.html ?? '').toUpperCase())
     expect(iconHtml.some((h) => h.includes('>S<'))).toBe(true)
     expect(iconHtml.some((h) => h.includes('>E<'))).toBe(true)
-    // ...connected by a polyline from start to end (the travel vector).
-    expect(fake.L.polyline).toHaveBeenCalledTimes(1)
+    // ...connected by a travel polyline from start to end, PLUS a short
+    // perpendicular divider through the start (the hotter/colder boundary).
+    expect(fake.L.polyline).toHaveBeenCalledTimes(2)
+    // The travel line runs start→end.
     expect(fake.polylines[0]!.latlngs).toEqual([
       [36.12, -97.07],
       [36.13, -97.06],
     ])
+    // The perpendicular divider is a 2-point segment centered on the start pin.
+    const divider = fake.polylines[1]!.latlngs as [number, number][]
+    expect(divider).toHaveLength(2)
+    expect((divider[0]![0] + divider[1]![0]) / 2).toBeCloseTo(36.12, 4)
+    expect((divider[0]![1] + divider[1]![1]) / 2).toBeCloseTo(-97.07, 4)
   })
 
   it('does not draw a thermometer vector when there are none', async () => {
@@ -434,9 +441,10 @@ describe('BaseMap (MAP-001)', () => {
     await nextTick()
     await rerender({ leaflet: fake.L as never, thermometerVectors: [] })
     await nextTick()
-    // The vector's layers were removed from its group; not re-created.
+    // The vector's layers were removed from its group; not re-created. Two
+    // polylines were created (travel line + perpendicular divider).
     expect(fake.group.removeLayer).toHaveBeenCalled()
-    expect(fake.L.polyline).toHaveBeenCalledTimes(1)
+    expect(fake.L.polyline).toHaveBeenCalledTimes(2)
   })
 
   // ── Temp-pin placement + vector shades (MAP-010) ──

@@ -15,7 +15,7 @@ import { BRAND_COLORS } from '@/design/colors'
 import type { Position, Role, Zone } from '@/services/sync/protocol'
 import { geohashBounds } from '@/utils/geohash'
 import type { VectorShade } from '@/composables/useVectorShades'
-import { halfPlanePolygon } from '@/utils/halfPlane'
+import { halfPlanePolygon, perpendicularSegment } from '@/utils/halfPlane'
 
 /** A temporary placement pin the seeker drops for a shade tool (MAP-010). */
 export interface TempPin {
@@ -571,9 +571,18 @@ watch(() => props.askedFromMarkers, drawAskedFrom)
 const THERMO_START_PIN = '#16a34a' // green — where the seeker started
 const THERMO_END_PIN = '#dc2626' // red — where the seeker ended
 const THERMO_LINE = '#f59e0b' // amber — the thermometer category color
+const THERMO_DIVIDER = '#e2e8f0' // light — the hotter/colder boundary line
+// How far (meters) the hotter/colder divider extends on each side of the start
+// pin. A short "ruler" at town scale — long enough to read the boundary angle,
+// short enough not to clutter the map.
+const THERMO_DIVIDER_HALF_M = 120
 let thermoLayer: L.LayerGroup | null = null
-// Each vector owns three Leaflet layers we reconcile as a unit.
-const thermoById = new Map<string, { start: L.Marker; end: L.Marker; line: L.Polyline }>()
+// Each vector owns four Leaflet layers we reconcile as a unit: the two endpoint
+// pins, the travel line, and the perpendicular hotter/colder divider (issue #29).
+const thermoById = new Map<
+  string,
+  { start: L.Marker; end: L.Marker; line: L.Polyline; divider: L.Polyline | null }
+>()
 
 /** Build a small labeled teardrop pin ("S"/"E") for a thermometer endpoint. */
 function thermoPinIcon(leaflet: typeof L, glyph: string, color: string): L.DivIcon {
@@ -609,6 +618,7 @@ function drawThermometerVectors() {
       thermoLayer.removeLayer(layers.start)
       thermoLayer.removeLayer(layers.end)
       thermoLayer.removeLayer(layers.line)
+      if (layers.divider) thermoLayer.removeLayer(layers.divider)
       thermoById.delete(id)
     }
   }
@@ -616,6 +626,9 @@ function drawThermometerVectors() {
   for (const v of props.thermometerVectors) {
     const startLL: [number, number] = [v.start.lat, v.start.lng]
     const endLL: [number, number] = [v.end.lat, v.end.lng]
+    // The hotter/colder divider: a short segment through the start pin,
+    // perpendicular to the travel direction (issue #29). Null if start == end.
+    const dividerPts = perpendicularSegment(v.start, v.end, THERMO_DIVIDER_HALF_M)
     const existing = thermoById.get(v.id)
     if (!existing) {
       const line = leaflet.polyline([startLL, endLL], {
@@ -624,6 +637,10 @@ function drawThermometerVectors() {
         opacity: 0.9,
         dashArray: '6 6',
       })
+      // Solid, lighter line so the boundary reads distinctly from the travel line.
+      const divider = dividerPts
+        ? leaflet.polyline(dividerPts, { color: THERMO_DIVIDER, weight: 2, opacity: 0.85 })
+        : null
       const start = leaflet.marker(startLL, {
         icon: thermoPinIcon(leaflet, 'S', THERMO_START_PIN),
         zIndexOffset: 1100,
@@ -637,14 +654,16 @@ function drawThermometerVectors() {
         end.bindTooltip(`${v.label} — end`, { direction: 'top' })
       }
       thermoLayer.addLayer(line)
+      if (divider) thermoLayer.addLayer(divider)
       thermoLayer.addLayer(start)
       thermoLayer.addLayer(end)
-      thermoById.set(v.id, { start, end, line })
+      thermoById.set(v.id, { start, end, line, divider })
       continue
     }
     existing.start.setLatLng(startLL)
     existing.end.setLatLng(endLL)
     existing.line.setLatLngs([startLL, endLL])
+    if (existing.divider && dividerPts) existing.divider.setLatLngs(dividerPts)
   }
 }
 
