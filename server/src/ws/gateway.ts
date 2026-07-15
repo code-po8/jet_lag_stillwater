@@ -95,6 +95,18 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
     }
   }
 
+  /**
+   * Broadcast a per-recipient message: `build(pid)` computes what that player
+   * should receive (or null to send them nothing). Used for viewer-specific
+   * withholding, e.g. the hiding zone is sent to the hider but null to seekers.
+   */
+  function broadcastEach(code: string, build: (pid: string) => ServerMessage | null): void {
+    for (const [pid, sock] of roomSockets(code)) {
+      const msg = build(pid)
+      if (msg) send(sock, msg)
+    }
+  }
+
   app.get('/ws', { websocket: true }, (socket) => {
     let ctx: SocketCtx | null = null
 
@@ -170,7 +182,8 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
           players: hub.publicMembers(),
           phase: hub.getPhase(),
           phaseStartedAt: hub.getPhaseStartedAt(),
-          zone: hub.getZone(),
+          // Withheld from seekers — the zone is the hider's secret (see zoneFor).
+          zone: hub.zoneFor(resolved.player.id),
           // Reconcile pause state on (re)connect so a client that joined mid-pause
           // doesn't miss the edge-triggered `paused` broadcast it never saw.
           paused: hub.isPaused(),
@@ -191,7 +204,7 @@ export async function registerWsGateway(app: FastifyInstance, opts: GatewayOptio
       }
 
       // Authenticated message handling.
-      handleMessage(ctx, socket, msg, broadcast, opts.persistHiderRole)
+      handleMessage(ctx, socket, msg, broadcast, broadcastEach, opts.persistHiderRole)
     })
 
     socket.on('pong', () => {
@@ -273,6 +286,7 @@ function handleMessage(
   socket: WebSocket,
   msg: ClientMessage,
   broadcast: (code: string, msg: ServerMessage, exceptPlayerId?: string) => void,
+  broadcastEach: (code: string, build: (pid: string) => ServerMessage | null) => void,
   persistHiderRole?: (code: string, hiderId: string) => Promise<void>,
 ): void {
   const { hub, code, playerId } = ctx
@@ -284,9 +298,10 @@ function handleMessage(
     }
     case 'zone.set': {
       hub.setZone(msg.zone)
-      // Seekers only ever see the declared zone — broadcasting the zone itself
-      // is safe (it's the public boundary, not the hider's exact position).
-      broadcast(code, { t: 'zone', zone: msg.zone })
+      // The zone is the hider's secret — seekers must deduce it from answers.
+      // Send the real zone to non-seekers; seekers get null (the server still
+      // holds it for breach detection). Withholding decided by zoneFor.
+      broadcastEach(code, (pid) => ({ t: 'zone', zone: hub.zoneFor(pid) }))
       break
     }
     case 'ruledout.add': {

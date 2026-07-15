@@ -164,6 +164,43 @@ describe('WS gateway (integration)', () => {
     seeker.close()
   })
 
+  it('sends the declared zone to the hider but withholds it from seekers', async () => {
+    // The zone is the hider's secret — seekers must deduce it from answers, so
+    // they must never receive its coordinates over the wire.
+    const { ws: hider } = await helloAs('tok-hider')
+    const { ws: seeker } = await helloAs('tok-seeker')
+
+    const hiderZonePromise = nextMessage(hider, (m) => m.t === 'zone')
+    const seekerZonePromise = nextMessage(seeker, (m) => m.t === 'zone')
+    hider.send(JSON.stringify({ t: 'zone.set', zone: { lat: 36.12, lng: -97.07, radiusM: 402 } }))
+
+    const hiderZone = await hiderZonePromise
+    const seekerZone = await seekerZonePromise
+    expect(hiderZone.t === 'zone' && hiderZone.zone?.lat).toBe(36.12)
+    expect(seekerZone.t === 'zone' && seekerZone.zone).toBeNull()
+    hider.close()
+    seeker.close()
+  })
+
+  it('withholds the zone from a seeker in the welcome snapshot', async () => {
+    // A seeker joining AFTER the zone is set must not learn it via `welcome`.
+    const { ws: hider } = await helloAs('tok-hider')
+    const zoneAck = nextMessage(hider, (m) => m.t === 'zone')
+    hider.send(JSON.stringify({ t: 'zone.set', zone: { lat: 36.12, lng: -97.07, radiusM: 402 } }))
+    await zoneAck // ensure the hub has the zone before the seeker connects
+
+    const { ws: seeker, welcome: seekerWelcome } = await helloAs('tok-seeker')
+    expect(seekerWelcome.t === 'welcome' && seekerWelcome.zone).toBeNull()
+
+    // A (re)connecting hider still gets it.
+    const { ws: hider2, welcome: hiderWelcome } = await helloAs('tok-hider')
+    expect(hiderWelcome.t === 'welcome' && hiderWelcome.zone?.lat).toBe(36.12)
+
+    hider.close()
+    seeker.close()
+    hider2.close()
+  })
+
   it('broadcasts ruled-out cells as a union', async () => {
     const { ws: seeker } = await helloAs('tok-seeker')
     seeker.send(JSON.stringify({ t: 'ruledout.add', cells: ['a', 'b'] }))
