@@ -6,13 +6,30 @@ import type { Queryable } from './rooms/repository.js'
 import { RoomHubRegistry } from './ws/registry.js'
 import { registerWsGateway, type ConnectionAuth } from './ws/gateway.js'
 
+/**
+ * Parse the `WEB_ORIGIN` value into a list of allowed origins.
+ *
+ * Accepts a single origin or a comma-separated list (e.g. the Railway default
+ * URL plus a custom domain). Whitespace around each entry is trimmed and empty
+ * entries are dropped, so `"a, b,"` yields `["a", "b"]`. Returns an empty array
+ * when nothing usable is configured, which the caller treats as "CORS open".
+ */
+export function parseWebOrigins(raw: string | undefined): string[] {
+  if (!raw) return []
+  return raw
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0)
+}
+
 export interface BuildAppOptions {
   /** Enable Fastify's logger. Defaults to true; tests pass false to stay quiet. */
   logger?: boolean
   /**
-   * Allowed browser origin (the deployed `web` URL). When set, CORS is locked to
-   * it. Defaults to `process.env.WEB_ORIGIN`; if neither is set, CORS is open
-   * (local dev convenience).
+   * Allowed browser origin(s) — the deployed `web` URL(s). Accepts a single
+   * origin or a comma-separated list (custom domain + Railway URL). When set,
+   * CORS and the WS upgrade are locked to these origins. Defaults to
+   * `process.env.WEB_ORIGIN`; if neither is set, CORS is open (local dev).
    */
   webOrigin?: string
   /**
@@ -29,7 +46,10 @@ export interface BuildAppOptions {
     registry?: RoomHubRegistry
     batchIntervalMs?: number
     heartbeatMs?: number
-    /** Lock WS connections to this origin (defaults to webOrigin). */
+    /**
+     * Lock WS connections to this origin, or a comma-separated list of origins
+     * (defaults to webOrigin).
+     */
     allowedOrigin?: string
     /** Persist a hider assignment so it survives reconnect (see GatewayOptions). */
     persistHiderRole?: (code: string, hiderId: string) => Promise<void>
@@ -47,10 +67,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     logger: options.logger ?? true,
   })
 
-  // CORS: lock to the deployed web origin when known (INFRA-007); open locally.
-  const webOrigin = options.webOrigin ?? process.env.WEB_ORIGIN
+  // CORS: lock to the deployed web origin(s) when known (INFRA-007); open
+  // locally. Accepts a comma-separated list so a custom domain and the Railway
+  // default URL can both be allowed.
+  const webOrigins = parseWebOrigins(options.webOrigin ?? process.env.WEB_ORIGIN)
   app.register(fastifyCors, {
-    origin: webOrigin ? [webOrigin] : true,
+    origin: webOrigins.length ? webOrigins : true,
   })
 
   // Liveness/readiness probe — used by Docker/Railway health checks.
@@ -70,16 +92,18 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   // WebSocket data-plane gateway (INFRA-006), registered when configured.
   if (options.ws) {
     const registry = options.ws.registry ?? new RoomHubRegistry()
-    const allowedOrigin = options.ws.allowedOrigin ?? webOrigin
+    const allowedOrigins = parseWebOrigins(
+      options.ws.allowedOrigin ?? options.webOrigin ?? process.env.WEB_ORIGIN,
+    )
     app.register(fastifyWebsocket, {
-      options: allowedOrigin
+      options: allowedOrigins.length
         ? {
-            // Lock WS upgrades to the deployed web origin (INFRA-007).
+            // Lock WS upgrades to the deployed web origin(s) (INFRA-007).
             verifyClient: (
               info: { origin?: string },
               next: (ok: boolean, code?: number, message?: string) => void,
             ) => {
-              if (info.origin === allowedOrigin) next(true)
+              if (info.origin !== undefined && allowedOrigins.includes(info.origin)) next(true)
               else next(false, 403, 'origin not allowed')
             },
           }
