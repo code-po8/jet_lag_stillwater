@@ -15,8 +15,10 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   cancel: []
+  close: []
   asked: [{ questionId: string; cardsDraw: number; cardsKeep: number }]
   answered: [{ questionId: string; answer: string }]
+  remoteAnswered: [{ questionId: string; answer: string }]
   cardDraw: [{ cardsDraw: number; cardsKeep: number }]
   vetoed: [{ questionId: string }]
   randomized: [{ originalQuestionId: string; newQuestionId: string }]
@@ -34,6 +36,9 @@ const questionSync = useQuestionCurseSync()
 const answerText = ref('')
 const showConfirmation = ref(false)
 const confirmationMessage = ref('')
+// True once the seeker submits an answer from THIS modal, so the pendingQuestion
+// watcher can distinguish a local answer from a remote one (issue #25).
+const answeredLocally = ref(false)
 
 // Get category info for the question
 const category = computed(() => {
@@ -83,6 +88,37 @@ watch(
     answerText.value = ''
     showConfirmation.value = false
     confirmationMessage.value = ''
+    answeredLocally.value = false
+  },
+)
+
+// Remote-answer sync (issue #25): while the seeker's modal is open awaiting the
+// answer, the hider may answer on their device. That arrives as a store mutation
+// (pendingQuestion cleared, answer pushed to askedQuestions). Detect the pending
+// question for THIS modal disappearing without a local submit, surface the
+// received answer, and ask the parent to close — instead of silently reverting
+// to the "Ask" prompt.
+watch(
+  () => questionStore.pendingQuestion,
+  (pending, prev) => {
+    // Only react to a pending question being CLEARED (not asked/randomized).
+    if (pending !== null || prev === null) return
+    // Ignore our own local submit — handleSubmitAnswer already closed the modal.
+    if (answeredLocally.value) return
+    // Only if the question that cleared is the one this modal is showing.
+    if (!props.question || prev.questionId !== props.question.id) return
+
+    // Only treat this as a remote ANSWER if the question actually landed in
+    // askedQuestions with an answer. A local veto also clears pendingQuestion but
+    // records no answer — leave its existing in-modal confirmation flow alone.
+    const answered = questionStore.askedQuestions.find(
+      (q) => q.questionId === prev.questionId && !q.vetoed,
+    )
+    if (!answered) return
+
+    confirmationMessage.value = `Hider answered: ${answered.answer}`
+    emit('remoteAnswered', { questionId: prev.questionId, answer: answered.answer })
+    emit('close')
   },
 )
 
@@ -115,17 +151,28 @@ function handleAsk() {
 function handleSubmitAnswer() {
   if (!displayedQuestion.value || !category.value) return
 
-  const result = questionSync.answerQuestion(displayedQuestion.value.id, answerText.value)
+  // Guard empty answers: recording a blank answer silently loses the question
+  // (issue #25). Do nothing until the seeker types something.
+  const answer = answerText.value.trim()
+  if (!answer) return
+
+  const result = questionSync.answerQuestion(displayedQuestion.value.id, answer)
   if (result.success) {
+    // Mark this as a locally-driven answer so the pendingQuestion watcher does
+    // not also treat the resulting clear as a remote answer.
+    answeredLocally.value = true
     confirmationMessage.value = 'Answer recorded! Hider draws cards.'
     emit('answered', {
       questionId: displayedQuestion.value.id,
-      answer: answerText.value,
+      answer,
     })
     emit('cardDraw', {
       cardsDraw: cardsDraw.value,
       cardsKeep: cardsKeep.value,
     })
+    // Close the modal so the seeker returns to the question menu (issue #25:
+    // previously the modal stayed open and appeared to do nothing on submit).
+    emit('close')
   }
 }
 
@@ -205,7 +252,7 @@ function handleRandomize() {
             v-model="answerText"
             type="text"
             placeholder="Enter the hider's answer..."
-            class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
       </div>

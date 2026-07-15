@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { render, screen, cleanup, fireEvent } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import AskQuestionModal from '../AskQuestionModal.vue'
@@ -618,6 +619,73 @@ describe('AskQuestionModal', () => {
         cardsDraw: 6,
         cardsKeep: 2,
       })
+    })
+  })
+
+  // Issue #25: Seeker doesn't see answered question
+  describe('issue #25 - answer readability, submit, and remote answer sync', () => {
+    /** Bug #2: the answer textbox rendered near-white text on a white card. */
+    it('renders the answer input with an explicit dark text color (readable on white)', async () => {
+      render(AskQuestionModal, { props: { question: testQuestion } })
+
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+
+      const answerInput = screen.getByPlaceholderText(/enter the hider's answer/i)
+      // Must set an explicit dark text color so it does not inherit the near-white
+      // body text (var(--color-ui-text-primary) = #f8fafc) on the white modal card.
+      expect(answerInput.className).toMatch(/\btext-gray-900\b/)
+    })
+
+    /** Bug #3: submitting recorded the answer but never closed the modal. */
+    it('emits close when an answer is submitted so the modal dismisses', async () => {
+      const onClose = vi.fn()
+      render(AskQuestionModal, { props: { question: testQuestion, onClose } })
+
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+      const answerInput = screen.getByPlaceholderText(/enter the hider's answer/i)
+      await fireEvent.update(answerInput, 'Yes')
+      await fireEvent.click(screen.getByRole('button', { name: /submit answer/i }))
+
+      expect(onClose).toHaveBeenCalled()
+    })
+
+    /** Bug #3: an empty answer must not record or close — nothing silently lost. */
+    it('does not record or close when submitting an empty answer', async () => {
+      const store = useQuestionStore()
+      const onClose = vi.fn()
+      render(AskQuestionModal, { props: { question: testQuestion, onClose } })
+
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+      await fireEvent.click(screen.getByRole('button', { name: /submit answer/i }))
+
+      expect(store.hasPendingQuestion).toBe(true)
+      expect(store.askedQuestions).toHaveLength(0)
+      expect(onClose).not.toHaveBeenCalled()
+    })
+
+    /**
+     * Bug #1: while the seeker's modal is open awaiting the answer, the hider
+     * answers (in-app, synced via the store clearing pendingQuestion + pushing to
+     * askedQuestions). The modal must surface that answer and close, instead of
+     * silently reverting to the "Ask" prompt.
+     */
+    it('surfaces a remotely-received answer and emits close', async () => {
+      const store = useQuestionStore()
+      const onClose = vi.fn()
+      render(AskQuestionModal, { props: { question: testQuestion, onClose } })
+
+      // Seeker asks; modal is now in answer mode awaiting the hider.
+      await fireEvent.click(screen.getByRole('button', { name: /ask/i }))
+      expect(screen.getByTestId('answer-section')).toBeInTheDocument()
+
+      // Hider answers on their device — arrives as a store mutation on the seeker.
+      store.answerQuestion(testQuestion.id, 'No')
+      await nextTick()
+
+      // The received answer should be shown to the seeker...
+      expect(screen.getByText(/No/)).toBeInTheDocument()
+      // ...and the modal should ask to close (not silently flip back to Ask mode).
+      expect(onClose).toHaveBeenCalled()
     })
   })
 })
