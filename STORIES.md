@@ -4640,6 +4640,7 @@ Shared base map of Stillwater with live positions, hider zone, seeker ruled-out 
 
 - Cross-seeker **sync** of vector shades is deferred (local-only per the card); the seam is documented in `useVectorShades`.
 - The "outside" mask uses a fixed ±2° span — ample for Stillwater; a future card could tie it to the map bounds if the play area grows.
+- **Units (issue #28, done):** the radius input now takes a **value + unit** (miles/feet, default **miles**) instead of a raw feet field, and accepts decimals (e.g. `0.25` miles), so a "25 mile radar" is a direct entry. Conversion is centralized in `src/utils/distanceUnits.ts` (`toMeters`, `DISTANCE_UNITS`, `DEFAULT_DISTANCE_UNIT`) — extend it to add meters/km later.
 
 ---
 

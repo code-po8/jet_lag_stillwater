@@ -20,6 +20,12 @@ import { useQuestionCurseSync } from '@/composables/useQuestionCurseSync'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useQuestionStore } from '@/stores/questionStore'
 import { getCategoryById, QuestionCategoryId } from '@/types/question'
+import {
+  DISTANCE_UNITS,
+  DEFAULT_DISTANCE_UNIT,
+  toMeters,
+  type DistanceUnit,
+} from '@/utils/distanceUnits'
 import { QUARTER_MILE_M } from '@/services/sync/protocol'
 import { distanceMeters } from '@jet-lag-stillwater/shared'
 import poiGeo from '../assets/map/stillwater-poi.json'
@@ -75,7 +81,11 @@ function onTempPins(pins: LatLng[]) {
 
 // ── Radius shader (MAP-010): vector-shade a configurable disc, inside/outside ──
 const radiusActive = ref(false)
-const radiusFeet = ref(500) // default matches the ~300ft–¼mi play scale
+// Radius as a value + unit (issue #28): default 0.5 miles — a common radar
+// distance, and miles is the most common question unit, so a "25 mile radar"
+// is a straight entry instead of a hand-conversion to feet.
+const radiusValue = ref(0.5)
+const radiusUnit = ref<DistanceUnit>(DEFAULT_DISTANCE_UNIT)
 const radiusMode = ref<'inside' | 'outside'>('inside')
 const radiusPin = ref<LatLng | null>(null) // temp placement pin (center)
 
@@ -95,7 +105,7 @@ const canApplyRadius = computed(() => radiusActive.value && radiusPin.value !== 
 /** Commit the pending disc as a vector shade. */
 function applyRadius() {
   if (!radiusPin.value) return
-  const meters = radiusFeet.value * 0.3048
+  const meters = toMeters(radiusValue.value, radiusUnit.value)
   const id = vectorShades.addRadiusShade(
     { lat: radiusPin.value.lat, lng: radiusPin.value.lng },
     meters,
@@ -513,15 +523,27 @@ function pickStopFromMap(stop: BusStop) {
         }}
       </p>
       <label class="radius-field">
-        <span>Radius (ft)</span>
-        <input
-          v-model.number="radiusFeet"
-          type="number"
-          min="50"
-          step="50"
-          data-testid="radius-input"
-          class="radius-input"
-        />
+        <span>Radius</span>
+        <div class="radius-field-inputs">
+          <input
+            v-model.number="radiusValue"
+            type="number"
+            min="0"
+            step="any"
+            inputmode="decimal"
+            data-testid="radius-input"
+            class="radius-input"
+            aria-label="Radius value"
+          />
+          <select
+            v-model="radiusUnit"
+            data-testid="radius-unit"
+            class="radius-unit-select"
+            aria-label="Radius unit"
+          >
+            <option v-for="u in DISTANCE_UNITS" :key="u.id" :value="u.id">{{ u.label }}</option>
+          </select>
+        </div>
       </label>
       <div class="radius-mode" role="radiogroup" aria-label="Shade inside or outside">
         <button
@@ -821,18 +843,31 @@ function pickStopFromMap(stop: BusStop) {
 }
 .radius-field {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
+}
+.radius-field-inputs {
+  display: flex;
+  gap: 6px;
 }
 .radius-input {
-  width: 84px;
+  flex: 1;
+  min-width: 0;
   min-height: 36px;
   border-radius: 6px;
   border: 1px solid var(--color-ui-border, #475569);
   background: var(--color-ui-bg, #0f172a);
   color: inherit;
   padding: 0 8px;
+  font-size: 0.85rem;
+}
+.radius-unit-select {
+  min-height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--color-ui-border, #475569);
+  background: var(--color-ui-bg, #0f172a);
+  color: inherit;
+  padding: 0 6px;
   font-size: 0.85rem;
 }
 .radius-mode {
