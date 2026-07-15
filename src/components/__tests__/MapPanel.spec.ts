@@ -29,6 +29,7 @@ vi.mock('../BaseMap.vue', () => ({
     emits: ['pickStop', 'tempPinsChange'],
     template: `<div
       data-testid="base-map-stub"
+      :data-has-zone="String(!!zone)"
       :data-marker-count="(markers || []).length"
       :data-breached="String(!!breached)"
       :data-shaded="(shadedCells || []).length"
@@ -105,6 +106,28 @@ describe('MapPanel (MAP-004)', () => {
     await nextTick()
     expect(screen.getByTestId('zone-center')).toHaveTextContent('Student Union')
     expect(screen.getByTestId('zone-radius')).toHaveTextContent(/¼ mi/)
+  })
+
+  it('draws the zone on the map for the hider', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    sync.zone.value = { lat: 36.12, lng: -97.07, radiusM: QUARTER_MILE_M, label: 'Student Union' }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('base-map-stub').getAttribute('data-has-zone')).toBe('true')
+  })
+
+  it('never draws the zone on the map for a seeker (defense-in-depth)', async () => {
+    // Even if a stale zone somehow reaches the seeker's sync state, the map must
+    // not render it — the zone is the hider's secret.
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    sync.zone.value = { lat: 36.12, lng: -97.07, radiusM: QUARTER_MILE_M, label: 'Student Union' }
+    render(MapPanel)
+    await nextTick()
+    expect(screen.getByTestId('base-map-stub').getAttribute('data-has-zone')).toBe('false')
+    // ...and the seeker never sees the zone sheet with its center/radius.
+    expect(screen.queryByTestId('zone-sheet')).not.toBeInTheDocument()
   })
 
   it('shows the bus-stop picker only for the hider', async () => {

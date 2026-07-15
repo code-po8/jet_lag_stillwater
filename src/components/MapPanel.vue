@@ -318,7 +318,7 @@ function pickStopFromMap(stop: BusStop) {
     </div>
 
     <BaseMap
-      :zone="zone"
+      :zone="isSeeker ? null : zone"
       :markers="markers"
       :breached="isBreached"
       :shaded-cells="shadedCells"
@@ -552,8 +552,10 @@ function pickStopFromMap(stop: BusStop) {
       </div>
     </div>
 
-    <!-- Hiding-zone sheet (labeled) -->
-    <section class="zone-sheet" data-testid="zone-sheet" aria-label="Hiding zone">
+    <!-- Hiding-zone sheet (labeled). Hider-only: the zone is the hider's secret,
+         so a seeker never sees its center/radius (defense-in-depth — the server
+         also withholds the zone coords from seekers). -->
+    <section v-if="!isSeeker" class="zone-sheet" data-testid="zone-sheet" aria-label="Hiding zone">
       <h3 class="zone-sheet-title">Hiding Zone</h3>
 
       <template v-if="hasZone">

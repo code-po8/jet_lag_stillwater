@@ -240,6 +240,22 @@ export class RoomHub {
     return this.zone
   }
 
+  /** Role of a member, or undefined if not present. */
+  roleOf(id: string): Role | undefined {
+    return this.membersById.get(id)?.role
+  }
+
+  /**
+   * The hiding zone as visible to `viewerId`. The zone is the hider's secret —
+   * seekers must deduce it from question answers — so it is withheld from
+   * seekers entirely (they only need it server-side, for breach detection).
+   * Withholding happens here, at the data layer, alongside position withholding.
+   */
+  zoneFor(viewerId: string): Zone | null {
+    if (this.membersById.get(viewerId)?.role === 'seeker') return null
+    return this.zone
+  }
+
   breachedSeekers(): string[] {
     return [...this.breached]
   }
