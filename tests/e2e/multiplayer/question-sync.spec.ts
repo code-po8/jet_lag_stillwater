@@ -18,6 +18,8 @@ import { test, expect, type Page, type BrowserContext } from '@playwright/test'
 
 // A real radar question id + its visible text (from the seeded question data).
 const RADAR_QUESTION_ID = 'radar-0.5-miles'
+// A real thermometer question id (issue #29: seeker sends a travel vector).
+const THERMOMETER_QUESTION_ID = 'thermometer-0.5-miles'
 
 async function createHost(
   context: BrowserContext,
@@ -122,6 +124,66 @@ test.describe('multiplayer question sync + map pin (2 browsers)', () => {
     await expect(seeker.getByTestId(`history-item-${RADAR_QUESTION_ID}`)).toContainText(/yes/i, {
       timeout: 15_000,
     })
+
+    await hostCtx.close()
+    await joinCtx.close()
+  })
+
+  // Issue #29: the seeker asks a thermometer question, places a START + END pin
+  // on their map and sends the travel vector; the HIDER's map shows the vector
+  // (two pins + arrow line) so they can judge hotter/colder.
+  test('seeker sends a thermometer travel vector → hider map shows the start/end pins', async ({
+    browser,
+  }) => {
+    const hostCtx = await browser.newContext()
+    const joinCtx = await browser.newContext()
+
+    const { page: seeker, code } = await createHost(hostCtx, 'Hank')
+    const hider = await joinRoom(joinCtx, code, 'Sam')
+
+    await expect(seeker.getByTestId('lobby-roster')).toContainText('Sam')
+    await seeker.getByTestId('lobby-roster').getByRole('button', { name: 'Sam' }).click()
+    await expect(seeker.getByTestId('start-game-btn')).toBeEnabled()
+    await expect(hider.getByTestId('lobby-roster')).toContainText('HIDER', { timeout: 15_000 })
+
+    await seeker.getByTestId('start-game-btn').click()
+    await expect(seeker).toHaveURL(/\/game/)
+    await expect(hider).toHaveURL(/\/game/)
+
+    // End the hiding period so questions unlock.
+    await seeker.getByTestId('bottom-nav').getByRole('button', { name: 'Admin' }).click()
+    await seeker.getByTestId('admin-end-hiding-btn').click()
+    await seeker.getByTestId('admin-end-hiding-confirm-btn').click()
+
+    // Seeker asks the thermometer question.
+    await seeker.getByTestId('bottom-nav').getByRole('button', { name: 'Questions' }).click()
+    const tile = seeker.getByTestId(`question-tile-${THERMOMETER_QUESTION_ID}`)
+    await expect(tile).toBeEnabled({ timeout: 15_000 })
+    await tile.click()
+    await expect(seeker.getByTestId('ask-question-modal')).toBeVisible()
+    await seeker.getByRole('button', { name: 'Ask', exact: true }).click()
+
+    // On the map, the seeker's thermometer send-vector panel appears (the
+    // question is pending). Place two pins by tapping the map, then send.
+    await seeker.getByTestId('bottom-nav').getByRole('button', { name: 'Map' }).click()
+    const map = seeker.getByTestId('base-map-canvas')
+    await expect(map).toBeVisible()
+    await expect(seeker.getByTestId('thermo-panel')).toBeVisible({ timeout: 15_000 })
+    await seeker.getByTestId('thermo-place-btn').click()
+    // Two distinct taps on the map = start pin then end pin.
+    const box = (await map.boundingBox())!
+    await seeker.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.5)
+    await seeker.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.5)
+    await expect(seeker.getByTestId('thermo-send-btn')).toBeEnabled()
+    await seeker.getByTestId('thermo-send-btn').click()
+
+    // The HIDER's map shows the thermometer vector (start/end pins rendered as
+    // .thermo-pin markers) relayed over the live WS.
+    await hider.getByTestId('bottom-nav').getByRole('button', { name: 'Map' }).click()
+    await expect(hider.getByTestId('base-map-canvas')).toBeVisible()
+    await expect(hider.locator('.thermo-pin').first()).toBeVisible({ timeout: 15_000 })
+    // Both endpoints are present.
+    await expect(hider.locator('.thermo-pin')).toHaveCount(2, { timeout: 15_000 })
 
     await hostCtx.close()
     await joinCtx.close()

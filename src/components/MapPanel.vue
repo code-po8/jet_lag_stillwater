@@ -5,15 +5,21 @@
  * declared zone drawn on the map and described in a labeled sheet.
  */
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import BaseMap, { type PlayerMarker, type BusStop, type AskedFromMarker } from './BaseMap.vue'
+import BaseMap, {
+  type PlayerMarker,
+  type BusStop,
+  type AskedFromMarker,
+  type ThermometerVector,
+} from './BaseMap.vue'
 import { useZone, type BusStopLike } from '@/composables/useZone'
 import { useSync } from '@/composables/useSync'
 import { useGeolocation } from '@/composables/useGeolocation'
 import { useShading } from '@/composables/useShading'
 import { useVectorShades, type LatLng } from '@/composables/useVectorShades'
+import { useQuestionCurseSync } from '@/composables/useQuestionCurseSync'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useQuestionStore } from '@/stores/questionStore'
-import { getCategoryById } from '@/types/question'
+import { getCategoryById, QuestionCategoryId } from '@/types/question'
 import { QUARTER_MILE_M } from '@/services/sync/protocol'
 import { distanceMeters } from '@jet-lag-stillwater/shared'
 import poiGeo from '../assets/map/stillwater-poi.json'
@@ -25,6 +31,7 @@ const gameStore = useGameStore()
 const questionStore = useQuestionStore()
 const { cells: shadedCells, shadeFreehand, autoShadeRadar, unshadeLocal } = useShading()
 const vectorShades = useVectorShades()
+const questionSync = useQuestionCurseSync()
 
 const isHider = computed(() => sync.role.value === 'hider')
 const isSeeker = computed(() => sync.role.value === 'seeker')
@@ -38,19 +45,24 @@ function toggleFreehand() {
   if (freehandActive.value) {
     radiusActive.value = false // one tool at a time
     lineActive.value = false
+    thermoActive.value = false
   }
 }
 
 // ── Vector shade tools (MAP-010/011) share temp-pin placement + undo/clear ──
 // Ids of vector shades this device committed, for order-independent undo.
 const vectorUndo = ref<string[]>([])
-// Placement mode / pin capacity depend on the active tool (radius=1, line=2).
-const placementMode = computed(() => radiusActive.value || lineActive.value)
-const maxPins = computed(() => (lineActive.value ? 2 : 1))
+// Placement mode / pin capacity depend on the active tool (radius=1, line=2,
+// thermometer send=2 — issue #29).
+const placementMode = computed(() => radiusActive.value || lineActive.value || thermoActive.value)
+const maxPins = computed(() => (lineActive.value || thermoActive.value ? 2 : 1))
 
 /** BaseMap reports the current temp pin(s); route them to the active tool. */
 function onTempPins(pins: LatLng[]) {
-  if (lineActive.value) {
+  if (thermoActive.value) {
+    thermoStart.value = pins[0] ?? null
+    thermoEnd.value = pins[1] ?? null
+  } else if (lineActive.value) {
     lineStart.value = pins[0] ?? null
     lineEnd.value = pins[1] ?? null
   } else {
@@ -69,6 +81,7 @@ function toggleRadiusTool() {
   if (radiusActive.value) {
     freehandActive.value = false
     lineActive.value = false
+    thermoActive.value = false
   } else {
     radiusPin.value = null // leaving the tool clears the pending pin
   }
@@ -100,6 +113,7 @@ function toggleLineTool() {
   if (lineActive.value) {
     freehandActive.value = false
     radiusActive.value = false
+    thermoActive.value = false
   } else {
     lineStart.value = null
     lineEnd.value = null
@@ -122,6 +136,49 @@ function applyLine() {
   vectorUndo.value = [...vectorUndo.value, id]
   lineStart.value = null
   lineEnd.value = null
+}
+
+// ── Thermometer send-vector tool (issue #29): the seeker places START + END
+// pins for a pending thermometer question and sends them to the hider. Distinct
+// from the seeker's own line-shading tool (which is a local deduction aid).
+const thermoActive = ref(false)
+const thermoStart = ref<LatLng | null>(null)
+const thermoEnd = ref<LatLng | null>(null)
+
+/** The seeker's pending thermometer question, if any (drives the send panel). */
+const pendingThermometer = computed(() => {
+  const p = questionStore.pendingQuestion
+  return isSeeker.value && p?.categoryId === QuestionCategoryId.Thermometer ? p : null
+})
+
+function toggleThermoTool() {
+  thermoActive.value = !thermoActive.value
+  if (thermoActive.value) {
+    freehandActive.value = false
+    radiusActive.value = false
+    lineActive.value = false
+  } else {
+    thermoStart.value = null
+    thermoEnd.value = null
+  }
+}
+
+const canSendThermo = computed(
+  () => !!pendingThermometer.value && thermoStart.value !== null && thermoEnd.value !== null,
+)
+
+/** Send the placed start→end vector to the hider (broadcasts question.vector). */
+function sendThermometerVector() {
+  const q = pendingThermometer.value
+  if (!q || !thermoStart.value || !thermoEnd.value) return
+  questionSync.setThermometerVector(
+    q.questionId,
+    { lat: thermoStart.value.lat, lng: thermoStart.value.lng },
+    { lat: thermoEnd.value.lat, lng: thermoEnd.value.lng },
+  )
+  thermoStart.value = null
+  thermoEnd.value = null
+  thermoActive.value = false
 }
 
 /** Undo the most recent vector shade this device added. */
@@ -235,6 +292,33 @@ const askedFromMarkers = computed<AskedFromMarker[]>(() => {
   return out
 })
 
+// Thermometer travel vectors (issue #29): the seeker's start→end pins for a
+// thermometer question, shown to the HIDER only (it's the seeker's measurement,
+// context for judging hotter/colder). Covers the pending question plus any
+// answered ones that carry a vector. Keyed by question id for stable
+// reconciliation.
+const thermometerVectors = computed<ThermometerVector[]>(() => {
+  if (!isHider.value) return []
+  const out: ThermometerVector[] = []
+  const seen = new Set<string>()
+  const add = (q: { questionId: string; thermometerVector?: { start: LatLng; end: LatLng } }) => {
+    if (!q.thermometerVector || seen.has(q.questionId)) return
+    seen.add(q.questionId)
+    const question = questionStore.getQuestionById(q.questionId)
+    // Prefer the question's distance text (e.g. "0.5 miles") for the label.
+    const distance = question?.text.match(/([\d.]+\s*miles?)/i)?.[1]
+    out.push({
+      id: q.questionId,
+      start: q.thermometerVector.start,
+      end: q.thermometerVector.end,
+      label: distance ? `Thermometer ${distance}` : 'Thermometer',
+    })
+  }
+  if (questionStore.pendingQuestion) add(questionStore.pendingQuestion)
+  for (const q of questionStore.askedQuestions) add(q)
+  return out
+})
+
 onMounted(() => geo.start())
 onBeforeUnmount(() => geo.stop())
 
@@ -326,6 +410,7 @@ function pickStopFromMap(stop: BusStop) {
       :in-range-stop-indices="inRangeStopIndices"
       :stops-pickable="isHider"
       :asked-from-markers="askedFromMarkers"
+      :thermometer-vectors="thermometerVectors"
       :vector-shades="vectorShades.shades.value"
       :placement-mode="placementMode"
       :max-pins="maxPins"
@@ -548,6 +633,52 @@ function pickStopFromMap(stop: BusStop) {
           @click="clearVector"
         >
           Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Thermometer send-vector panel (issue #29). Shown to the seeker while a
+         thermometer question is pending: place start + end pins and send the
+         travel vector to the hider. -->
+    <div
+      v-if="pendingThermometer"
+      class="radius-panel"
+      data-testid="thermo-panel"
+      role="group"
+      aria-label="Thermometer travel vector"
+    >
+      <p class="radius-panel-hint" data-testid="thermo-hint">
+        {{
+          !thermoActive
+            ? 'Send your start + end pins so the hider can judge hotter/colder.'
+            : !thermoStart
+              ? 'Tap the map to place your START pin (where you began).'
+              : !thermoEnd
+                ? 'Tap the map to place your END pin (where you traveled to).'
+                : 'Both pins placed. Send them to the hider.'
+        }}
+      </p>
+      <div class="radius-actions">
+        <button
+          type="button"
+          class="radius-mode-btn"
+          :class="{ 'radius-mode-active': thermoActive }"
+          :aria-pressed="thermoActive"
+          data-testid="thermo-place-btn"
+          title="Place the start and end pins on the map"
+          @click="toggleThermoTool"
+        >
+          {{ thermoActive ? 'Placing…' : 'Place pins' }}
+        </button>
+        <button
+          type="button"
+          class="radius-apply"
+          data-testid="thermo-send-btn"
+          :disabled="!canSendThermo"
+          title="Send the travel vector to the hider"
+          @click="sendThermometerVector"
+        >
+          Send to hider
         </button>
       </div>
     </div>

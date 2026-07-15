@@ -44,6 +44,8 @@ function fakeLeaflet() {
     bindTooltip: ReturnType<typeof vi.fn>
   }> = []
   const rects: unknown[] = []
+  // Thermometer vector arrows (issue #29): a polyline from start→end pin.
+  const polylines: Array<{ latlngs: unknown; opts: unknown }> = []
   // Ask-time pins (MAP-009) use L.marker + L.divIcon. Record each so tests can
   // assert the icon html + precedence ops (setLatLng, bringToFront, zIndex).
   const pins: Array<{
@@ -115,6 +117,10 @@ function fakeLeaflet() {
       polygons.push({ latlngs, opts })
       return { addTo: vi.fn().mockReturnThis() }
     }),
+    polyline: vi.fn((latlngs: unknown, opts: unknown) => {
+      polylines.push({ latlngs, opts })
+      return { addTo: vi.fn().mockReturnThis(), setLatLngs: vi.fn().mockReturnThis() }
+    }),
     layerGroup: vi.fn().mockReturnValue(group),
     rectangle: vi.fn(() => {
       const r = { addTo: vi.fn() }
@@ -144,6 +150,7 @@ function fakeLeaflet() {
     circle,
     circles,
     polygons,
+    polylines,
     group,
     markers,
     rects,
@@ -378,6 +385,58 @@ describe('BaseMap (MAP-001)', () => {
     // The single pin was removed from its group; L.marker not re-created.
     expect(fake.group.removeLayer).toHaveBeenCalled()
     expect(fake.L.marker).toHaveBeenCalledTimes(1)
+  })
+
+  // ── Thermometer travel vector (issue #29) ──
+
+  it('draws a start pin, an end pin, and a connecting arrow line', async () => {
+    render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        thermometerVectors: [
+          {
+            id: 'q1',
+            start: { lat: 36.12, lng: -97.07 },
+            end: { lat: 36.13, lng: -97.06 },
+            label: 'Thermometer',
+          },
+        ],
+      },
+    })
+    await nextTick()
+
+    // Two labeled pins (start + end) via divIcon markers...
+    expect(fake.L.marker).toHaveBeenCalledTimes(2)
+    const iconHtml = fake.divIcons.map((d) => (d.options.html ?? '').toUpperCase())
+    expect(iconHtml.some((h) => h.includes('>S<'))).toBe(true)
+    expect(iconHtml.some((h) => h.includes('>E<'))).toBe(true)
+    // ...connected by a polyline from start to end (the travel vector).
+    expect(fake.L.polyline).toHaveBeenCalledTimes(1)
+    expect(fake.polylines[0]!.latlngs).toEqual([
+      [36.12, -97.07],
+      [36.13, -97.06],
+    ])
+  })
+
+  it('does not draw a thermometer vector when there are none', async () => {
+    render(BaseMap, { props: { leaflet: fake.L as never } })
+    await nextTick()
+    expect(fake.L.polyline).not.toHaveBeenCalled()
+  })
+
+  it('removes a thermometer vector when its question is no longer active', async () => {
+    const { rerender } = render(BaseMap, {
+      props: {
+        leaflet: fake.L as never,
+        thermometerVectors: [{ id: 'q1', start: { lat: 1, lng: 1 }, end: { lat: 2, lng: 2 } }],
+      },
+    })
+    await nextTick()
+    await rerender({ leaflet: fake.L as never, thermometerVectors: [] })
+    await nextTick()
+    // The vector's layers were removed from its group; not re-created.
+    expect(fake.group.removeLayer).toHaveBeenCalled()
+    expect(fake.L.polyline).toHaveBeenCalledTimes(1)
   })
 
   // ── Temp-pin placement + vector shades (MAP-010) ──

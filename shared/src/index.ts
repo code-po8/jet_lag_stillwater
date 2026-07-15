@@ -94,6 +94,7 @@ export type GameEventKind =
   | 'question.asked'
   | 'question.answered'
   | 'question.vetoed'
+  | 'question.vector'
   | 'curse.activated'
   | 'curse.cleared'
   | 'card.drawn'

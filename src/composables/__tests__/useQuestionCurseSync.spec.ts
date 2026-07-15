@@ -298,4 +298,64 @@ describe('useQuestionCurseSync (MULTI-003b-2)', () => {
     expect(questions.pendingQuestion?.questionId).toBe(RADAR_Q)
     expect(questions.pendingQuestion?.askedFrom).toBeUndefined()
   })
+
+  // ── issue #29: thermometer travel vector (start/end pins) ──
+  const THERMO_Q = 'thermometer-0.5-miles'
+  const start = { lat: 36.12, lng: -97.07 }
+  const end = { lat: 36.13, lng: -97.06 }
+
+  it('emits question.vector with start/end and stamps the pending question', () => {
+    enterRoom()
+    const sync = useSync()
+    const sent: Array<{ kind: string; payload: unknown }> = []
+    sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+    const questions = useQuestionStore()
+    const bridge = useQuestionCurseSync()
+    questions.askQuestion(THERMO_Q)
+    bridge.setThermometerVector(THERMO_Q, start, end)
+
+    expect(sent).toEqual([
+      { kind: 'question.vector', payload: { questionId: THERMO_Q, start, end } },
+    ])
+    expect(questions.pendingQuestion?.thermometerVector).toEqual({ start, end })
+  })
+
+  it('does NOT emit the vector when offline (no room)', () => {
+    const sync = useSync()
+    const sent: unknown[] = []
+    sync.sendGameEvent = (kind, payload) => sent.push({ kind, payload })
+
+    const questions = useQuestionStore()
+    const bridge = useQuestionCurseSync()
+    questions.askQuestion(THERMO_Q)
+    bridge.setThermometerVector(THERMO_Q, start, end)
+
+    expect(sent).toHaveLength(0)
+    // still applied locally
+    expect(questions.pendingQuestion?.thermometerVector).toEqual({ start, end })
+  })
+
+  it('applies an inbound question.vector to the local (hider) store', () => {
+    enterRoom()
+    const questions = useQuestionStore()
+    const bridge = useQuestionCurseSync()
+    // The hider already has the thermometer question pending (relayed earlier).
+    questions.askQuestion(THERMO_Q)
+
+    bridge.applyRemoteEvent('question.vector', { questionId: THERMO_Q, start, end })
+
+    expect(questions.pendingQuestion?.thermometerVector).toEqual({ start, end })
+  })
+
+  it('ignores a malformed inbound question.vector', () => {
+    enterRoom()
+    const questions = useQuestionStore()
+    const bridge = useQuestionCurseSync()
+    questions.askQuestion(THERMO_Q)
+
+    bridge.applyRemoteEvent('question.vector', { questionId: THERMO_Q, start, end: { lat: 'x' } })
+
+    expect(questions.pendingQuestion?.thermometerVector).toBeUndefined()
+  })
 })

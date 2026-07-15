@@ -318,6 +318,52 @@ describe('questionStore actions', () => {
     })
   })
 
+  describe('setThermometerVector (issue #29)', () => {
+    const THERMO_Q = 'thermometer-0.5-miles'
+    const start = { lat: 36.12, lng: -97.07 }
+    const end = { lat: 36.13, lng: -97.06 }
+
+    it('stamps the vector on the pending thermometer question', () => {
+      const store = useQuestionStore()
+      store.askQuestion(THERMO_Q)
+
+      const result = store.setThermometerVector(THERMO_Q, start, end)
+
+      expect(result.success).toBe(true)
+      expect(store.pendingQuestion?.thermometerVector).toEqual({ start, end })
+    })
+
+    it('carries the vector over to the answered record', () => {
+      const store = useQuestionStore()
+      store.askQuestion(THERMO_Q)
+      store.setThermometerVector(THERMO_Q, start, end)
+      store.answerQuestion(THERMO_Q, 'hotter')
+
+      const answered = store.askedQuestions.find((q) => q.questionId === THERMO_Q)
+      expect(answered?.thermometerVector).toEqual({ start, end })
+    })
+
+    it('updates the vector on an already-answered thermometer question', () => {
+      const store = useQuestionStore()
+      store.askQuestion(THERMO_Q)
+      store.answerQuestion(THERMO_Q, 'hotter')
+
+      const result = store.setThermometerVector(THERMO_Q, start, end)
+
+      expect(result.success).toBe(true)
+      const answered = store.askedQuestions.find((q) => q.questionId === THERMO_Q)
+      expect(answered?.thermometerVector).toEqual({ start, end })
+    })
+
+    it('fails when the question is neither pending nor asked', () => {
+      const store = useQuestionStore()
+
+      const result = store.setThermometerVector(THERMO_Q, start, end)
+
+      expect(result.success).toBe(false)
+    })
+  })
+
   describe('answerQuestion', () => {
     it('should record answer and move question to asked', () => {
       const store = useQuestionStore()

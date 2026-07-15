@@ -260,6 +260,38 @@ export const useQuestionStore = defineStore('questions', () => {
   }
 
   /**
+   * Attach a thermometer travel vector (issue #29) to a question. The seeker
+   * places the START and END pins on their map after asking a thermometer
+   * question; this stamps them on the matching pending or already-answered
+   * question so the hider's map can show the two pins + travel arrow. The vector
+   * is applied whether the question is still pending or already answered (the
+   * seeker may place/adjust it around the time the hider answers).
+   */
+  function setThermometerVector(
+    questionId: string,
+    start: { lat: number; lng: number },
+    end: { lat: number; lng: number },
+  ): ActionResult {
+    const vector = { start, end }
+
+    // Prefer the pending question if it matches.
+    if (pendingQuestion.value?.questionId === questionId) {
+      pendingQuestion.value = { ...pendingQuestion.value, thermometerVector: vector }
+      return { success: true }
+    }
+
+    // Otherwise update the matching answered question in place.
+    const idx = askedQuestions.value.findIndex((q) => q.questionId === questionId)
+    if (idx !== -1) {
+      const existing = askedQuestions.value[idx]!
+      askedQuestions.value[idx] = { ...existing, thermometerVector: vector }
+      return { success: true }
+    }
+
+    return { success: false, error: 'Question is neither pending nor asked' }
+  }
+
+  /**
    * Veto a pending question - returns it to available (but hider still gets cards).
    * The question is NOT added to asked questions, so it can be asked again.
    */
@@ -424,6 +456,7 @@ export const useQuestionStore = defineStore('questions', () => {
     getCategoryStats,
     askQuestion,
     answerQuestion,
+    setThermometerVector,
     vetoQuestion,
     randomizeQuestion,
     reaskQuestion,
