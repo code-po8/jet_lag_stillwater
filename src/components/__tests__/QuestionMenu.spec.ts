@@ -151,6 +151,52 @@ describe('QuestionMenu', () => {
     })
   })
 
+  // Issue #26: radar/thermometer tiles share one icon, so overlay the range as a
+  // distinguishing badge to tell (e.g.) a 0.5-mile radar from a 25-mile radar.
+  describe('range badge (issue #26)', () => {
+    it('shows the distance on a radar tile', () => {
+      render(QuestionMenu)
+      const tile = screen.getByTestId('question-tile-radar-25-miles')
+      const badge = tile.querySelector('[data-testid="tile-range-badge"]')
+      expect(badge).not.toBeNull()
+      expect(badge!.textContent).toContain('25')
+    })
+
+    it('shows the distance on a thermometer tile', () => {
+      render(QuestionMenu)
+      const tile = screen.getByTestId('question-tile-thermometer-0.5-miles')
+      const badge = tile.querySelector('[data-testid="tile-range-badge"]')
+      expect(badge).not.toBeNull()
+      expect(badge!.textContent).toContain('0.5')
+    })
+
+    it('lets a seeker distinguish two radar tiles at a glance', () => {
+      render(QuestionMenu)
+      const small = screen
+        .getByTestId('question-tile-radar-0.5-miles')
+        .querySelector('[data-testid="tile-range-badge"]')
+      const big = screen
+        .getByTestId('question-tile-radar-25-miles')
+        .querySelector('[data-testid="tile-range-badge"]')
+      expect(small!.textContent).not.toBe(big!.textContent)
+    })
+
+    it('does not badge questions without a meaningful range (e.g. matching)', () => {
+      render(QuestionMenu)
+      const tile = screen.getByTestId('question-tile-matching-transit-airport')
+      expect(tile.querySelector('[data-testid="tile-range-badge"]')).toBeNull()
+    })
+
+    it('overlays the badge ON TOP of the icon (both are present)', () => {
+      render(QuestionMenu)
+      const tile = screen.getByTestId('question-tile-radar-5-miles')
+      // The category icon SVG is still rendered...
+      expect(tile.querySelector('svg.tile-icon')).not.toBeNull()
+      // ...with the range badge layered on top, not replacing it.
+      expect(tile.querySelector('[data-testid="tile-range-badge"]')?.textContent).toContain('5')
+    })
+  })
+
   describe('hiding period lock', () => {
     it('should show a locked notice during the hiding period', () => {
       const gameStore = useGameStore()
