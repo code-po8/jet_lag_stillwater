@@ -46,6 +46,15 @@ function parseAskedFrom(raw: unknown): LatLng | undefined {
   return { lat, lng }
 }
 
+/**
+ * Validate an inbound thermometer vector endpoint (issue #29). A malformed
+ * coordinate must not corrupt the pending question, so return undefined and let
+ * the caller drop the whole vector.
+ */
+function parseLatLng(raw: unknown): LatLng | undefined {
+  return parseAskedFrom(raw)
+}
+
 export type QuestionCurseSync = ReturnType<typeof createQuestionCurseSync>
 
 function createQuestionCurseSync() {
@@ -117,6 +126,17 @@ function createQuestionCurseSync() {
     if (res.success) emit('question.answered', { questionId, answer })
     return res
   }
+  /**
+   * Attach a thermometer travel vector to a question and broadcast it (issue
+   * #29). The seeker places the start/end pins on their map after asking; this
+   * stamps them locally and relays `question.vector` so the hider's map shows the
+   * two pins + travel arrow.
+   */
+  function setThermometerVector(questionId: string, start: LatLng, end: LatLng) {
+    const res = questions.setThermometerVector(questionId, start, end)
+    if (res.success) emit('question.vector', { questionId, start, end })
+    return res
+  }
   function vetoQuestion(questionId: string) {
     const res = questions.vetoQuestion(questionId)
     if (res.success) emit('question.vetoed', { questionId })
@@ -168,6 +188,16 @@ function createQuestionCurseSync() {
           if (typeof payload.questionId === 'string')
             res = questions.vetoQuestion(payload.questionId)
           break
+        case 'question.vector': {
+          // Thermometer travel vector from the seeker (issue #29). Both endpoints
+          // must be valid; a malformed one drops the whole vector rather than
+          // stamping a half-vector the hider can't interpret.
+          const s = parseLatLng(payload.start)
+          const e = parseLatLng(payload.end)
+          if (typeof payload.questionId === 'string' && s && e)
+            res = questions.setThermometerVector(payload.questionId, s, e)
+          break
+        }
         case 'curse.activated':
           if (typeof payload.curseId === 'string')
             res = cards.activateCurseManually(payload.curseId)
@@ -202,6 +232,7 @@ function createQuestionCurseSync() {
     reaskQuestion,
     randomizeQuestion,
     answerQuestion,
+    setThermometerVector,
     vetoQuestion,
     activateCurse,
     triggerTimeTrap,

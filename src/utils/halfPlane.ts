@@ -82,6 +82,39 @@ export function halfPlanePolygon(
 }
 
 /**
+ * The two endpoints of a short line segment through `start`, perpendicular to
+ * the `start`→`end` travel direction (issue #29). This is the hotter/colder
+ * DIVIDING line itself — everything on the end-pin side is hotter, the other
+ * side colder — drawn on the hider's map so they can read the boundary directly
+ * at any travel angle rather than projecting it by eye.
+ *
+ * `halfLengthMeters` is how far the segment extends on EACH side of `start`.
+ * Returns `[[lat,lng], [lat,lng]]`, or null if start/end coincide (no direction).
+ */
+export function perpendicularSegment(
+  start: LatLng,
+  end: LatLng,
+  halfLengthMeters: number,
+): [[number, number], [number, number]] | null {
+  const cosLat = Math.cos((start.lat * Math.PI) / 180)
+  const dx = (end.lng - start.lng) * M_PER_DEG_LAT * cosLat
+  const dy = (end.lat - start.lat) * M_PER_DEG_LAT
+  const len = Math.hypot(dx, dy)
+  if (len === 0) return null
+
+  // Unit vector ALONG the perpendicular (rotate the travel normal 90°).
+  const px = -dy / len
+  const py = dx / len
+
+  const toLatLng = (sign: number): [number, number] => {
+    const mx = sign * px * halfLengthMeters
+    const my = sign * py * halfLengthMeters
+    return [start.lat + my / M_PER_DEG_LAT, start.lng + mx / (M_PER_DEG_LAT * cosLat)]
+  }
+  return [toLatLng(1), toLatLng(-1)]
+}
+
+/**
  * Which half-plane does `point` fall in, relative to the perpendicular through
  * `start` (normal = start→end)? Returns 'toward' if on the end side, 'away'
  * otherwise, or null if start/end coincide. Useful for tests and for a future

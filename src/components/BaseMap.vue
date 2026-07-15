@@ -15,7 +15,7 @@ import { BRAND_COLORS } from '@/design/colors'
 import type { Position, Role, Zone } from '@/services/sync/protocol'
 import { geohashBounds } from '@/utils/geohash'
 import type { VectorShade } from '@/composables/useVectorShades'
-import { halfPlanePolygon } from '@/utils/halfPlane'
+import { halfPlanePolygon, perpendicularSegment } from '@/utils/halfPlane'
 
 /** A temporary placement pin the seeker drops for a shade tool (MAP-010). */
 export interface TempPin {
@@ -75,6 +75,21 @@ export interface AskedFromMarker {
   label?: string
 }
 
+/**
+ * A thermometer travel vector (issue #29): the seeker's START and END pins for a
+ * thermometer question, shown to the hider as two labeled pins joined by an
+ * arrow line. The start→end direction is what the hider uses to judge hotter
+ * (closer) vs colder (farther).
+ */
+export interface ThermometerVector {
+  /** Stable id (the question id) for reconciliation. */
+  id: string
+  start: { lat: number; lng: number }
+  end: { lat: number; lng: number }
+  /** Tooltip label, e.g. "Thermometer 0.5 mi". */
+  label?: string
+}
+
 /** Game-data overlay categories (MAP-002) and their legend colors. */
 const POI_STYLE: Record<string, { color: string; label: string }> = {
   'bus-stop': { color: '#ffffff', label: 'Bus stop' },
@@ -113,6 +128,11 @@ const props = withDefaults(
      */
     askedFromMarkers?: AskedFromMarker[]
     /**
+     * Thermometer travel vectors (issue #29), shown to the hider: start + end
+     * pins joined by an arrow line, so the hider can judge hotter/colder.
+     */
+    thermometerVectors?: ThermometerVector[]
+    /**
      * Vector shades to render (MAP-010/011): smooth circle/half-plane regions a
      * seeker has committed. Coexists with the geohash `shadedCells`.
      */
@@ -135,6 +155,7 @@ const props = withDefaults(
     inRangeStopIndices: () => [],
     stopsPickable: false,
     askedFromMarkers: () => [],
+    thermometerVectors: () => [],
     vectorShades: () => [],
     placementMode: false,
     maxPins: 1,
@@ -236,6 +257,7 @@ onMounted(() => {
   drawBusStops()
   drawMarkers()
   drawAskedFrom()
+  drawThermometerVectors()
   drawVectorShades()
 
   // Temp-pin placement (MAP-010): while placing, a map tap drops a pin (or moves
@@ -542,6 +564,111 @@ function drawAskedFrom() {
 
 watch(() => props.askedFromMarkers, drawAskedFrom)
 
+// ── Thermometer travel vectors (issue #29) ──
+// The seeker's start→end pins for a thermometer question, shown to the hider as
+// two labeled pins (green "S" / red "E") joined by an arrow line. The direction
+// is what the hider needs to judge hotter (toward end) vs colder (behind start).
+const THERMO_START_PIN = '#16a34a' // green — where the seeker started
+const THERMO_END_PIN = '#dc2626' // red — where the seeker ended
+const THERMO_LINE = '#f59e0b' // amber — the thermometer category color
+const THERMO_DIVIDER = '#e2e8f0' // light — the hotter/colder boundary line
+// How far (meters) the hotter/colder divider extends on each side of the start
+// pin. A short "ruler" at town scale — long enough to read the boundary angle,
+// short enough not to clutter the map.
+const THERMO_DIVIDER_HALF_M = 120
+let thermoLayer: L.LayerGroup | null = null
+// Each vector owns four Leaflet layers we reconcile as a unit: the two endpoint
+// pins, the travel line, and the perpendicular hotter/colder divider (issue #29).
+const thermoById = new Map<
+  string,
+  { start: L.Marker; end: L.Marker; line: L.Polyline; divider: L.Polyline | null }
+>()
+
+/** Build a small labeled teardrop pin ("S"/"E") for a thermometer endpoint. */
+function thermoPinIcon(leaflet: typeof L, glyph: string, color: string): L.DivIcon {
+  const html =
+    `<span class="thermo-pin" aria-hidden="true">` +
+    `<svg viewBox="0 0 24 32" width="22" height="30">` +
+    `<path d="M12 0C5.4 0 0 5.2 0 11.6 0 20.3 12 32 12 32s12-11.7 12-20.4C24 5.2 18.6 0 12 0z" ` +
+    `fill="${color}" stroke="#ffffff" stroke-width="1.5"/>` +
+    `<text x="12" y="16" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">${glyph}</text>` +
+    `</svg></span>`
+  return leaflet.divIcon({
+    html,
+    className: 'thermo-pin-icon',
+    iconSize: [22, 30],
+    iconAnchor: [11, 30], // tip points at the position
+  })
+}
+
+function drawThermometerVectors() {
+  const map = mapInstance.value
+  if (!map) return
+  const leaflet = props.leaflet ?? L
+
+  if (!thermoLayer) {
+    thermoLayer = leaflet.layerGroup()
+    thermoLayer.addTo(map)
+  }
+
+  const next = new Map(props.thermometerVectors.map((v) => [v.id, v]))
+  // Remove vectors whose question is no longer active.
+  for (const [id, layers] of thermoById) {
+    if (!next.has(id)) {
+      thermoLayer.removeLayer(layers.start)
+      thermoLayer.removeLayer(layers.end)
+      thermoLayer.removeLayer(layers.line)
+      if (layers.divider) thermoLayer.removeLayer(layers.divider)
+      thermoById.delete(id)
+    }
+  }
+  // Add or move the rest.
+  for (const v of props.thermometerVectors) {
+    const startLL: [number, number] = [v.start.lat, v.start.lng]
+    const endLL: [number, number] = [v.end.lat, v.end.lng]
+    // The hotter/colder divider: a short segment through the start pin,
+    // perpendicular to the travel direction (issue #29). Null if start == end.
+    const dividerPts = perpendicularSegment(v.start, v.end, THERMO_DIVIDER_HALF_M)
+    const existing = thermoById.get(v.id)
+    if (!existing) {
+      const line = leaflet.polyline([startLL, endLL], {
+        color: THERMO_LINE,
+        weight: 3,
+        opacity: 0.9,
+        dashArray: '6 6',
+      })
+      // Solid, lighter line so the boundary reads distinctly from the travel line.
+      const divider = dividerPts
+        ? leaflet.polyline(dividerPts, { color: THERMO_DIVIDER, weight: 2, opacity: 0.85 })
+        : null
+      const start = leaflet.marker(startLL, {
+        icon: thermoPinIcon(leaflet, 'S', THERMO_START_PIN),
+        zIndexOffset: 1100,
+      })
+      const end = leaflet.marker(endLL, {
+        icon: thermoPinIcon(leaflet, 'E', THERMO_END_PIN),
+        zIndexOffset: 1100,
+      })
+      if (v.label) {
+        start.bindTooltip(`${v.label} — start`, { direction: 'top' })
+        end.bindTooltip(`${v.label} — end`, { direction: 'top' })
+      }
+      thermoLayer.addLayer(line)
+      if (divider) thermoLayer.addLayer(divider)
+      thermoLayer.addLayer(start)
+      thermoLayer.addLayer(end)
+      thermoById.set(v.id, { start, end, line, divider })
+      continue
+    }
+    existing.start.setLatLng(startLL)
+    existing.end.setLatLng(endLL)
+    existing.line.setLatLngs([startLL, endLL])
+    if (existing.divider && dividerPts) existing.divider.setLatLngs(dividerPts)
+  }
+}
+
+watch(() => props.thermometerVectors, drawThermometerVectors, { deep: true })
+
 // ── Temp placement pins (MAP-010) ──
 // Draggable markers the seeker drops to anchor a shade (radius center, or line
 // start/end). Kept as a small ordered list; committing/clearing happens in
@@ -753,6 +880,17 @@ onBeforeUnmount(() => {
   border: none;
 }
 :global(.askedfrom-pin) {
+  display: block;
+  line-height: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+/* Thermometer travel-vector pins (issue #29). Same divIcon treatment: strip the
+   default white box so only the labeled teardrop SVG shows. */
+:global(.thermo-pin-icon) {
+  background: transparent;
+  border: none;
+}
+:global(.thermo-pin) {
   display: block;
   line-height: 0;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));

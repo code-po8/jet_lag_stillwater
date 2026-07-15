@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import MapPanel from '../MapPanel.vue'
 import { useSync, __resetSyncSession } from '@/composables/useSync'
+import { __resetQuestionCurseSync } from '@/composables/useQuestionCurseSync'
 import { useVectorShades, __resetVectorShades } from '@/composables/useVectorShades'
 import { useGameStore, GamePhase } from '@/stores/gameStore'
 import { useQuestionStore } from '@/stores/questionStore'
@@ -22,6 +23,7 @@ vi.mock('../BaseMap.vue', () => ({
       'inRangeStopIndices',
       'stopsPickable',
       'askedFromMarkers',
+      'thermometerVectors',
       'vectorShades',
       'placementMode',
       'maxPins',
@@ -38,6 +40,8 @@ vi.mock('../BaseMap.vue', () => ({
       :data-pickable="String(!!stopsPickable)"
       :data-askedfrom="(askedFromMarkers || []).length"
       :data-askedfrom-label="(askedFromMarkers || []).map(m => m.label).join('|')"
+      :data-thermo="(thermometerVectors || []).length"
+      :data-thermo-label="(thermometerVectors || []).map(v => v.label).join('|')"
       :data-vectorshades="(vectorShades || []).length"
       :data-vectormode="(vectorShades || []).map(s => s.mode).join(',')"
       :data-placement="String(!!placementMode)"
@@ -52,6 +56,13 @@ vi.mock('../BaseMap.vue', () => ({
       data-testid="map-drop-two-pins"
       @click="$emit('tempPinsChange', [{ lat: 36.12, lng: -97.07 }, { lat: 36.13, lng: -97.07 }])"
     /></div>`,
+    // MapPanel calls baseMap.clearTempPins() via a template ref; the real one
+    // drops the temp pins and emits an empty tempPinsChange. Mirror that.
+    methods: {
+      clearTempPins(this: { $emit: (event: string, ...args: unknown[]) => void }) {
+        this.$emit('tempPinsChange', [])
+      },
+    },
   },
 }))
 
@@ -83,6 +94,7 @@ describe('MapPanel (MAP-004)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     __resetSyncSession()
+    __resetQuestionCurseSync()
     __resetVectorShades()
     geoState.position = null
     geoState.error = null
@@ -90,6 +102,7 @@ describe('MapPanel (MAP-004)', () => {
   afterEach(() => {
     cleanup()
     __resetSyncSession()
+    __resetQuestionCurseSync()
     __resetVectorShades()
   })
 
@@ -387,6 +400,127 @@ describe('MapPanel (MAP-004)', () => {
     await nextTick()
 
     expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-askedfrom', '0')
+  })
+
+  // ── Thermometer travel vector (issue #29) ──
+
+  it('passes thermometer vectors to the map for the HIDER', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('thermometer-0.5-miles', { lat: 36.12, lng: -97.07 })
+    questions.setThermometerVector(
+      'thermometer-0.5-miles',
+      { lat: 36.12, lng: -97.07 },
+      { lat: 36.13, lng: -97.06 },
+    )
+
+    render(MapPanel)
+    await nextTick()
+
+    const stub = screen.getByTestId('base-map-stub')
+    expect(stub).toHaveAttribute('data-thermo', '1')
+    expect(stub.getAttribute('data-thermo-label')).toContain('Thermometer')
+  })
+
+  it('does NOT show thermometer vectors to a seeker', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('thermometer-0.5-miles')
+    questions.setThermometerVector(
+      'thermometer-0.5-miles',
+      { lat: 36.12, lng: -97.07 },
+      { lat: 36.13, lng: -97.06 },
+    )
+
+    render(MapPanel)
+    await nextTick()
+
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-thermo', '0')
+  })
+
+  it('omits a thermometer vector for a question that has none placed', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 'h1', name: 'Hank', role: 'hider', isHost: true, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('thermometer-0.5-miles', { lat: 36.12, lng: -97.07 })
+
+    render(MapPanel)
+    await nextTick()
+
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-thermo', '0')
+  })
+
+  it('shows the seeker a thermometer send-vector panel only while a thermometer question is pending', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    const questions = useQuestionStore()
+
+    render(MapPanel)
+    await nextTick()
+    // No pending thermometer question yet → no panel.
+    expect(screen.queryByTestId('thermo-panel')).not.toBeInTheDocument()
+
+    questions.askQuestion('thermometer-0.5-miles')
+    await nextTick()
+    expect(screen.getByTestId('thermo-panel')).toBeInTheDocument()
+  })
+
+  it('does not show the thermometer panel for a non-thermometer pending question', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('radar-0.5-miles')
+
+    render(MapPanel)
+    await nextTick()
+
+    expect(screen.queryByTestId('thermo-panel')).not.toBeInTheDocument()
+  })
+
+  it('sends the placed start/end vector to the hider and stamps the question', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('thermometer-0.5-miles')
+
+    render(MapPanel)
+    await nextTick()
+
+    // Enter thermometer placement, drop two pins, then send.
+    await fireEvent.click(screen.getByTestId('thermo-place-btn'))
+    await fireEvent.click(screen.getByTestId('map-drop-two-pins'))
+    await fireEvent.click(screen.getByTestId('thermo-send-btn'))
+
+    expect(questions.pendingQuestion?.thermometerVector).toEqual({
+      start: { lat: 36.12, lng: -97.07 },
+      end: { lat: 36.13, lng: -97.07 },
+    })
+  })
+
+  it('clears misplaced pins so the seeker can re-place before sending', async () => {
+    const sync = useSync()
+    sync.self.value = { id: 's1', name: 'Sue', role: 'seeker', isHost: false, connected: true }
+    const questions = useQuestionStore()
+    questions.askQuestion('thermometer-0.5-miles')
+
+    render(MapPanel)
+    await nextTick()
+
+    // Place two pins → Send is enabled.
+    await fireEvent.click(screen.getByTestId('thermo-place-btn'))
+    await fireEvent.click(screen.getByTestId('map-drop-two-pins'))
+    expect(screen.getByTestId('thermo-send-btn')).toBeEnabled()
+
+    // Clear resets the pins so Send is disabled again (nothing is sent).
+    await fireEvent.click(screen.getByTestId('thermo-clear-btn'))
+    await nextTick()
+    expect(screen.getByTestId('thermo-send-btn')).toBeDisabled()
+    expect(questions.pendingQuestion?.thermometerVector).toBeUndefined()
+
+    // Still in placement mode, so the seeker can drop fresh pins right away.
+    expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-placement', 'true')
   })
 
   // ── Radius shader (MAP-010) ──

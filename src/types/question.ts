@@ -107,6 +107,18 @@ export interface AskedQuestion {
    * and backward-compatible: offline/single-device or pre-MAP-009 records omit it.
    */
   askedFrom?: { lat: number; lng: number }
+  /**
+   * Thermometer travel vector (issue #29): the seeker's START and END pins for a
+   * thermometer question. The straight-line start→end direction is what the
+   * hider uses to judge hotter (closer) vs colder (farther). Placed by the seeker
+   * on their map after asking and synced to the hider so their map shows the
+   * two pins + travel arrow. Only present on thermometer questions once the
+   * seeker has placed the vector; omitted otherwise.
+   */
+  thermometerVector?: {
+    start: { lat: number; lng: number }
+    end: { lat: number; lng: number }
+  }
 }
 
 /**
