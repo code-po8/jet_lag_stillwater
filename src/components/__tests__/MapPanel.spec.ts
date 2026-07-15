@@ -568,10 +568,64 @@ describe('MapPanel (MAP-004)', () => {
 
     expect(v.shades.value).toHaveLength(1)
     expect(v.shades.value[0]).toMatchObject({ kind: 'radius', mode: 'inside' })
-    // Radius input default 500 ft → meters.
-    expect((v.shades.value[0] as { radiusM: number }).radiusM).toBeCloseTo(500 * 0.3048, 1)
+    // Default unit is miles (issue #28), default value 0.5 mi → meters.
+    expect((v.shades.value[0] as { radiusM: number }).radiusM).toBeCloseTo(0.5 * 1609.34, 1)
     // The committed shade is passed back down to the map.
     expect(screen.getByTestId('base-map-stub')).toHaveAttribute('data-vectorshades', '1')
+  })
+
+  it('defaults the radius unit to miles (issue #28)', async () => {
+    asSeeker()
+    render(MapPanel)
+    await nextTick()
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+
+    const unit = screen.getByTestId('radius-unit') as HTMLSelectElement
+    expect(unit.value).toBe('miles')
+  })
+
+  it('commits a radius entered in miles, including decimals like 0.25', async () => {
+    asSeeker()
+    const v = useVectorShades()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+    // Unit is miles by default; enter a decimal value.
+    await fireEvent.update(screen.getByTestId('radius-input'), '0.25')
+    await fireEvent.click(screen.getByTestId('map-drop-pin'))
+    await fireEvent.click(screen.getByTestId('radius-apply-btn'))
+
+    expect((v.shades.value[0] as { radiusM: number }).radiusM).toBeCloseTo(0.25 * 1609.34, 1)
+  })
+
+  it('commits a radius entered in feet when the feet unit is chosen', async () => {
+    asSeeker()
+    const v = useVectorShades()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+    await fireEvent.update(screen.getByTestId('radius-unit'), 'feet')
+    await fireEvent.update(screen.getByTestId('radius-input'), '500')
+    await fireEvent.click(screen.getByTestId('map-drop-pin'))
+    await fireEvent.click(screen.getByTestId('radius-apply-btn'))
+
+    expect((v.shades.value[0] as { radiusM: number }).radiusM).toBeCloseTo(500 * 0.3048, 1)
+  })
+
+  it('lets the seeker enter a large mileage like 25 miles easily', async () => {
+    asSeeker()
+    const v = useVectorShades()
+    render(MapPanel)
+    await nextTick()
+
+    await fireEvent.click(screen.getByTestId('shade-radius-btn'))
+    await fireEvent.update(screen.getByTestId('radius-input'), '25')
+    await fireEvent.click(screen.getByTestId('map-drop-pin'))
+    await fireEvent.click(screen.getByTestId('radius-apply-btn'))
+
+    expect((v.shades.value[0] as { radiusM: number }).radiusM).toBeCloseTo(25 * 1609.34, 0)
   })
 
   it('commits an OUTSIDE shade when the outside mode is selected', async () => {
